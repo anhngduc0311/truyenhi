@@ -134,7 +134,7 @@ namespace TruyenKomi.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Primary storage upload failed or full. Attempting fallback to Secondary Storage (Backblaze B2)...");
+                _logger.LogWarning(ex, "Primary storage upload failed. Attempting fallback to Secondary Storage...");
 
                 if (_secondaryClient != null)
                 {

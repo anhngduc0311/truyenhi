@@ -923,6 +923,306 @@ class ZetMangaDownloader(BaseMangaDownloader):
         return unique_imgs
 
 
+class HentaiVNRealDownloader(BaseMangaDownloader):
+    """Bộ tải truyện chuyên biệt cho HentaiVNReal (https://hentaivnreal.com)"""
+    BASE_URL = "https://hentaivnreal.com"
+
+    def __init__(self, comic_url="https://hentaivnreal.com/danh-sach", output_dir="downloads", merge_slices=False, make_pdf=False, upload_to_web=False, api_base_url=DEFAULT_API_BASE_URL):
+        super().__init__(output_dir=output_dir, merge_slices=merge_slices, make_pdf=make_pdf, upload_to_web=upload_to_web, api_base_url=api_base_url)
+        self.source_name = "HentaiVNReal"
+        self.raw_input = str(comic_url).strip()
+        self.comic_url = self._normalize_url(self.raw_input)
+        self.scraper = cloudscraper.create_scraper(
+            browser={
+                'browser': 'chrome',
+                'platform': 'windows',
+                'desktop': True
+            }
+        )
+        self.slug = self._extract_slug(self.comic_url)
+
+    def _normalize_url(self, url: str) -> str:
+        url = url.strip()
+        if not url.startswith("http"):
+            if url.startswith("/"):
+                url = f"{self.BASE_URL}{url}"
+            else:
+                url = f"{self.BASE_URL}/truyen/{url}"
+        return url
+
+    def _extract_slug(self, url: str) -> str:
+        clean = url.split("?")[0].rstrip("/")
+        parts = clean.split("/")
+        if "truyen" in parts:
+            idx = parts.index("truyen")
+            if idx + 1 < len(parts):
+                return parts[idx + 1]
+        return parts[-1] if parts else "hentai-comic"
+
+    def _download_single_image(self, img_url: str, save_path: Path, referer: str = None) -> bool:
+        ref = referer or (self.BASE_URL + "/")
+        return super()._download_single_image(img_url, save_path, referer=ref)
+
+    def get_comic_info(self, comic_url: str = None) -> dict:
+        """Lấy thông tin chi tiết bộ truyện và toàn bộ danh sách chapter từ hentaivnreal.com"""
+        if comic_url:
+            self.raw_input = str(comic_url).strip()
+            self.comic_url = self._normalize_url(self.raw_input)
+            self.slug = self._extract_slug(self.comic_url)
+
+        if HAS_RICH and console:
+            console.print(f"[bold cyan]🔍 Đang phân tích dữ liệu truyện từ HentaiVNReal:[/bold cyan] [underline]{self.comic_url}[/underline]")
+        else:
+            print(f"🔍 Đang phân tích dữ liệu truyện từ HentaiVNReal: {self.comic_url}")
+
+        res = self.scraper.get(self.comic_url, timeout=TIMEOUT)
+        if res.status_code != 200:
+            raise Exception(f"Không thể kết nối đến trang truyện HentaiVNReal (HTTP {res.status_code})")
+        res.encoding = 'utf-8'
+        soup = BeautifulSoup(res.text, "html.parser")
+
+        # 1. Tên truyện
+        h1 = soup.find("h1")
+        title = h1.get_text(strip=True) if h1 else self.slug.replace("-", " ").title()
+        title = re.sub(r'\s*\|\s*Hentaivn.*', '', title, flags=re.IGNORECASE).strip()
+        self.comic_title = title
+
+        # 2. Ảnh bìa (ưu tiên ảnh bìa độ nét cao -w575-)
+        cover_url = None
+        for img in soup.find_all("img"):
+            src = img.get("src") or img.get("data-src") or ""
+            if "story-images" in src and "-w575-" in src:
+                cover_url = src
+                break
+        if not cover_url:
+            for img in soup.find_all("img"):
+                src = img.get("src") or img.get("data-src") or ""
+                if "story-images" in src:
+                    cover_url = src
+                    break
+        if not cover_url:
+            ava = soup.select_one(".page-ava img, .box-cover img")
+            if ava:
+                cover_url = ava.get("src") or ava.get("data-src")
+
+        # 3. Metadata
+        author = "Đang cập nhật"
+        translator_group = "Đang cập nhật"
+        other_names = "Đang cập nhật"
+        status = "Đang tiến hành"
+        views = 0
+        desc = ""
+        genres = []
+
+        for p in soup.find_all("p"):
+            t = p.get_text(" ", strip=True)
+            if t.startswith("Tác giả:"):
+                author = t.replace("Tác giả:", "").strip()
+            elif t.startswith("Nhóm dịch:"):
+                translator_group = t.replace("Nhóm dịch:", "").strip()
+            elif t.startswith("Tên Khác:"):
+                other_names = t.replace("Tên Khác:", "").strip()
+            elif "Tình Trạng:" in t:
+                m = re.search(r'Tình Trạng\s*:\s*([^\sL]+)', t)
+                if m: status = m.group(1).strip()
+            elif "Lượt xem:" in t:
+                m = re.search(r'Lượt xem\s*:\s*([\d,.]+)', t)
+                if m:
+                    try: views = int(m.group(1).replace(",", "").replace(".", ""))
+                    except Exception: pass
+            elif t.startswith("Nội dung:"):
+                next_p = p.find_next_sibling("p")
+                if next_p:
+                    desc = next_p.get_text(strip=True)
+
+        for a in soup.find_all("a"):
+            href = a.get("href", "")
+            if "/the-loai/" in href:
+                gt = a.get_text(strip=True)
+                if gt and gt not in genres and gt.lower() not in ["thể loại", "danh sách", "kết hợp", "full màu", "không che"]:
+                    genres.append(gt)
+
+        self.author = author
+        self.translator_group = translator_group
+        self.other_names = other_names
+        self.views = views
+        self.genres = genres
+
+        # 4. Danh sách chapter
+        chapters = []
+        chuong = soup.find(id="chuong")
+        if chuong:
+            for tr in chuong.find_all("tr"):
+                a = tr.find("a", href=True)
+                if a and a["href"] != "#" and not a["href"].startswith("javascript"):
+                    c_url = urllib.parse.urljoin(self.BASE_URL, a["href"])
+                    c_title = a.get_text(strip=True)
+                    m = re.search(r'(?:chap|chương|tập|hoi|hồi|lần)\s*([0-9]+(?:\.[0-9]+)?)', c_title, re.I)
+                    if m:
+                        c_num = float(m.group(1))
+                    elif "oneshot" in c_title.lower() or "1shot" in c_title.lower():
+                        c_num = 1.0
+                    else:
+                        c_num = float(len(chapters) + 1)
+                    date_td = tr.find_all("td")
+                    c_date = date_td[1].get_text(strip=True) if len(date_td) > 1 else ""
+                    chapters.append({
+                        "number": c_num,
+                        "title": c_title,
+                        "url": c_url,
+                        "date": c_date,
+                        "updated_at": parse_date_to_iso(c_date)
+                    })
+
+        chapters.reverse()
+        seen_numbers = set()
+        for idx, chap in enumerate(chapters, 1):
+            if chap["number"] in seen_numbers:
+                chap["number"] = float(idx)
+            seen_numbers.add(chap["number"])
+
+        return {
+            "title": title,
+            "slug": self.slug,
+            "cover_url": cover_url,
+            "author": self.author,
+            "translator_group": self.translator_group,
+            "other_names": self.other_names,
+            "status": status,
+            "views": self.views,
+            "description": desc,
+            "genres": self.genres,
+            "categories": self.genres,
+            "chapters": chapters
+        }
+
+    def get_chapter_images(self, chapter_info_or_url) -> list:
+        """Lấy toàn bộ link ảnh chất lượng cao của chapter từ hentaivnreal.com"""
+        c_url = chapter_info_or_url if isinstance(chapter_info_or_url, str) else chapter_info_or_url.get("url", "")
+        res = self.scraper.get(c_url, headers={"Referer": self.comic_url}, timeout=TIMEOUT)
+        if res.status_code != 200:
+            return []
+        res.encoding = 'utf-8'
+        soup = BeautifulSoup(res.text, "html.parser")
+
+        images = []
+        for img in soup.find_all("img"):
+            src = img.get("src") or img.get("data-src") or ""
+            if "manga-images" in src and src not in images:
+                images.append(src)
+
+        return images
+
+    @staticmethod
+    def fetch_all_hentaivn_comics_iter(start_page=1, end_page=None, max_comics=None):
+        """
+        Iterator duyệt toàn bộ truyện trên https://hentaivnreal.com/danh-sach
+        Theo thứ tự từ MỚI NHẤT đến CŨ NHẤT (Trang 1 ➜ Trang cuối).
+        """
+        scraper = cloudscraper.create_scraper(
+            browser={
+                'browser': 'chrome',
+                'platform': 'windows',
+                'desktop': True
+            }
+        )
+        current_page = max(1, start_page)
+        yielded_count = 0
+        total_pages = 982
+
+        while True:
+            if end_page and current_page > end_page:
+                break
+            if current_page > total_pages:
+                break
+            if max_comics and yielded_count >= max_comics:
+                break
+
+            url = f"https://hentaivnreal.com/danh-sach?page={current_page}"
+            try:
+                res = scraper.get(url, timeout=20)
+                if res.status_code != 200:
+                    time.sleep(2)
+                    continue
+                res.encoding = 'utf-8'
+                soup = BeautifulSoup(res.text, "html.parser")
+
+                pag = soup.find(class_=lambda c: c and 'pagination' in c)
+                if pag:
+                    for a in pag.find_all('a'):
+                        href = a.get('href', '')
+                        if 'page=' in href:
+                            try:
+                                p_num = int(href.split('page=')[-1].split('&')[0])
+                                total_pages = max(total_pages, p_num)
+                            except Exception:
+                                pass
+                        t = a.get_text(strip=True)
+                        if t.isdigit():
+                            total_pages = max(total_pages, int(t))
+
+                items = soup.select("li.item")
+                if not items:
+                    break
+
+                for it in items:
+                    desc_elem = it.select_one(".box-description")
+                    a_tag = desc_elem.find("a", href=True) if desc_elem else it.find("a", href=True)
+                    if not a_tag or "/truyen/" not in a_tag.get("href", ""):
+                        continue
+
+                    comic_rel_url = a_tag["href"]
+                    comic_full_url = urllib.parse.urljoin("https://hentaivnreal.com", comic_rel_url)
+                    comic_title = a_tag.get_text(strip=True)
+                    slug = comic_rel_url.split("?")[0].rstrip("/").split("/")[-1]
+
+                    img_elem = it.find("img")
+                    thumb_url = img_elem.get("src") or img_elem.get("data-src") or "" if img_elem else ""
+
+                    other_names = ""
+                    for p in it.find_all("p"):
+                        if "Tên Khác:" in p.get_text():
+                            other_names = p.get_text().replace("Tên Khác:", "").strip()
+                            break
+
+                    tags = [t.get_text(strip=True) for t in it.find_all("a", class_="tag") if t.get_text(strip=True)]
+
+                    views = 0
+                    for p in it.find_all("p"):
+                        if "Lượt xem:" in p.get_text():
+                            m_v = re.search(r'Lượt xem\s*:\s*([\d,.]+)', p.get_text())
+                            if m_v:
+                                try: views = int(m_v.group(1).replace(",", "").replace(".", ""))
+                                except Exception: pass
+                            break
+
+                    yielded_count += 1
+                    yield {
+                        "id": slug,
+                        "slug": slug,
+                        "title": comic_title,
+                        "url": comic_full_url,
+                        "cover_thumb": thumb_url,
+                        "other_names": other_names,
+                        "tags": tags,
+                        "views": views,
+                        "author": "Đang cập nhật",
+                        "page": current_page,
+                        "total_pages": total_pages,
+                        "total_available": total_pages * 40
+                    }
+
+                    if max_comics and yielded_count >= max_comics:
+                        return
+
+                current_page += 1
+                time.sleep(0.3)
+
+            except Exception as e:
+                time.sleep(2)
+                continue
+
+
 class MangaDexDownloader(BaseMangaDownloader):
     """Bộ tải truyện chuyên biệt cho MangaDex (ưu tiên Tiếng Việt)"""
     def __init__(self, manga_id_or_url: str, output_dir="downloads", merge_slices=False, make_pdf=False, upload_to_web=False, api_base_url=DEFAULT_API_BASE_URL, lang=DEFAULT_LANG, data_saver=False):
@@ -1483,15 +1783,16 @@ Ví dụ sử dụng:
     parser.add_argument("--merge", action="store_true", help="Ghép 5 lát cắt ảnh làm 1 (Mặc định tự động ghép nếu chương > 70 ảnh)")
     parser.add_argument("--api", default=DEFAULT_API_BASE_URL, help=f"URL Backend API (Mặc định: {DEFAULT_API_BASE_URL})")
     
-    # MangaDex Specific Arguments
-    parser.add_argument("--source", "--src", choices=["auto", "zet", "mangadex"], default="auto", help="Nguồn truyện (Mặc định: auto nhận diện)")
+    # MangaDex & HentaiVN Specific Arguments
+    parser.add_argument("--source", "--src", choices=["auto", "zet", "mangadex", "hentai"], default="auto", help="Nguồn truyện (Mặc định: auto nhận diện)")
+    parser.add_argument("--all-hentai", action="store_true", help="Tải toàn bộ truyện từ https://hentaivnreal.com/danh-sach (từ mới nhất đến cũ nhất)")
     parser.add_argument("--mangadex", "--dex", action="store_true", help="Bật chế độ duyệt/tìm kiếm MangaDex Tiếng Việt")
     parser.add_argument("--all-mangadex", "--download-all", action="store_true", help="Tải toàn bộ truyện MangaDex (Mặc định từ cũ nhất đến mới nhất)")
     parser.add_argument("--order", choices=["oldest", "latest", "newest_created", "updated_desc"], default="oldest", help="Thứ tự tải toàn bộ (Mặc định: oldest - cũ nhất đến mới nhất)")
     parser.add_argument("--start-offset", type=int, default=0, help="Bắt đầu từ truyện thứ mấy (Mặc định: 0)")
     parser.add_argument("--max-manga", type=int, default=None, help="Số lượng truyện tối đa muốn tải (Mặc định: Tất cả)")
     parser.add_argument("-q", "--query", "--search", default=None, help="Từ khóa tìm kiếm truyện trên MangaDex")
-    parser.add_argument("-p", "--page", type=int, default=1, help="Số trang duyệt trên MangaDex (Mặc định: 1)")
+    parser.add_argument("-p", "--page", type=int, default=1, help="Số trang duyệt trên MangaDex hoặc trang bắt đầu HentaiVN (Mặc định: 1)")
     parser.add_argument("--lang", default=DEFAULT_LANG, help=f"Mã ngôn ngữ bản dịch MangaDex (Mặc định: {DEFAULT_LANG} - Tiếng Việt)")
     parser.add_argument("--data-saver", action="store_true", help="Tải ảnh nén tiết kiệm dung lượng từ MangaDex")
     parser.add_argument("--select", default=None, help="Tự động chọn STT truyện khi duyệt danh sách (VD: 1 hoặc 1,2 hoặc all)")
@@ -1499,6 +1800,55 @@ Ví dụ sử dụng:
     args = parser.parse_args()
 
     input_url = args.url or ""
+
+    # -1. Xử lý tải toàn bộ HentaiVN (Batch All Newest -> Oldest)
+    if args.all_hentai:
+        start_p = max(1, args.page)
+        if HAS_RICH and console:
+            console.print(f"[bold green]🚀 BẮT ĐẦU TIẾN TRÌNH TẢI TOÀN BỘ HENTAIVNREAL (MỚI NHẤT ➜ CŨ NHẤT)[/bold green]")
+            console.print(f"Nguồn: [cyan]https://hentaivnreal.com/danh-sach[/cyan] | Bắt đầu từ trang: [cyan]{start_p}[/cyan]")
+        else:
+            print(f"🚀 BẮT ĐẦU TIẾN TRÌNH TẢI TOÀN BỘ HENTAIVNREAL (MỚI NHẤT ➜ CŨ NHẤT)")
+            print(f"Nguồn: https://hentaivnreal.com/danh-sach | Bắt đầu từ trang: {start_p}")
+
+        comic_gen = HentaiVNRealDownloader.fetch_all_hentaivn_comics_iter(
+            start_page=start_p,
+            max_comics=args.max_manga
+        )
+
+        total_processed = 0
+        for item in comic_gen:
+            total_processed += 1
+            if HAS_RICH and console:
+                console.print(f"\n[bold yellow]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold yellow]")
+                console.print(f"[bold green]▶ [#{total_processed} | Trang {item.get('page')}] Đang xử lý bộ truyện:[/bold green] [bold cyan]{item['title']}[/bold cyan]")
+                console.print(f"🔗 Link: {item['url']}")
+            else:
+                print(f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                print(f"▶ [#{total_processed} | Trang {item.get('page')}] Đang xử lý bộ truyện: {item['title']}")
+                print(f"🔗 Link: {item['url']}")
+
+            try:
+                downloader = HentaiVNRealDownloader(
+                    comic_url=item['url'],
+                    output_dir=args.output,
+                    merge_slices=args.merge,
+                    make_pdf=args.pdf,
+                    upload_to_web=args.upload,
+                    api_base_url=args.api
+                )
+                downloader.run(start_chap=args.start, end_chap=args.end, specific_chap=args.chapter)
+            except Exception as ex:
+                if HAS_RICH and console:
+                    console.print(f"[bold red]❌ Lỗi khi tải bộ truyện '{item['title']}': {ex}[/bold red]")
+                else:
+                    print(f"❌ Lỗi khi tải bộ truyện '{item['title']}': {ex}")
+
+        if HAS_RICH and console:
+            console.print(f"\n[bold green]🎉 ĐÃ HOÀN TẤT TIẾN TRÌNH TẢI HÀNG LOẠT {total_processed} BỘ TRUYỆN HENTAIVN![/bold green]")
+        else:
+            print(f"\n🎉 ĐÃ HOÀN TẤT TIẾN TRÌNH TẢI HÀNG LOẠT {total_processed} BỘ TRUYỆN HENTAIVN!")
+        return
 
     # 0. Xử lý tải toàn bộ MangaDex (Batch All)
     if args.all_mangadex:
@@ -1599,13 +1949,26 @@ Ví dụ sử dụng:
 
     # 2. Xử lý tải trực tiếp 1 URL cụ thể
     target_url = input_url if input_url else DEFAULT_COMIC_URL
+    is_hentaivn = (
+        args.source == "hentai" or
+        "hentaivnreal.com" in target_url
+    )
     is_mangadex = (
         args.source == "mangadex" or
         "mangadex.org" in target_url or
         re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', target_url.strip())
     )
 
-    if is_mangadex:
+    if is_hentaivn:
+        downloader = HentaiVNRealDownloader(
+            comic_url=target_url,
+            output_dir=args.output,
+            merge_slices=args.merge,
+            make_pdf=args.pdf,
+            upload_to_web=args.upload,
+            api_base_url=args.api
+        )
+    elif is_mangadex:
         downloader = MangaDexDownloader(
             manga_id_or_url=target_url,
             output_dir=args.output,

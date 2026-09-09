@@ -300,10 +300,10 @@ fi
 CF_ENDPOINT=$(echo "$CF_ENDPOINT" | sed 's|https://||; s|http://||; s|/*$||')
 
 S3_PROVIDER="Cloudflare"
-if [[ "$CF_ENDPOINT" == *"storage.googleapis.com"* ]]; then
+if [[ "$CF_ENDPOINT" == *"amazonaws.com"* ]]; then
+    S3_PROVIDER="AWS"
+elif [[ "$CF_ENDPOINT" == *"storage.googleapis.com"* ]]; then
     S3_PROVIDER="GCS"
-elif [[ "$CF_ENDPOINT" == *"backblazeb2.com"* ]]; then
-    S3_PROVIDER="Backblaze"
 fi
 
 if docker exec -e PGPASSWORD="$DB_PASS" -i nekohentai-postgres pg_dump -U postgres NekoHentaiDb 2>>"$LOG_FILE" | gzip > "$BACKUP_FILE"; then

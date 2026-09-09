@@ -49,6 +49,7 @@ try:
     from zet_downloader import (
         MangaDexDownloader,
         ZetMangaDownloader,
+        HentaiVNRealDownloader,
         slugify,
         upload_file_to_cloud,
         sync_chapter_to_web_api,
@@ -62,7 +63,7 @@ try:
         STITCH_GROUP_SIZE,
     )
 except ImportError:
-    DEFAULT_COMIC_URL = "https://www.zettruyen1.com/truyen-tranh/phuc-thu"
+    DEFAULT_COMIC_URL = "https://hentaivnreal.com/truyen/me-ban-la-mau-hinh-ly-tuong-cua-toi"
     DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:5000/api")
     MANGADEX_API_BASE = "https://api.mangadex.org"
     MANGADEX_UPLOADS_BASE = "https://uploads.mangadex.org"
@@ -75,12 +76,12 @@ ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
 
-class MangaDexBatchConfigDialog(ctk.CTkToplevel):
-    """Cửa sổ cấu hình tải hàng loạt toàn bộ truyện MangaDex từ cũ nhất đến mới nhất"""
+class HentaiVNBatchConfigDialog(ctk.CTkToplevel):
+    """Cửa sổ cấu hình tải hàng loạt toàn bộ truyện từ https://hentaivnreal.com/danh-sach theo thứ tự Mới Nhất ➜ Cũ Nhất"""
     def __init__(self, parent, default_save_dir: str, default_api_url: str, on_start_callback):
         super().__init__(parent)
-        self.title("⚡ Tải Toàn Bộ Truyện MangaDex (Cũ Nhất ➜ Mới Nhất)")
-        self.geometry("650x720")
+        self.title("⚡ Tải Toàn Bộ Truyện HentaiVNReal (Mới Nhất ➜ Cũ Nhất)")
+        self.geometry("660x720")
         self.minsize(580, 640)
         self.resizable(False, False)
         self.default_save_dir = default_save_dir
@@ -102,15 +103,15 @@ class MangaDexBatchConfigDialog(ctk.CTkToplevel):
         
         t_lbl = ctk.CTkLabel(
             hdr, 
-            text="📥 Tải Hàng Loạt Toàn Bộ MangaDex", 
+            text="📥 Tải Hàng Loạt Toàn Bộ HentaiVNReal", 
             font=ctk.CTkFont(size=20, weight="bold"),
-            text_color="#f59e0b"
+            text_color="#ec4899"
         )
         t_lbl.pack(anchor="w", padx=20, pady=(15, 2))
 
         sub_lbl = ctk.CTkLabel(
             hdr,
-            text="Tự động tải toàn bộ ~6.600+ truyện Tiếng Việt từ MangaDex theo thứ tự từ Cũ Nhất đến Mới Nhất.\nHỗ trợ đa luồng, chuyển đổi WebP, ghép ảnh manhwa, tạo PDF và tự động đồng bộ Web.",
+            text="Tự động cào toàn bộ danh sách ~39.000+ truyện từ https://hentaivnreal.com/danh-sach\ntheo thứ tự từ MỚI NHẤT đến CŨ NHẤT (bắt đầu từ Trang 1 ➜ Trang 982+).\nHỗ trợ đa luồng, chuyển đổi WebP, ghép ảnh manhwa, tạo PDF và tự động đồng bộ Web / Cloud.",
             font=ctk.CTkFont(size=12),
             text_color="#94a3b8",
             justify="left"
@@ -122,34 +123,42 @@ class MangaDexBatchConfigDialog(ctk.CTkToplevel):
         body.grid(row=1, column=0, sticky="nsew", padx=15, pady=10)
         body.grid_columnconfigure(1, weight=1)
 
-        # 1. Thứ tự tải (Order)
+        # 1. Thứ tự tải (Luôn là Mới nhất -> Cũ nhất)
         ctk.CTkLabel(body, text="🎯 Thứ tự tải:", font=ctk.CTkFont(weight="bold"), text_color="#38bdf8").grid(row=0, column=0, padx=10, pady=(10, 4), sticky="w")
-        self.order_var = ctk.StringVar(value="oldest")
-        
         order_box = ctk.CTkFrame(body, fg_color="transparent")
         order_box.grid(row=0, column=1, padx=10, pady=(10, 4), sticky="w")
-        
-        ctk.CTkRadioButton(order_box, text="⏳ Cũ nhất ➜ Mới nhất (order[createdAt]=asc) [Khuyên dùng]", variable=self.order_var, value="oldest").pack(anchor="w", pady=2)
-        ctk.CTkRadioButton(order_box, text="🔄 Mới cập nhật nhất (order[latestUploadedChapter]=desc)", variable=self.order_var, value="latest").pack(anchor="w", pady=2)
+        ctk.CTkLabel(order_box, text="⚡ Từ Mới Nhất ➜ Cũ Nhất (Trang 1 ➜ Trang 982+)", font=ctk.CTkFont(weight="bold"), text_color="#10b981").pack(anchor="w")
 
-        # 2. Vị trí bắt đầu & Giới hạn
-        ctk.CTkLabel(body, text="🔢 Bắt đầu từ truyện #:", font=ctk.CTkFont(weight="bold")).grid(row=1, column=0, padx=10, pady=6, sticky="w")
-        self.start_idx_entry = ctk.CTkEntry(body, width=120, placeholder_text="1")
-        self.start_idx_entry.insert(0, "1")
-        self.start_idx_entry.grid(row=1, column=1, padx=10, pady=6, sticky="w")
+        # 2. Trang bắt đầu & Trang kết thúc
+        ctk.CTkLabel(body, text="🔢 Bắt đầu từ Trang #:", font=ctk.CTkFont(weight="bold")).grid(row=1, column=0, padx=10, pady=6, sticky="w")
+        start_p_box = ctk.CTkFrame(body, fg_color="transparent")
+        start_p_box.grid(row=1, column=1, padx=10, pady=6, sticky="w")
+        self.start_page_entry = ctk.CTkEntry(start_p_box, width=90, placeholder_text="1")
+        self.start_page_entry.insert(0, "1")
+        self.start_page_entry.pack(side="left", padx=(0, 8))
+        ctk.CTkLabel(start_p_box, text="(Trang 1 = Mới nhất)", font=ctk.CTkFont(size=11), text_color="#94a3b8").pack(side="left")
 
-        ctk.CTkLabel(body, text="📊 Giới hạn số truyện:", font=ctk.CTkFont(weight="bold")).grid(row=2, column=0, padx=10, pady=6, sticky="w")
+        ctk.CTkLabel(body, text="🏁 Đến Trang #:", font=ctk.CTkFont(weight="bold")).grid(row=2, column=0, padx=10, pady=6, sticky="w")
+        end_p_box = ctk.CTkFrame(body, fg_color="transparent")
+        end_p_box.grid(row=2, column=1, padx=10, pady=6, sticky="w")
+        self.end_page_entry = ctk.CTkEntry(end_p_box, width=90, placeholder_text="0")
+        self.end_page_entry.insert(0, "0")
+        self.end_page_entry.pack(side="left", padx=(0, 8))
+        ctk.CTkLabel(end_p_box, text="(0 = Tải hết đến trang cuối cùng ~982)", font=ctk.CTkFont(size=11), text_color="#94a3b8").pack(side="left")
+
+        # 3. Giới hạn số truyện
+        ctk.CTkLabel(body, text="📊 Giới hạn số truyện:", font=ctk.CTkFont(weight="bold")).grid(row=3, column=0, padx=10, pady=6, sticky="w")
         max_box = ctk.CTkFrame(body, fg_color="transparent")
-        max_box.grid(row=2, column=1, padx=10, pady=6, sticky="w")
-        self.max_manga_entry = ctk.CTkEntry(max_box, width=100, placeholder_text="0 (Tất cả)")
+        max_box.grid(row=3, column=1, padx=10, pady=6, sticky="w")
+        self.max_manga_entry = ctk.CTkEntry(max_box, width=90, placeholder_text="0")
         self.max_manga_entry.insert(0, "0")
-        self.max_manga_entry.pack(side="left", padx=(0, 10))
-        ctk.CTkLabel(max_box, text="(0 = Tải TẤT CẢ ~6.600 bộ)", font=ctk.CTkFont(size=11), text_color="#94a3b8").pack(side="left")
+        self.max_manga_entry.pack(side="left", padx=(0, 8))
+        ctk.CTkLabel(max_box, text="(0 = Tải TẤT CẢ ~39.000+ bộ)", font=ctk.CTkFont(size=11), text_color="#94a3b8").pack(side="left")
 
-        # 3. Thư mục lưu
-        ctk.CTkLabel(body, text="📂 Thư mục lưu máy:", font=ctk.CTkFont(weight="bold")).grid(row=3, column=0, padx=10, pady=6, sticky="w")
+        # 4. Thư mục lưu
+        ctk.CTkLabel(body, text="📂 Thư mục lưu máy:", font=ctk.CTkFont(weight="bold")).grid(row=4, column=0, padx=10, pady=6, sticky="w")
         save_box = ctk.CTkFrame(body, fg_color="transparent")
-        save_box.grid(row=3, column=1, padx=10, pady=6, sticky="ew")
+        save_box.grid(row=4, column=1, padx=10, pady=6, sticky="ew")
         save_box.grid_columnconfigure(0, weight=1)
 
         self.save_dir_entry = ctk.CTkEntry(save_box)
@@ -158,22 +167,19 @@ class MangaDexBatchConfigDialog(ctk.CTkToplevel):
 
         ctk.CTkButton(save_box, text="Chọn", width=60, command=self._browse_save_folder, fg_color="#334155").grid(row=0, column=1)
 
-        # 4. Tùy chọn xử lý & Tải lên
-        ctk.CTkLabel(body, text="⚙️ Tùy chọn xử lý:", font=ctk.CTkFont(weight="bold"), text_color="#38bdf8").grid(row=4, column=0, padx=10, pady=(12, 4), sticky="w")
+        # 5. Tùy chọn xử lý & Tải lên
+        ctk.CTkLabel(body, text="⚙️ Tùy chọn xử lý:", font=ctk.CTkFont(weight="bold"), text_color="#38bdf8").grid(row=5, column=0, padx=10, pady=(12, 4), sticky="w")
 
         opts_frame = ctk.CTkFrame(body, fg_color="#0f172a", corner_radius=6)
-        opts_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=4, sticky="ew")
+        opts_frame.grid(row=6, column=0, columnspan=2, padx=10, pady=4, sticky="ew")
 
         self.cb_upload_web = ctk.CTkCheckBox(opts_frame, text="🌐 Tự động tải lên Cloud Storage & Đồng bộ Web API", fg_color="#0284c7")
         self.cb_upload_web.select()
         self.cb_upload_web.pack(anchor="w", padx=12, pady=(10, 4))
 
-        self.cb_skip_existing = ctk.CTkCheckBox(opts_frame, text="⏭️ Bỏ qua chapter đã có trên máy (Tránh tải trùng / Resume)", fg_color="#0284c7")
+        self.cb_skip_existing = ctk.CTkCheckBox(opts_frame, text="⏭️ Bỏ qua chapter đã có trên máy (Tránh tải trùng / Hỗ trợ Resume)", fg_color="#0284c7")
         self.cb_skip_existing.select()
         self.cb_skip_existing.pack(anchor="w", padx=12, pady=4)
-
-        self.cb_data_saver = ctk.CTkCheckBox(opts_frame, text="⚡ MangaDex Data-Saver (Tải ảnh nén nhẹ tiết kiệm mạng)", fg_color="#0284c7")
-        self.cb_data_saver.pack(anchor="w", padx=12, pady=4)
 
         self.cb_merge = ctk.CTkCheckBox(opts_frame, text="🧩 Ghép ảnh Manhwa 5-in-1 (Tự động khi chapter > 70 ảnh)", fg_color="#0284c7")
         self.cb_merge.pack(anchor="w", padx=12, pady=4)
@@ -181,10 +187,10 @@ class MangaDexBatchConfigDialog(ctk.CTkToplevel):
         self.cb_pdf = ctk.CTkCheckBox(opts_frame, text="📄 Tự động xuất mỗi chapter thành file PDF", fg_color="#0284c7")
         self.cb_pdf.pack(anchor="w", padx=12, pady=(4, 10))
 
-        # 5. Luồng tải
-        ctk.CTkLabel(body, text="⚡ Luồng tải song song:", font=ctk.CTkFont(weight="bold")).grid(row=6, column=0, padx=10, pady=(10, 4), sticky="w")
+        # 6. Luồng tải
+        ctk.CTkLabel(body, text="⚡ Luồng tải song song:", font=ctk.CTkFont(weight="bold")).grid(row=7, column=0, padx=10, pady=(10, 4), sticky="w")
         thread_box = ctk.CTkFrame(body, fg_color="transparent")
-        thread_box.grid(row=6, column=1, padx=10, pady=(10, 4), sticky="ew")
+        thread_box.grid(row=7, column=1, padx=10, pady=(10, 4), sticky="ew")
         thread_box.grid_columnconfigure(0, weight=1)
 
         self.lbl_threads_dialog = ctk.CTkLabel(thread_box, text="16 luồng")
@@ -212,12 +218,12 @@ class MangaDexBatchConfigDialog(ctk.CTkToplevel):
 
         ctk.CTkButton(
             btn_bar,
-            text="🚀 Bắt Đầu Tải Hàng Loạt",
+            text="🚀 Bắt Đầu Tải Hàng Loạt (Mới ➜ Cũ)",
             command=self._on_start_clicked,
             fg_color="#10b981",
             hover_color="#059669",
             font=ctk.CTkFont(size=13, weight="bold"),
-            width=220,
+            width=270,
             height=36
         ).pack(side="right", padx=5, pady=12)
 
@@ -229,9 +235,16 @@ class MangaDexBatchConfigDialog(ctk.CTkToplevel):
 
     def _on_start_clicked(self):
         try:
-            start_idx = max(1, int(self.start_idx_entry.get() or 1))
+            start_p = max(1, int(self.start_page_entry.get() or 1))
         except ValueError:
-            start_idx = 1
+            start_p = 1
+
+        try:
+            end_p = int(self.end_page_entry.get() or 0)
+            if end_p <= 0:
+                end_p = None
+        except ValueError:
+            end_p = None
 
         try:
             max_manga = int(self.max_manga_entry.get() or 0)
@@ -241,13 +254,12 @@ class MangaDexBatchConfigDialog(ctk.CTkToplevel):
             max_manga = None
 
         config = {
-            "order": self.order_var.get(),
-            "start_offset": start_idx - 1,
+            "start_page": start_p,
+            "end_page": end_p,
             "max_manga": max_manga,
             "save_dir": self.save_dir_entry.get().strip(),
             "upload_to_web": self.cb_upload_web.get() == 1,
             "skip_existing": self.cb_skip_existing.get() == 1,
-            "data_saver": self.cb_data_saver.get() == 1,
             "merge_slices": self.cb_merge.get() == 1,
             "make_pdf": self.cb_pdf.get() == 1,
             "workers": int(self.slider_threads_dialog.get())
@@ -256,11 +268,15 @@ class MangaDexBatchConfigDialog(ctk.CTkToplevel):
         self.on_start_callback(config)
 
 
+# Alias để tương thích
+MangaDexBatchConfigDialog = HentaiVNBatchConfigDialog
+
+
 class MangaDownloaderGUI(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("⚡ NekoHentai Manga Downloader Pro (ZetTruyen & MangaDex)")
+        self.title("⚡ NekoHentai Manga Downloader Pro (HentaiVNReal & MangaDex)")
         self.geometry("1100x840")
         self.minsize(950, 700)
 
@@ -269,11 +285,9 @@ class MangaDownloaderGUI(ctk.CTk):
         self.comic_info = None
         self.is_downloading = False
         self.cancel_requested = False
-        self.current_mangadex_page = 1
-        self.total_mangadex_pages = 1
-        self.mangadex_search_query = None
-        self.mangadex_sort_order = "latest"
-        self.is_fetching_mangadex_list = False
+        self.current_hentai_page = 1
+        self.total_hentai_pages = 982
+        self.is_fetching_hentai_list = False
 
         self._setup_ui()
 
@@ -293,13 +307,13 @@ class MangaDownloaderGUI(ctk.CTk):
             title_box,
             text="🚀 NekoHentai Manga Downloader Pro",
             font=ctk.CTkFont(size=22, weight="bold"),
-            text_color="#38bdf8"
+            text_color="#ec4899"
         )
         title_lbl.pack(anchor="w", pady=(0, 2))
 
         sub_lbl = ctk.CTkLabel(
             title_box,
-            text="Tải truyện siêu tốc từ ZetTruyen & MangaDex (Tiếng Việt) • Đa luồng • Xuất PDF • Ghép ảnh Manhwa • Đồng bộ Cloud & Website",
+            text="Tải truyện siêu tốc từ HentaiVNReal (https://hentaivnreal.com) & MangaDex • Đa luồng • Xuất PDF • Ghép ảnh Manhwa • Đồng bộ Cloud & Website",
             font=ctk.CTkFont(size=12),
             text_color="#94a3b8"
         )
@@ -308,25 +322,25 @@ class MangaDownloaderGUI(ctk.CTk):
         # Quick Batch Download Button in Header
         self.btn_header_batch = ctk.CTkButton(
             header_frame,
-            text="⚡ Tải Toàn Bộ MangaDex (Cũ ➜ Mới)",
-            command=self.open_mangadex_batch_dialog,
-            fg_color="#d97706",
-            hover_color="#b45309",
+            text="⚡ Tải Toàn Bộ HentaiVN (Mới ➜ Cũ)",
+            command=self.open_hentaivn_batch_dialog,
+            fg_color="#db2777",
+            hover_color="#be185d",
             font=ctk.CTkFont(size=13, weight="bold"),
             height=36,
-            width=270
+            width=290
         )
         self.btn_header_batch.pack(side="right", padx=20, pady=10)
 
-        # ---------------- 2. TAB VIEW (DOWNLOADER / MANGADEX BROWSER) ----------------
+        # ---------------- 2. TAB VIEW (DOWNLOADER / HENTAIVN BROWSER) ----------------
         self.tabview = ctk.CTkTabview(self, corner_radius=10)
         self.tabview.grid(row=1, column=0, padx=15, pady=(0, 10), sticky="nsew")
 
         self.tab_download = self.tabview.add("⚡ Tải Theo Link / ID")
-        self.tab_mangadex = self.tabview.add("📚 Duyệt & Tìm Kiếm MangaDex (Tiếng Việt)")
+        self.tab_hentai = self.tabview.add("📚 Danh Sách HentaiVNReal (Mới Nhất ➜ Cũ Nhất)")
 
         self._setup_tab_download()
-        self._setup_tab_mangadex()
+        self._setup_tab_hentaivn()
 
     # =========================================================================
     # TAB 1: DOWNLOAD BY DIRECT LINK / ID
@@ -346,7 +360,7 @@ class MangaDownloaderGUI(ctk.CTk):
         
         self.url_entry = ctk.CTkEntry(
             input_card, 
-            placeholder_text="Nhập URL truyện (ZetTruyen, MangaDex, hoặc MangaDex UUID)"
+            placeholder_text="Nhập URL truyện (HentaiVN, ZetTruyen, MangaDex, hoặc MangaDex UUID)"
         )
         self.url_entry.insert(0, DEFAULT_COMIC_URL)
         self.url_entry.grid(row=0, column=1, padx=(0, 8), pady=(10, 4), sticky="ew")
@@ -537,119 +551,67 @@ class MangaDownloaderGUI(ctk.CTk):
         self.log("🚀 NekoHentai Manga Downloader sẵn sàng!\nHỗ trợ tải từ ZetTruyen và MangaDex (Tiếng Việt).")
 
     # =========================================================================
-    # TAB 2: MANGADEX BROWSER & SEARCH
+    # TAB 2: HENTAIVNREAL BROWSER & LIST (MỚI NHẤT ➜ CŨ NHẤT)
     # =========================================================================
-    def _setup_tab_mangadex(self):
-        tab = self.tab_mangadex
+    def _setup_tab_hentaivn(self):
+        tab = self.tab_hentai
         tab.grid_columnconfigure(0, weight=1)
         tab.grid_rowconfigure(1, weight=1)
 
-        # Search Bar
+        # Nav & Search Bar Card
         search_card = ctk.CTkFrame(tab, corner_radius=8, fg_color="#18202f")
         search_card.grid(row=0, column=0, padx=5, pady=(5, 8), sticky="ew")
         search_card.grid_columnconfigure(0, weight=1)
 
-        top_search_row = ctk.CTkFrame(search_card, fg_color="transparent")
-        top_search_row.pack(fill="x", padx=10, pady=(8, 4))
-        top_search_row.grid_columnconfigure(0, weight=1)
-
-        self.dex_search_entry = ctk.CTkEntry(
-            top_search_row, 
-            placeholder_text="Nhập từ khóa tìm truyện Tiếng Việt trên MangaDex (VD: Solo Leveling, Akuyaku...)"
-        )
-        self.dex_search_entry.grid(row=0, column=0, padx=(0, 8), sticky="ew")
-        self.dex_search_entry.bind("<Return>", lambda e: self.search_mangadex_action())
-
-        self.btn_dex_search = ctk.CTkButton(
-            top_search_row,
-            text="🔍 Tìm Kiếm",
-            command=self.search_mangadex_action,
-            fg_color="#0284c7",
-            hover_color="#0369a1",
-            width=100
-        )
-        self.btn_dex_search.grid(row=0, column=1, padx=(0, 6))
-
-        self.dex_sort_menu = ctk.CTkOptionMenu(
-            top_search_row,
-            values=["🔄 Mới cập nhật", "⏳ Cũ nhất ➜ Mới nhất", "🆕 Mới tạo gần đây"],
-            command=self._on_mangadex_sort_changed,
-            width=165,
-            fg_color="#1e293b"
-        )
-        self.dex_sort_menu.set("🔄 Mới cập nhật")
-        self.dex_sort_menu.grid(row=0, column=2, padx=(0, 6))
-
-        self.btn_dex_refresh = ctk.CTkButton(
-            top_search_row,
-            text="🔄 Làm Mới",
-            command=self.refresh_mangadex_latest,
-            fg_color="#334155",
-            hover_color="#475569",
-            width=90
-        )
-        self.btn_dex_refresh.grid(row=0, column=3, padx=(0, 6))
-
-        self.btn_dex_download_all = ctk.CTkButton(
-            top_search_row,
-            text="⚡ Tải Toàn Bộ (Cũ ➜ Mới)",
-            command=self.open_mangadex_batch_dialog,
-            fg_color="#d97706",
-            hover_color="#b45309",
-            font=ctk.CTkFont(weight="bold"),
-            width=190
-        )
-        self.btn_dex_download_all.grid(row=0, column=4)
-
-        # Nav & Page Bar
         nav_row = ctk.CTkFrame(search_card, fg_color="transparent")
-        nav_row.pack(fill="x", padx=10, pady=(0, 8))
+        nav_row.pack(fill="x", padx=10, pady=8)
 
-        self.lbl_dex_status = ctk.CTkLabel(
+        self.lbl_hentai_status = ctk.CTkLabel(
             nav_row,
-            text="Danh sách truyện Tiếng Việt mới cập nhật trên MangaDex",
+            text="Danh sách truyện trên hentaivnreal.com/danh-sach (Mới nhất ➜ Cũ nhất)",
             font=ctk.CTkFont(size=12),
             text_color="#94a3b8"
         )
-        self.lbl_dex_status.pack(side="left", padx=5)
+        self.lbl_hentai_status.pack(side="left", padx=5)
 
-        page_btn_frame = ctk.CTkFrame(nav_row, fg_color="transparent")
-        page_btn_frame.pack(side="right")
+        # Right Action Buttons
+        btn_action_box = ctk.CTkFrame(nav_row, fg_color="transparent")
+        btn_action_box.pack(side="right")
 
         self.btn_prev_page = ctk.CTkButton(
-            page_btn_frame,
+            btn_action_box,
             text="◀ Trang Trước",
-            command=self.prev_mangadex_page,
-            width=90,
+            command=self.prev_hentai_page,
+            width=95,
             fg_color="#1e293b"
         )
         self.btn_prev_page.pack(side="left", padx=3)
 
-        ctk.CTkLabel(page_btn_frame, text="Trang", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(6, 3))
+        ctk.CTkLabel(btn_action_box, text="Trang", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(6, 3))
 
-        self.dex_page_entry = ctk.CTkEntry(
-            page_btn_frame,
-            width=48,
+        self.hentai_page_entry = ctk.CTkEntry(
+            btn_action_box,
+            width=50,
             height=28,
             justify="center",
             font=ctk.CTkFont(size=12, weight="bold")
         )
-        self.dex_page_entry.insert(0, "1")
-        self.dex_page_entry.pack(side="left", padx=2)
-        self.dex_page_entry.bind("<Return>", self.goto_mangadex_page)
+        self.hentai_page_entry.insert(0, "1")
+        self.hentai_page_entry.pack(side="left", padx=2)
+        self.hentai_page_entry.bind("<Return>", self.goto_hentai_page)
 
-        self.lbl_dex_total_pages = ctk.CTkLabel(
-            page_btn_frame,
-            text="/ 1",
+        self.lbl_hentai_total_pages = ctk.CTkLabel(
+            btn_action_box,
+            text="/ 982",
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color="#94a3b8"
         )
-        self.lbl_dex_total_pages.pack(side="left", padx=(2, 4))
+        self.lbl_hentai_total_pages.pack(side="left", padx=(2, 4))
 
         self.btn_goto_page = ctk.CTkButton(
-            page_btn_frame,
+            btn_action_box,
             text="Đi ↵",
-            command=self.goto_mangadex_page,
+            command=self.goto_hentai_page,
             width=42,
             height=28,
             fg_color="#0284c7",
@@ -659,21 +621,42 @@ class MangaDownloaderGUI(ctk.CTk):
         self.btn_goto_page.pack(side="left", padx=(0, 4))
 
         self.btn_next_page = ctk.CTkButton(
-            page_btn_frame,
+            btn_action_box,
             text="Trang Sau ▶",
-            command=self.next_mangadex_page,
-            width=90,
+            command=self.next_hentai_page,
+            width=95,
             fg_color="#1e293b"
         )
         self.btn_next_page.pack(side="left", padx=3)
 
-        # Scrollable Comic Cards Container
-        self.dex_scroll_frame = ctk.CTkScrollableFrame(tab, corner_radius=8, fg_color="#131722")
-        self.dex_scroll_frame.grid(row=1, column=0, padx=5, pady=0, sticky="nsew")
-        self.dex_scroll_frame.grid_columnconfigure(0, weight=1)
+        self.btn_hentai_refresh = ctk.CTkButton(
+            btn_action_box,
+            text="🔄 Làm Mới",
+            command=self.refresh_hentai_list,
+            fg_color="#334155",
+            hover_color="#475569",
+            width=85
+        )
+        self.btn_hentai_refresh.pack(side="left", padx=4)
 
-        # Trigger first MangaDex load
-        self.after(500, self.refresh_mangadex_latest)
+        self.btn_hentai_download_all = ctk.CTkButton(
+            btn_action_box,
+            text="⚡ Tải Toàn Bộ (Mới ➜ Cũ)",
+            command=self.open_hentaivn_batch_dialog,
+            fg_color="#db2777",
+            hover_color="#be185d",
+            font=ctk.CTkFont(weight="bold"),
+            width=210
+        )
+        self.btn_hentai_download_all.pack(side="left", padx=(6, 0))
+
+        # Scrollable Comic Cards Container
+        self.hentai_scroll_frame = ctk.CTkScrollableFrame(tab, corner_radius=8, fg_color="#131722")
+        self.hentai_scroll_frame.grid(row=1, column=0, padx=5, pady=0, sticky="nsew")
+        self.hentai_scroll_frame.grid_columnconfigure(0, weight=1)
+
+        # Trigger first HentaiVN load
+        self.after(500, self.refresh_hentai_list)
 
     # =========================================================================
     # EVENT HANDLERS & HELPERS
@@ -692,8 +675,11 @@ class MangaDownloaderGUI(ctk.CTk):
 
     def _on_url_changed(self, event=None):
         url = self.url_entry.get().strip()
+        is_hentai = "hentaivnreal.com" in url or "/truyen/" in url
         is_mangadex = "mangadex.org" in url or re.match(r'^[0-9a-fA-F-]{36}$', url)
-        if is_mangadex:
+        if is_hentai:
+            self.lbl_source_detected.configure(text="🏷️ Nguồn: HentaiVNReal (https://hentaivnreal.com)", text_color="#ec4899")
+        elif is_mangadex:
             self.lbl_source_detected.configure(text="🏷️ Nguồn: MangaDex (Tiếng Việt)", text_color="#10b981")
         elif "zettruyen" in url:
             self.lbl_source_detected.configure(text="🏷️ Nguồn: ZetTruyen", text_color="#38bdf8")
@@ -723,126 +709,158 @@ class MangaDownloaderGUI(ctk.CTk):
         self.log_box.see("end")
 
     # =========================================================================
-    # MANGADEX BROWSER LOGIC
+    # HENTAIVNREAL BROWSER LOGIC
     # =========================================================================
-    def _on_mangadex_sort_changed(self, choice):
-        if "Cũ nhất" in choice:
-            self.mangadex_sort_order = "oldest"
-        elif "Mới tạo" in choice:
-            self.mangadex_sort_order = "newest_created"
-        else:
-            self.mangadex_sort_order = "latest"
-        self.current_mangadex_page = 1
-        self.fetch_mangadex_list_thread()
+    def refresh_hentai_list(self):
+        self.fetch_hentai_list_thread()
 
-    def search_mangadex_action(self):
-        query = self.dex_search_entry.get().strip()
-        self.mangadex_search_query = query if query else None
-        self.current_mangadex_page = 1
-        self.fetch_mangadex_list_thread()
+    def prev_hentai_page(self):
+        if self.current_hentai_page > 1:
+            self.current_hentai_page -= 1
+            self.fetch_hentai_list_thread()
 
-    def refresh_mangadex_latest(self):
-        self.dex_search_entry.delete(0, "end")
-        self.mangadex_search_query = None
-        self.current_mangadex_page = 1
-        self.fetch_mangadex_list_thread()
+    def next_hentai_page(self):
+        if self.current_hentai_page < self.total_hentai_pages:
+            self.current_hentai_page += 1
+            self.fetch_hentai_list_thread()
 
-    def goto_mangadex_page(self, event=None):
+    def goto_hentai_page(self, event=None):
         try:
-            val = self.dex_page_entry.get().strip()
-            page = int(val)
-            if page < 1:
-                page = 1
-            if self.total_mangadex_pages and page > self.total_mangadex_pages:
-                page = self.total_mangadex_pages
-            self.current_mangadex_page = page
-            self.fetch_mangadex_list_thread()
+            page = int(self.hentai_page_entry.get().strip())
+            if 1 <= page <= self.total_hentai_pages:
+                self.current_hentai_page = page
+                self.fetch_hentai_list_thread()
+            else:
+                messagebox.showwarning("Cảnh báo", f"Vui lòng nhập trang từ 1 đến {self.total_hentai_pages}")
         except ValueError:
-            self.dex_page_entry.delete(0, "end")
-            self.dex_page_entry.insert(0, str(self.current_mangadex_page))
+            pass
 
-    def prev_mangadex_page(self):
-        if self.current_mangadex_page > 1:
-            self.current_mangadex_page -= 1
-            self.fetch_mangadex_list_thread()
+    # Aliases
+    refresh_mangadex_latest = refresh_hentai_list
+    prev_mangadex_page = prev_hentai_page
+    next_mangadex_page = next_hentai_page
+    goto_mangadex_page = goto_hentai_page
 
-    def next_mangadex_page(self):
-        if self.current_mangadex_page < self.total_mangadex_pages:
-            self.current_mangadex_page += 1
-            self.fetch_mangadex_list_thread()
-
-    def fetch_mangadex_list_thread(self):
-        if self.is_fetching_mangadex_list:
+    def fetch_hentai_list_thread(self):
+        if self.is_fetching_hentai_list:
             return
-        self.is_fetching_mangadex_list = True
-        self.btn_dex_search.configure(state="disabled")
-        self.btn_dex_refresh.configure(state="disabled")
+        self.is_fetching_hentai_list = True
+        self.lbl_hentai_status.configure(text=f"Đang tải danh sách truyện trang {self.current_hentai_page} từ hentaivnreal.com...")
+        self.btn_goto_page.configure(state="disabled")
+        self.btn_hentai_refresh.configure(state="disabled")
         self.btn_prev_page.configure(state="disabled")
         self.btn_next_page.configure(state="disabled")
-        self.btn_goto_page.configure(state="disabled")
-        self.dex_page_entry.delete(0, "end")
-        self.dex_page_entry.insert(0, str(self.current_mangadex_page))
-        self.lbl_dex_status.configure(text="Đang tải danh sách truyện từ MangaDex...")
+        self.hentai_page_entry.delete(0, "end")
+        self.hentai_page_entry.insert(0, str(self.current_hentai_page))
 
-        # Clear existing cards
-        for widget in self.dex_scroll_frame.winfo_children():
+        for widget in self.hentai_scroll_frame.winfo_children():
             widget.destroy()
 
         loading_lbl = ctk.CTkLabel(
-            self.dex_scroll_frame, 
-            text="⏳ Đang kết nối tới MangaDex API...", 
+            self.hentai_scroll_frame, 
+            text=f"⏳ Đang kết nối hentaivnreal.com (Trang {self.current_hentai_page})...", 
             font=ctk.CTkFont(size=14)
         )
         loading_lbl.pack(pady=30)
 
-        threading.Thread(target=self._fetch_mangadex_worker, daemon=True).start()
+        threading.Thread(target=self._fetch_hentai_list_worker, daemon=True).start()
 
-    def _fetch_mangadex_worker(self):
+    def _fetch_hentai_list_worker(self):
         try:
-            res = MangaDexDownloader.search_or_browse_manga(
-                query=self.mangadex_search_query,
-                page=self.current_mangadex_page,
-                limit=12,
-                lang="vi",
-                only_available=True,
-                order_by=getattr(self, 'mangadex_sort_order', 'latest')
-            )
-            items = res.get("items", [])
-            total = res.get("total", 0)
-            self.after(0, lambda: self._render_mangadex_results(items, total))
+            scraper = cloudscraper.create_scraper()
+            url = f"https://hentaivnreal.com/danh-sach?page={self.current_hentai_page}"
+            res = scraper.get(url, timeout=20)
+            res.encoding = 'utf-8'
+            soup = BeautifulSoup(res.text, "html.parser")
+
+            pag = soup.find(class_=lambda c: c and 'pagination' in c)
+            if pag:
+                for a in pag.find_all('a'):
+                    href = a.get('href', '')
+                    if 'page=' in href:
+                        try:
+                            p_num = int(href.split('page=')[-1].split('&')[0])
+                            self.total_hentai_pages = max(self.total_hentai_pages, p_num)
+                        except Exception:
+                            pass
+                    t = a.get_text(strip=True)
+                    if t.isdigit():
+                        self.total_hentai_pages = max(self.total_hentai_pages, int(t))
+
+            items = []
+            for it in soup.select("li.item"):
+                desc_elem = it.select_one(".box-description")
+                a_tag = desc_elem.find("a", href=True) if desc_elem else it.find("a", href=True)
+                if not a_tag or "/truyen/" not in a_tag.get("href", ""):
+                    continue
+
+                comic_rel_url = a_tag["href"]
+                comic_full_url = urllib.parse.urljoin("https://hentaivnreal.com", comic_rel_url)
+                comic_title = a_tag.get_text(strip=True)
+                slug = comic_rel_url.split("?")[0].rstrip("/").split("/")[-1]
+
+                img_elem = it.find("img")
+                thumb_url = img_elem.get("src") or img_elem.get("data-src") or "" if img_elem else ""
+
+                other_names = ""
+                for p in it.find_all("p"):
+                    if "Tên Khác:" in p.get_text():
+                        other_names = p.get_text().replace("Tên Khác:", "").strip()
+                        break
+
+                tags = [t.get_text(strip=True) for t in it.find_all("a", class_="tag") if t.get_text(strip=True)]
+
+                views = 0
+                for p in it.find_all("p"):
+                    if "Lượt xem:" in p.get_text():
+                        m_v = re.search(r'Lượt xem\s*:\s*([\d,.]+)', p.get_text())
+                        if m_v:
+                            try: views = int(m_v.group(1).replace(",", "").replace(".", ""))
+                            except Exception: pass
+                        break
+
+                items.append({
+                    "id": slug,
+                    "slug": slug,
+                    "title": comic_title,
+                    "url": comic_full_url,
+                    "cover_thumb": thumb_url,
+                    "other_names": other_names,
+                    "tags": tags,
+                    "views": views
+                })
+
+            self.after(0, lambda: self._render_hentai_results(items))
         except Exception as e:
-            self.after(0, lambda: self._render_mangadex_error(str(e)))
+            self.after(0, lambda err=str(e): self._render_hentai_error(err))
         finally:
-            self.is_fetching_mangadex_list = False
+            self.is_fetching_hentai_list = False
             self.after(0, lambda: (
-                self.btn_dex_search.configure(state="normal"),
-                self.btn_dex_refresh.configure(state="normal"),
+                self.btn_hentai_refresh.configure(state="normal"),
                 self.btn_goto_page.configure(state="normal"),
-                self.btn_prev_page.configure(state="normal" if self.current_mangadex_page > 1 else "disabled"),
-                self.btn_next_page.configure(state="normal" if self.current_mangadex_page < self.total_mangadex_pages else "disabled")
+                self.btn_prev_page.configure(state="normal" if self.current_hentai_page > 1 else "disabled"),
+                self.btn_next_page.configure(state="normal" if self.current_hentai_page < self.total_hentai_pages else "disabled")
             ))
 
-    def _render_mangadex_results(self, items, total):
-        for widget in self.dex_scroll_frame.winfo_children():
+    def _render_hentai_results(self, items):
+        for widget in self.hentai_scroll_frame.winfo_children():
             widget.destroy()
 
-        self.total_mangadex_pages = max(1, (total + 11) // 12) if total > 0 else 1
-        self.lbl_dex_total_pages.configure(text=f"/ {self.total_mangadex_pages}")
-        self.btn_prev_page.configure(state="normal" if self.current_mangadex_page > 1 else "disabled")
-        self.btn_next_page.configure(state="normal" if self.current_mangadex_page < self.total_mangadex_pages else "disabled")
+        self.lbl_hentai_total_pages.configure(text=f"/ {self.total_hentai_pages}")
+        self.btn_prev_page.configure(state="normal" if self.current_hentai_page > 1 else "disabled")
+        self.btn_next_page.configure(state="normal" if self.current_hentai_page < self.total_hentai_pages else "disabled")
         self.btn_goto_page.configure(state="normal")
-        self.dex_page_entry.delete(0, "end")
-        self.dex_page_entry.insert(0, str(self.current_mangadex_page))
+        self.hentai_page_entry.delete(0, "end")
+        self.hentai_page_entry.insert(0, str(self.current_hentai_page))
 
-        query_str = f" với từ khóa '{self.mangadex_search_query}'" if self.mangadex_search_query else ""
-        self.lbl_dex_status.configure(
-            text=f"Tìm thấy {total} bộ truyện Tiếng Việt{query_str} (Trang {self.current_mangadex_page}/{self.total_mangadex_pages})"
+        self.lbl_hentai_status.configure(
+            text=f"Trang {self.current_hentai_page}/{self.total_hentai_pages} • Hiển thị {len(items)} bộ truyện (Mới nhất ➜ Cũ nhất)"
         )
 
         if not items:
             empty_lbl = ctk.CTkLabel(
-                self.dex_scroll_frame, 
-                text="❌ Không tìm thấy bộ truyện nào phù hợp!",
+                self.hentai_scroll_frame, 
+                text="❌ Không có truyện nào trên trang này!",
                 font=ctk.CTkFont(size=14, weight="bold"),
                 text_color="#ef4444"
             )
@@ -850,7 +868,7 @@ class MangaDownloaderGUI(ctk.CTk):
             return
 
         for item in items:
-            card = ctk.CTkFrame(self.dex_scroll_frame, corner_radius=8, fg_color="#18202f")
+            card = ctk.CTkFrame(self.hentai_scroll_frame, corner_radius=8, fg_color="#18202f")
             card.pack(fill="x", padx=5, pady=5)
             card.grid_columnconfigure(1, weight=1)
 
@@ -871,25 +889,31 @@ class MangaDownloaderGUI(ctk.CTk):
             )
             t_lbl.grid(row=0, column=1, padx=5, pady=(8, 2), sticky="w")
 
-            genres_txt = ", ".join(item["tags"][:4]) if item["tags"] else "Manga"
-            meta_txt = f"✍️ Tác giả: {item['author']}  •  🏷️ Thể loại: {genres_txt}"
+            genres_txt = ", ".join(item["tags"][:5]) if item["tags"] else "Manga"
+            meta_txt = f"🏷️ Thể loại: {genres_txt}"
+            if item.get("other_names"):
+                meta_txt += f"  •  Tên khác: {item['other_names'][:40]}"
+            if item.get("views"):
+                meta_txt += f"  •  👁️ {item['views']:,} lượt xem"
+
             m_lbl = ctk.CTkLabel(
                 card, 
                 text=meta_txt, 
                 font=ctk.CTkFont(size=11), 
                 text_color="#94a3b8",
                 anchor="w",
-                justify="left"
+                justify="left",
+                wraplength=550
             )
             m_lbl.grid(row=1, column=1, padx=5, pady=0, sticky="w")
 
-            id_lbl = ctk.CTkLabel(
+            url_lbl = ctk.CTkLabel(
                 card, 
-                text=f"MangaDex ID: {item['id']}", 
+                text=item["url"], 
                 font=ctk.CTkFont(family="Consolas", size=10), 
                 text_color="#64748b"
             )
-            id_lbl.grid(row=2, column=1, padx=5, pady=(0, 6), sticky="w")
+            url_lbl.grid(row=2, column=1, padx=5, pady=(0, 6), sticky="w")
 
             # Buttons
             btn_box = ctk.CTkFrame(card, fg_color="transparent")
@@ -900,33 +924,54 @@ class MangaDownloaderGUI(ctk.CTk):
                 text="📥 Chọn Tải Truyện",
                 fg_color="#10b981",
                 hover_color="#059669",
-                width=130,
+                width=135,
                 font=ctk.CTkFont(weight="bold"),
-                command=lambda m_id=item['id'], m_title=item['title']: self.select_mangadex_comic(m_id, m_title)
+                command=lambda u=item['url']: self.select_comic_for_download(u)
             )
             btn_select.pack(pady=3)
 
             btn_open_web = ctk.CTkButton(
                 btn_box,
-                text="🌐 Mở MangaDex",
+                text="🌐 Mở Web",
                 fg_color="#334155",
                 hover_color="#475569",
-                width=130,
+                width=135,
                 command=lambda u=item['url']: webbrowser.open(u)
             )
             btn_open_web.pack(pady=3)
 
             # Load thumbnail async
-            if item.get("cover_url"):
+            if item.get("cover_thumb"):
                 threading.Thread(
                     target=self._load_async_thumb, 
-                    args=(item["cover_url"] + ".256.jpg", cover_lbl), 
+                    args=(item["cover_thumb"], cover_lbl), 
                     daemon=True
                 ).start()
 
+    def _render_hentai_error(self, err_msg):
+        for widget in self.hentai_scroll_frame.winfo_children():
+            widget.destroy()
+        err_lbl = ctk.CTkLabel(
+            self.hentai_scroll_frame,
+            text=f"❌ Lỗi kết nối hentaivnreal.com:\n{err_msg}",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#ef4444"
+        )
+        err_lbl.pack(pady=30)
+
+    def select_comic_for_download(self, comic_url):
+        self.url_entry.delete(0, "end")
+        self.url_entry.insert(0, comic_url)
+        self._on_url_changed()
+        self.tabview.set("⚡ Tải Theo Link / ID")
+        self.fetch_comic_info_thread()
+
+    def select_mangadex_comic(self, manga_id, manga_title):
+        self.select_comic_for_download(f"https://mangadex.org/title/{manga_id}")
+
     def _load_async_thumb(self, img_url, label_widget):
         try:
-            r = requests.get(img_url, headers={"User-Agent": "NekoHentai-Downloader/1.0"}, timeout=10)
+            r = requests.get(img_url, headers={"User-Agent": "NekoHentai-Downloader/1.0", "Referer": "https://hentaivnreal.com/"}, timeout=10)
             if r.status_code == 200:
                 pil_im = Image.open(BytesIO(r.content))
                 pil_im.thumbnail((65, 90))
@@ -935,26 +980,8 @@ class MangaDownloaderGUI(ctk.CTk):
         except Exception:
             pass
 
-    def _render_mangadex_error(self, err_msg):
-        for widget in self.dex_scroll_frame.winfo_children():
-            widget.destroy()
-        err_lbl = ctk.CTkLabel(
-            self.dex_scroll_frame,
-            text=f"❌ Lỗi kết nối MangaDex API:\n{err_msg}",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#ef4444"
-        )
-        err_lbl.pack(pady=30)
-
-    def select_mangadex_comic(self, manga_id, manga_title):
-        self.url_entry.delete(0, "end")
-        self.url_entry.insert(0, f"https://mangadex.org/title/{manga_id}")
-        self._on_url_changed()
-        self.tabview.set("⚡ Tải Theo Link / ID")
-        self.fetch_comic_info_thread()
-
     # =========================================================================
-    # METADATA FETCH ENGINE (ZETTRUYEN & MANGADEX)
+    # METADATA FETCH ENGINE (HENTAIVNREAL, ZETTRUYEN & MANGADEX)
     # =========================================================================
     def fetch_comic_info_thread(self):
         url = self.url_entry.get().strip()
@@ -970,13 +997,23 @@ class MangaDownloaderGUI(ctk.CTk):
     def _fetch_comic_info_worker(self, url):
         try:
             self.log(f"\n🔍 Đang phân tích thông tin từ: {url}")
+            is_hentai = "hentaivnreal.com" in url or "/truyen/" in url
             is_mangadex = "mangadex.org" in url or re.match(r'^[0-9a-fA-F-]{36}$', url)
 
             # Get selected lang
             lang_choice = self.lang_menu.get().split(" ")[0].strip()
             data_saver = self.cb_data_saver.get() == 1
 
-            if is_mangadex:
+            if is_hentai:
+                downloader = HentaiVNRealDownloader(
+                    comic_url=url,
+                    output_dir=self.save_entry.get(),
+                    merge_slices=self.cb_merge.get() == 1,
+                    make_pdf=self.cb_pdf.get() == 1,
+                    upload_to_web=self.cb_upload_web.get() == 1,
+                    api_base_url=DEFAULT_API_BASE_URL
+                )
+            elif is_mangadex:
                 downloader = MangaDexDownloader(
                     manga_id_or_url=url,
                     output_dir=self.save_entry.get(),
@@ -1316,20 +1353,23 @@ class MangaDownloaderGUI(ctk.CTk):
         self.after(0, self._on_download_finished)
 
     # =========================================================================
-    # MANGADEX BATCH DOWNLOAD (ALL MANGA FROM OLDEST TO NEWEST)
+    # HENTAIVNREAL BATCH DOWNLOAD (ALL COMICS FROM NEWEST TO OLDEST)
     # =========================================================================
-    def open_mangadex_batch_dialog(self):
+    def open_hentaivn_batch_dialog(self):
         if self.is_downloading:
             messagebox.showwarning("Cảnh báo", "Đang có tiến trình tải hoạt động! Vui lòng dừng lại trước khi bắt đầu tải hàng loạt.")
             return
-        MangaDexBatchConfigDialog(
+        HentaiVNBatchConfigDialog(
             self,
             default_save_dir=self.save_entry.get(),
             default_api_url=DEFAULT_API_BASE_URL,
-            on_start_callback=self.start_batch_mangadex_download
+            on_start_callback=self.start_batch_hentaivn_download
         )
 
-    def start_batch_mangadex_download(self, config: dict):
+    # Alias
+    open_mangadex_batch_dialog = open_hentaivn_batch_dialog
+
+    def start_batch_hentaivn_download(self, config: dict):
         if self.is_downloading:
             return
         self.is_downloading = True
@@ -1339,49 +1379,49 @@ class MangaDownloaderGUI(ctk.CTk):
         self.btn_cancel.configure(state="normal")
         if hasattr(self, 'btn_header_batch'):
             self.btn_header_batch.configure(state="disabled")
+        if hasattr(self, 'btn_hentai_download_all'):
+            self.btn_hentai_download_all.configure(state="disabled")
         if hasattr(self, 'btn_dex_download_all'):
             self.btn_dex_download_all.configure(state="disabled")
 
-        # Switch to download tab to see live progress and logs
+        # Chuyển sang tab 1 để xem live progress và log chi tiết
         self.tabview.set("⚡ Tải Theo Link / ID")
         self.progress_bar.set(0)
 
-        threading.Thread(target=self._batch_download_mangadex_worker, args=(config,), daemon=True).start()
+        threading.Thread(target=self._batch_download_hentaivn_worker, args=(config,), daemon=True).start()
 
-    def _batch_download_mangadex_worker(self, config: dict):
-        order_key = config.get("order", "oldest")
-        order_desc = "Cũ Nhất ➜ Mới Nhất (order[createdAt]=asc)" if order_key == "oldest" else "Mới Cập Nhật Nhất (order[latestUploadedChapter]=desc)"
-        start_offset = config.get("start_offset", 0)
+    # Alias
+    start_batch_mangadex_download = start_batch_hentaivn_download
+
+    def _batch_download_hentaivn_worker(self, config: dict):
+        start_page = config.get("start_page", 1)
+        end_page = config.get("end_page")
         max_manga = config.get("max_manga")
         out_root = Path(config.get("save_dir", self.save_entry.get()))
         upload_to_web = config.get("upload_to_web", True)
         skip_existing = config.get("skip_existing", True)
-        data_saver = config.get("data_saver", False)
         merge_slices = config.get("merge_slices", False)
         make_pdf = config.get("make_pdf", False)
         workers = config.get("workers", 16)
 
         self.after(0, lambda: self.log("\n" + "=" * 70))
-        self.after(0, lambda: self.log("🚀 BẮT ĐẦU TIẾN TRÌNH TẢI TOÀN BỘ MANGADEX HÀNG LOẠT"))
-        self.after(0, lambda: self.log(f"📋 Thứ tự tải: {order_desc}"))
-        self.after(0, lambda: self.log(f"🌐 Ngôn ngữ: Tiếng Việt (vi) | Bắt đầu từ truyện #{start_offset + 1}"))
+        self.after(0, lambda: self.log("🚀 BẮT ĐẦU TIẾN TRÌNH TẢI TOÀN BỘ HENTAIVNREAL (MỚI NHẤT ➜ CŨ NHẤT)"))
+        self.after(0, lambda: self.log(f"📋 Nguồn: https://hentaivnreal.com/danh-sach | Bắt đầu từ Trang #{start_page}"))
         self.after(0, lambda: self.log(f"📂 Thư mục lưu: {out_root.resolve()}"))
         self.after(0, lambda: self.log(f"⚡ Luồng tải song song: {workers} luồng"))
         self.after(0, lambda: self.log(f"🌐 Đồng bộ Web & Cloud: {'BẬT' if upload_to_web else 'TẮT'} | ⏭️ Bỏ qua chapter đã có: {'BẬT' if skip_existing else 'TẮT'}"))
         self.after(0, lambda: self.log("=" * 70 + "\n"))
 
-        self.after(0, lambda: self.lbl_status.configure(text="Đang kết nối MangaDex API lấy danh sách truyện..."))
+        self.after(0, lambda: self.lbl_status.configure(text="Đang kết nối lấy danh sách truyện từ hentaivnreal.com/danh-sach..."))
 
         try:
-            manga_gen = MangaDexDownloader.fetch_all_mangadex_manga_iter(
-                lang="vi",
-                order_by=order_key,
-                start_offset=start_offset,
-                limit_per_req=100,
-                max_manga=max_manga
+            comic_iter = HentaiVNRealDownloader.fetch_all_hentaivn_comics_iter(
+                start_page=start_page,
+                end_page=end_page,
+                max_comics=max_manga
             )
         except Exception as e:
-            self.after(0, lambda err=str(e): self.log(f"❌ Lỗi kết nối lấy danh sách MangaDex: {err}"))
+            self.after(0, lambda err=str(e): self.log(f"❌ Lỗi kết nối lấy danh sách HentaiVNReal: {err}"))
             self.after(0, self._on_download_finished)
             return
 
@@ -1390,40 +1430,39 @@ class MangaDownloaderGUI(ctk.CTk):
         total_chapters_all = 0
         start_time = time.time()
 
-        for manga_item in manga_gen:
+        for item in comic_iter:
             if self.cancel_requested:
                 self.after(0, lambda: self.log("\n⛔ Đã hủy tiến trình tải hàng loạt theo yêu cầu của người dùng!"))
                 break
 
-            comic_num = start_offset + total_processed_comics + 1
-            tot_str = f" / {manga_item.get('total_available', '?')}" if manga_item.get('total_available') else ""
-            m_title = manga_item['title']
-            m_id = manga_item['id']
+            total_processed_comics += 1
+            c_title = item["title"]
+            c_url = item["url"]
+            c_page = item.get("page", 1)
+            tot_pages = item.get("total_pages", "?")
+            c_slug = item["slug"]
 
-            self.after(0, lambda n=comic_num, tot=tot_str, t=m_title, mid=m_id, a=manga_item.get('author', 'Đang cập nhật'): (
-                self.lbl_status.configure(text=f"[{n}{tot}] Đang xử lý: {t}..."),
+            self.after(0, lambda n=total_processed_comics, p=c_page, tp=tot_pages, t=c_title, u=c_url: (
+                self.lbl_status.configure(text=f"[#{n} | Trang {p}/{tp}] Đang xử lý: {t}..."),
                 self.log(f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"),
-                self.log(f"▶ [{n}{tot}] 📖 {t}"),
-                self.log(f"   MangaDex ID: {mid} | ✍️ Tác giả: {a}")
+                self.log(f"▶ [#{n} | Trang {p}/{tp}] 📖 {t}"),
+                self.log(f"   🔗 Link: {u} | Slug: {c_slug}")
             ))
 
             try:
-                downloader = MangaDexDownloader(
-                    manga_id_or_url=m_id,
+                downloader = HentaiVNRealDownloader(
+                    comic_url=c_url,
                     output_dir=str(out_root),
                     merge_slices=merge_slices,
                     make_pdf=make_pdf,
                     upload_to_web=upload_to_web,
-                    api_base_url=DEFAULT_API_BASE_URL,
-                    lang="vi",
-                    data_saver=data_saver
+                    api_base_url=DEFAULT_API_BASE_URL
                 )
 
                 info = downloader.get_comic_info()
                 chapters = info.get("chapters", [])
                 if not chapters:
-                    self.after(0, lambda: self.log("   ⚠️ Truyện không có chapter Tiếng Việt hợp lệ -> Bỏ qua."))
-                    total_processed_comics += 1
+                    self.after(0, lambda: self.log("   ⚠️ Truyện chưa có chapter hợp lệ ➜ Bỏ qua."))
                     continue
 
                 slug = info["slug"]
@@ -1432,7 +1471,7 @@ class MangaDownloaderGUI(ctk.CTk):
                 chapters_root_dir = out_root / "chapters" / slug
                 chapters_root_dir.mkdir(parents=True, exist_ok=True)
 
-                # Cover handling: covers/{slug}.webp
+                # Cover: covers/{slug}.webp
                 cover_cdn_url = None
                 if info.get("cover_url"):
                     raw_cover_path = covers_dir / f"{slug}_raw.jpg"
@@ -1452,13 +1491,12 @@ class MangaDownloaderGUI(ctk.CTk):
                     if upload_to_web and cover_path.exists():
                         try:
                             cover_cdn_url = upload_file_to_cloud(cover_path, f"covers/{slug}.webp", "image/webp")
-                            self.after(0, lambda u=cover_cdn_url: self.log(f"   📸 Đã đưa Ảnh bìa (WebP) lên Cloud: {u}"))
+                            self.after(0, lambda u=cover_cdn_url: self.log(f"   📸 Đã đưa Ảnh bìa lên Cloud: {u}"))
                         except Exception as err:
                             self.after(0, lambda e=err: self.log(f"   ⚠️ Lỗi upload ảnh bìa: {e}"))
 
-                self.after(0, lambda cnt=len(chapters): self.log(f"   📚 Có {cnt} chương Tiếng Việt. Bắt đầu tải..."))
+                self.after(0, lambda cnt=len(chapters): self.log(f"   📚 Có {cnt} chương. Bắt đầu tải..."))
 
-                # Download chapters: chapters/{slug}/chap{num}/page_{idx:03d}.webp
                 comic_img_count = 0
                 for c_idx, chap in enumerate(chapters, 1):
                     if self.cancel_requested:
@@ -1480,8 +1518,8 @@ class MangaDownloaderGUI(ctk.CTk):
                             continue
 
                     chap_dir.mkdir(parents=True, exist_ok=True)
-                    self.after(0, lambda t=chap_title, ci=c_idx, ct=len(chapters), cn=comic_num, tot=tot_str: (
-                        self.lbl_status.configure(text=f"[{cn}{tot}] [{ci}/{ct}] Đang tải {t}..."),
+                    self.after(0, lambda t=chap_title, ci=c_idx, ct=len(chapters), cn=total_processed_comics: (
+                        self.lbl_status.configure(text=f"[#{cn}] [{ci}/{ct}] Đang tải {t}..."),
                         self.log(f"   ▶ [{ci}/{ct}] Đang tải {t}...")
                     ))
 
@@ -1527,8 +1565,6 @@ class MangaDownloaderGUI(ctk.CTk):
                             ))
 
                     valid_paths = [p for p in downloaded if p.exists()]
-                    num_downloaded = len(valid_paths)
-
                     final_paths = []
                     if should_merge:
                         final_paths = downloader._merge_images_vertical(valid_paths, chap_dir, STITCH_GROUP_SIZE)
@@ -1591,15 +1627,12 @@ class MangaDownloaderGUI(ctk.CTk):
                                 chapter_title=chap.get("title", f"Chương {num_str}"),
                                 image_urls=valid_cdn_urls,
                                 author=info.get("author"),
-                                translator_group=chap.get("scanlation_group") or info.get("translator_group"),
+                                translator_group=info.get("translator_group"),
                                 other_names=info.get("other_names"),
-                                age_limit=info.get("age_limit"),
                                 views=chap.get("views", 0),
                                 published_at=chap.get("updated_at"),
                                 created_at=chap.get("updated_at"),
                                 comic_views=info.get("views", 0),
-                                comic_created_at=info.get("created_at_iso") or info.get("created_date_str"),
-                                comic_updated_at=info.get("updated_at_iso") or info.get("updated_date_str"),
                                 categories=info.get("genres", [])
                             )
                             if synced:
@@ -1607,12 +1640,10 @@ class MangaDownloaderGUI(ctk.CTk):
                             else:
                                 self.after(0, lambda t=chap_title: self.log(f"     ⚠️ Đã upload Cloud {t} - Chưa đồng bộ Web API"))
 
-                self.after(0, lambda t=m_title, img_c=comic_img_count, n=comic_num: self.log(f"   🎉 [{n}] Hoàn tất bộ '{t}' ({img_c} ảnh)!"))
-                total_processed_comics += 1
+                self.after(0, lambda t=c_title, img_c=comic_img_count, n=total_processed_comics: self.log(f"   🎉 [#{n}] Hoàn tất bộ '{t}' ({img_c} ảnh)!"))
 
             except Exception as ex:
-                self.after(0, lambda t=m_title, err=str(ex): self.log(f"   ❌ Lỗi khi xử lý bộ truyện '{t}': {err}"))
-                total_processed_comics += 1
+                self.after(0, lambda t=c_title, err=str(ex): self.log(f"   ❌ Lỗi khi xử lý bộ truyện '{t}': {err}"))
                 continue
 
         elapsed = time.time() - start_time
@@ -1628,6 +1659,9 @@ class MangaDownloaderGUI(ctk.CTk):
 
         self.after(0, self._on_download_finished)
 
+    # Alias
+    _batch_download_mangadex_worker = _batch_download_hentaivn_worker
+
     def _on_download_finished(self):
         self.is_downloading = False
         self.btn_start.configure(state="normal")
@@ -1635,6 +1669,8 @@ class MangaDownloaderGUI(ctk.CTk):
         self.btn_cancel.configure(state="disabled")
         if hasattr(self, 'btn_header_batch'):
             self.btn_header_batch.configure(state="normal")
+        if hasattr(self, 'btn_hentai_download_all'):
+            self.btn_hentai_download_all.configure(state="normal")
         if hasattr(self, 'btn_dex_download_all'):
             self.btn_dex_download_all.configure(state="normal")
 

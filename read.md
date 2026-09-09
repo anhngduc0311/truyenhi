@@ -5,10 +5,6 @@ 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
 
 
 
- Backblaze B2
-akzan0311@gmail.com
-Nguyenducanh2003@
-
 
 GOOGQHRXVRS7YCR24JBLB33S
 3Iamo8whmuUeT2B+CMtRnfW6qdIsmwXVec47tF52
@@ -56,3 +52,8 @@ chmod +x tai_mangadex_ubuntu.sh
 # xoa docker (chi dung khi muon reset trang web tu dau):
 # docker compose down -v
 
+
+# Access key
+AKIA2S27ZAESFGZBBYFN
+# Secret access key
+q2kMvvMYbySpIZNM3MT2F6fFv3HBDNcgYHsSBVvA

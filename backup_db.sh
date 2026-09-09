@@ -61,10 +61,10 @@ CF_ENDPOINT=$(echo "$CF_ENDPOINT" | sed 's|https://||; s|http://||; s|/*$||')
 
 # Tự động xác định Provider tương ứng với Endpoint
 S3_PROVIDER="Cloudflare"
-if [[ "$CF_ENDPOINT" == *"storage.googleapis.com"* ]]; then
+if [[ "$CF_ENDPOINT" == *"amazonaws.com"* ]]; then
+    S3_PROVIDER="AWS"
+elif [[ "$CF_ENDPOINT" == *"storage.googleapis.com"* ]]; then
     S3_PROVIDER="GCS"
-elif [[ "$CF_ENDPOINT" == *"backblazeb2.com"* ]]; then
-    S3_PROVIDER="Backblaze"
 fi
 
 # 3. Xuất database PostgreSQL ra file nén gzip
