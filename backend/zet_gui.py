@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 =============================================================================
-🎨 TruyenKomi Manga Downloader Pro - Modern GUI Application (CustomTkinter)
+🎨 NekoHentai Manga Downloader Pro - Modern GUI Application (CustomTkinter)
 =============================================================================
-Author: TruyenKomi Team
+Author: NekoHentai Team
 Description: Giao diện đồ họa hiện đại hỗ trợ tải truyện từ ZetTruyen và
              MangaDex (Tiếng Việt), duyệt danh sách MangaDex trực quan,
              tải đa luồng, xuất PDF, ghép ảnh manhwa và đồng bộ Cloud/Web API.
@@ -260,7 +260,7 @@ class MangaDownloaderGUI(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("⚡ TruyenKomi Manga Downloader Pro (ZetTruyen & MangaDex)")
+        self.title("⚡ NekoHentai Manga Downloader Pro (ZetTruyen & MangaDex)")
         self.geometry("1100x840")
         self.minsize(950, 700)
 
@@ -291,7 +291,7 @@ class MangaDownloaderGUI(ctk.CTk):
 
         title_lbl = ctk.CTkLabel(
             title_box,
-            text="🚀 TruyenKomi Manga Downloader Pro",
+            text="🚀 NekoHentai Manga Downloader Pro",
             font=ctk.CTkFont(size=22, weight="bold"),
             text_color="#38bdf8"
         )
@@ -534,7 +534,7 @@ class MangaDownloaderGUI(ctk.CTk):
         self.btn_cancel.pack(side="left", padx=4)
 
         self._toggle_mode()
-        self.log("🚀 TruyenKomi Manga Downloader sẵn sàng!\nHỗ trợ tải từ ZetTruyen và MangaDex (Tiếng Việt).")
+        self.log("🚀 NekoHentai Manga Downloader sẵn sàng!\nHỗ trợ tải từ ZetTruyen và MangaDex (Tiếng Việt).")
 
     # =========================================================================
     # TAB 2: MANGADEX BROWSER & SEARCH
@@ -926,7 +926,7 @@ class MangaDownloaderGUI(ctk.CTk):
 
     def _load_async_thumb(self, img_url, label_widget):
         try:
-            r = requests.get(img_url, headers={"User-Agent": "TruyenKomi-Downloader/1.0"}, timeout=10)
+            r = requests.get(img_url, headers={"User-Agent": "NekoHentai-Downloader/1.0"}, timeout=10)
             if r.status_code == 200:
                 pil_im = Image.open(BytesIO(r.content))
                 pil_im.thumbnail((65, 90))
@@ -1011,7 +1011,7 @@ class MangaDownloaderGUI(ctk.CTk):
         self.btn_fetch.configure(state="normal", text="🔍 Lấy Thông Tin")
         self.lbl_comic_title.configure(text=f"📖 {info['title']}")
         
-        src_name = getattr(self.downloader_instance, 'source_name', 'TruyenKomi')
+        src_name = getattr(self.downloader_instance, 'source_name', 'NekoHentai')
         chapters_count = len(info.get('chapters', []))
         views_txt = f"{info.get('views', 0):,} lượt xem" if info.get('views') else "0 lượt xem"
         genres_txt = ", ".join(info.get('genres', [])[:4]) if info.get('genres') else "Manga"
@@ -1038,7 +1038,7 @@ class MangaDownloaderGUI(ctk.CTk):
 
     def _load_cover_thumbnail(self, cover_url):
         try:
-            r = requests.get(cover_url, headers={"User-Agent": "TruyenKomi-Downloader/1.0"}, timeout=10)
+            r = requests.get(cover_url, headers={"User-Agent": "NekoHentai-Downloader/1.0"}, timeout=10)
             if r.status_code == 200:
                 img_data = BytesIO(r.content)
                 pil_img = Image.open(img_data)
@@ -1304,7 +1304,7 @@ class MangaDownloaderGUI(ctk.CTk):
                         ))
 
         elapsed = time.time() - start_time
-        public_domain = os.getenv("PUBLIC_DOMAIN", "https://truyenkomi.com").rstrip("/")
+        public_domain = os.getenv("PUBLIC_DOMAIN", "https://nekohentai.lol").rstrip("/")
         web_link = f"{public_domain}/comic/{slug}"
         self.after(0, lambda: self.progress_bar.set(1.0))
         self.after(0, lambda: self.log(f"\n=========================================="))

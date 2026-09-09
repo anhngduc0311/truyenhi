@@ -15,7 +15,7 @@ ON CONFLICT ("Slug") DO NOTHING;
 
 -- 2. Insert Users (Password: "123456" cho User, "admin123" cho Admin)
 INSERT INTO "Users" ("Username", "Email", "PasswordHash", "FullName", "Avatar", "Role", "IsLocked") VALUES
-('admin', 'admin@truyenkomi.com', '$2a$11$qRzN2P10w.hD/W/o5uSrmOCM2C67rR.62m/r.m8P03oT2h/p.8.v2', 'Quản Trị Viên', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80', 'Admin', FALSE),
+('admin', 'admin@nekohentai.lol', '$2a$11$qRzN2P10w.hD/W/o5uSrmOCM2C67rR.62m/r.m8P03oT2h/p.8.v2', 'Quản Trị Viên', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80', 'Admin', FALSE),
 ('otaku_master', 'user1@gmail.com', '$2a$11$qRzN2P10w.hD/W/o5uSrmOCM2C67rR.62m/r.m8P03oT2h/p.8.v2', 'Nguyễn Văn A', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80', 'User', FALSE),
 ('manga_lover', 'user2@gmail.com', '$2a$11$qRzN2P10w.hD/W/o5uSrmOCM2C67rR.62m/r.m8P03oT2h/p.8.v2', 'Trần Thị B', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80', 'User', FALSE)
 ON CONFLICT ("Username") DO NOTHING;

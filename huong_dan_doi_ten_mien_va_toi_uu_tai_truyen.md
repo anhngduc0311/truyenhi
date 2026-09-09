@@ -20,15 +20,15 @@ Tài liệu này tổng hợp giải pháp chi tiết cho 2 vấn đề quan tr�
 ### 2. Các phương án đổi tên miền nhanh nhất
 
 #### ⚡ Cách 1: Trỏ song song 2 tên miền vào cùng 1 Bucket (Nhanh nhất - 30 giây)
-- **Cơ chế**: Thêm tên miền mới (`img.truyenkomi.com`) làm Custom Domain thứ 2 vào cùng Bucket R2 / GCS lưu ảnh.
+- **Cơ chế**: Thêm tên miền mới (`img.nekohentai.lol`) làm Custom Domain thứ 2 vào cùng Bucket R2 / GCS lưu ảnh.
 - **Ưu điểm**:
-  - Link ảnh cũ (`img.truyenkomi.site/...`) và link ảnh mới (`img.truyenkomi.com/...`) đều load được bình thường.
+  - Link ảnh cũ (`img.truyenkomi.site/...` hoặc `img.truyenkomi.com/...`) và link ảnh mới (`img.nekohentai.lol/...`) đều load được bình thường.
   - **Không cần sửa 1 dòng code hay 1 câu lệnh SQL nào trong Database**.
 
 #### ⚡ Cách 2: Tạo Redirect Rule trên Cloudflare (1 phút)
 - Trên Dashboard Cloudflare của domain cũ, vào **Rules** ➡️ **Redirect Rules** tạo quy tắc:
-  - **Match**: `Hostname equals img.truyenkomi.site`
-  - **Action**: Dynamic Redirect sang `concat("https://img.truyenkomi.com", http.request.uri.path)` (Status 301).
+  - **Match**: `Hostname equals img.truyenkomi.site` hoặc `Hostname equals img.truyenkomi.com`
+  - **Action**: Dynamic Redirect sang `concat("https://img.nekohentai.lol", http.request.uri.path)` (Status 301).
 - Mọi truy cập ảnh từ link cũ sẽ được CDN chuyển tiếp tức thì sang link mới.
 
 #### ⚡ Cách 3: Chạy lệnh đổi trực tiếp trong SQL / PostgreSQL (Chỉ 2 dòng lệnh)
@@ -36,14 +36,14 @@ Nếu bạn muốn Database hoàn toàn sạch sẽ và chuyển hẳn sang tên
 ```sql
 -- 1. Cập nhật ảnh bìa truyện
 UPDATE "Comics" 
-SET "CoverImage" = REPLACE("CoverImage", 'img.truyenkomi.site', 'img.truyenkomi.com'),
-    "BannerImage" = REPLACE("BannerImage", 'img.truyenkomi.site', 'img.truyenkomi.com')
-WHERE "CoverImage" LIKE '%img.truyenkomi.site%' OR "BannerImage" LIKE '%img.truyenkomi.site%';
+SET "CoverImage" = REPLACE(REPLACE("CoverImage", 'img.truyenkomi.site', 'img.nekohentai.lol'), 'img.truyenkomi.com', 'img.nekohentai.lol'),
+    "BannerImage" = REPLACE(REPLACE("BannerImage", 'img.truyenkomi.site', 'img.nekohentai.lol'), 'img.truyenkomi.com', 'img.nekohentai.lol')
+WHERE "CoverImage" LIKE '%img.truyenkomi.%' OR "BannerImage" LIKE '%img.truyenkomi.%';
 
 -- 2. Cập nhật ảnh tất cả các trang chương truyện
 UPDATE "ChapterPages" 
-SET "ImageUrl" = REPLACE("ImageUrl", 'img.truyenkomi.site', 'img.truyenkomi.com')
-WHERE "ImageUrl" LIKE '%img.truyenkomi.site%';
+SET "ImageUrl" = REPLACE(REPLACE("ImageUrl", 'img.truyenkomi.site', 'img.nekohentai.lol'), 'img.truyenkomi.com', 'img.nekohentai.lol')
+WHERE "ImageUrl" LIKE '%img.truyenkomi.%';
 ```
 *Thời gian thực thi: Chỉ 2 - 5 giây cho hàng triệu trang ảnh.*
 
@@ -51,16 +51,16 @@ WHERE "ImageUrl" LIKE '%img.truyenkomi.site%';
 Sau khi đổi tên miền, cập nhật lại biến môi trường:
 1. **File `.env`**:
    ```ini
-   R2_CDN_BASE_URL=https://img.truyenkomi.com
-   PUBLIC_DOMAIN=https://truyenkomi.com
-   API_BASE_URL=https://truyenkomi.com/api
+   R2_CDN_BASE_URL=https://img.nekohentai.lol
+   PUBLIC_DOMAIN=https://nekohentai.lol
+   API_BASE_URL=https://nekohentai.lol/api
    ```
 2. **File `backend/MangaFlux.API/appsettings.Production.json`**:
    ```json
-   "CdnBaseUrl": "https://img.truyenkomi.com"
+   "CdnBaseUrl": "https://img.nekohentai.lol"
    ```
 3. **Nginx (`nginx.conf`)**:
-   Đổi `server_name` sang `truyenkomi.com www.truyenkomi.com` và cấp chứng chỉ SSL.
+   Đổi `server_name` sang `nekohentai.lol www.nekohentai.lol` và cấp chứng chỉ SSL.
 
 ---
 

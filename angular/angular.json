@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "truyenkomi": {
+    "nekohentai": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/truyenkomi",
+            "outputPath": "dist/nekohentai",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -64,15 +64,15 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "truyenkomi:build",
-            "allowedHosts": ["truyenkomi.com", "www.truyenkomi.com", ".truyenkomi.com", "truyenkomi.site", "www.truyenkomi.site", ".truyenkomi.site", "hypermmo.site", "www.hypermmo.site", "localhost", "127.0.0.1", ".hypermmo.site"]
+            "buildTarget": "nekohentai:build",
+            "allowedHosts": ["nekohentai.lol", "www.nekohentai.lol", ".nekohentai.lol", "nekohentai.com", "www.nekohentai.com", ".nekohentai.com", "nekohentai.site", "www.nekohentai.site", ".nekohentai.site", "hypermmo.site", "www.hypermmo.site", "localhost", "127.0.0.1", ".hypermmo.site"]
           },
           "configurations": {
             "production": {
-              "buildTarget": "truyenkomi:build:production"
+              "buildTarget": "nekohentai:build:production"
             },
             "development": {
-              "buildTarget": "truyenkomi:build:development"
+              "buildTarget": "nekohentai:build:development"
             }
           },
           "defaultConfiguration": "development"

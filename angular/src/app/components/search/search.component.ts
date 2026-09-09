@@ -101,8 +101,8 @@ export class SearchComponent implements OnInit {
     // Set SEO
     const searchLabel = this.query ? `Tìm kiếm: "${this.query}"` : 'Bộ Lọc & Tìm Kiếm Truyện Tranh Nâng Cao';
     this.seoService.setGeneralSeo(
-      `${searchLabel} - TruyenKomi`,
-      'Tìm kiếm và lọc truyện tranh tiếng Việt theo nhiều thể loại, tác giả, quốc gia, số chương và xếp hạng tại TruyenKomi.',
+      `${searchLabel} - NekoHentai`,
+      'Tìm kiếm và lọc truyện tranh tiếng Việt theo nhiều thể loại, tác giả, quốc gia, số chương và xếp hạng tại NekoHentai.',
       undefined,
       '/search'
     );

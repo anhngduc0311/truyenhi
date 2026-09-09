@@ -1,5 +1,5 @@
 # =======================================================
-# 🚀 Multi-stage Dockerfile for TruyenKomi Angular SPA
+# 🚀 Multi-stage Dockerfile for NekoHentai Angular SPA
 # =======================================================
 
 # Stage 1: Build stage
@@ -25,7 +25,7 @@ RUN rm -rf /usr/share/nginx/html/*
 RUN apk add --no-cache curl
 
 # Copy built artifacts from build stage
-COPY --from=build /app/dist/truyenkomi/browser /usr/share/nginx/html
+COPY --from=build /app/dist/nekohentai/browser /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# 🚀 TRUYENKOMI - ALL-IN-ONE VPS DEPLOYMENT SCRIPT (DOCKER)
+# 🚀 NEKOHENTAI - ALL-IN-ONE VPS DEPLOYMENT SCRIPT (DOCKER)
 # ==============================================================================
-# Script tự động hóa toàn bộ quá trình triển khai hệ thống TruyenKomi:
+# Script tự động hóa toàn bộ quá trình triển khai hệ thống NekoHentai:
 # 1. Cập nhật hệ điều hành & cài đặt gói bổ trợ cần thiết (git, curl, cron, rclone...)
 # 2. Tạo 4GB Swap Memory (chống tràn RAM khi build .NET 9 & Angular 17)
 # 3. Cài đặt Docker & Docker Compose mới nhất
@@ -72,7 +72,7 @@ else
     exit 1
 fi
 
-log_step "🚀 BẮT ĐẦU TRIỂN KHAI HỆ THỐNG TRUYENKOMI LÊN VPS (DOCKER)"
+log_step "🚀 BẮT ĐẦU TRIỂN KHAI HỆ THỐNG NEKOHENTAI LÊN VPS (DOCKER)"
 log_info "Thư mục làm việc: ${BOLD}${TARGET_DIR}${NC}"
 
 # ==============================================================================
@@ -183,7 +183,7 @@ fi
 # ==============================================================================
 # BƯỚC 5: BUILD VÀ KHỞI CHẠY TẤT CẢ CONTAINERS
 # ==============================================================================
-log_step "BƯỚC 5/8: Build và khởi chạy toàn bộ dịch vụ TruyenKomi bằng Docker Compose"
+log_step "BƯỚC 5/8: Build và khởi chạy toàn bộ dịch vụ NekoHentai bằng Docker Compose"
 log_info "Đang thực thi: $DOCKER_COMPOSE_CMD up -d --build (postgres, redis, meilisearch, api, frontend, nginx)..."
 
 $DOCKER_COMPOSE_CMD up -d --build
@@ -198,7 +198,7 @@ log_step "BƯỚC 6/8: Tự động kiểm tra & Khởi tạo Database PostgreSQ
 log_info "Đang chờ PostgreSQL container sẵn sàng nhận kết nối..."
 PG_READY=false
 for i in {1..30}; do
-    if docker exec truyenkomi-postgres pg_isready -U postgres -d TruyenKomiDb >/dev/null 2>&1; then
+    if docker exec nekohentai-postgres pg_isready -U postgres -d NekoHentaiDb >/dev/null 2>&1; then
         log_success "PostgreSQL đã sẵn sàng kết nối!"
         PG_READY=true
         break
@@ -211,16 +211,16 @@ echo ""
 if [ "$PG_READY" = false ]; then
     log_warning "PostgreSQL container chưa sẵn sàng sau 60s. Vui lòng kiểm tra lại logs container."
 else
-    # Kiểm tra xem Database TruyenKomiDb và bảng Users đã tồn tại chưa
-    CHECK_DB=$(docker exec -i truyenkomi-postgres psql -U postgres -d TruyenKomiDb -tAc "SELECT to_regclass('public.\"Users\"');" 2>/dev/null || echo "")
+    # Kiểm tra xem Database NekoHentaiDb và bảng Users đã tồn tại chưa
+    CHECK_DB=$(docker exec -i nekohentai-postgres psql -U postgres -d NekoHentaiDb -tAc "SELECT to_regclass('public.\"Users\"');" 2>/dev/null || echo "")
 
     if [ -z "$CHECK_DB" ] || [ "$CHECK_DB" = "" ]; then
         log_info "Phát hiện Database mới (chưa có bảng): Đang tự động nạp cấu trúc Database sạch (01_CreateDatabase.sql)..."
         
         if [ -f "database/01_CreateDatabase.sql" ]; then
             log_info "-> Đang thực thi /database/01_CreateDatabase.sql (Tạo các bảng & Index)..."
-            docker exec -i truyenkomi-postgres psql -U postgres -d TruyenKomiDb -f /docker-entrypoint-initdb.d/01_CreateDatabase.sql
-            log_success "Đã tạo toàn bộ cấu trúc bảng Database TruyenKomiDb thành công (Sạch 100%, sẵn sàng nhận dữ liệu)!"
+            docker exec -i nekohentai-postgres psql -U postgres -d NekoHentaiDb -f /docker-entrypoint-initdb.d/01_CreateDatabase.sql
+            log_success "Đã tạo toàn bộ cấu trúc bảng Database NekoHentaiDb thành công (Sạch 100%, sẵn sàng nhận dữ liệu)!"
         fi
 
         # Khởi động lại API sau khi tạo database để kết nối ngay lập tức
@@ -228,7 +228,7 @@ else
         $DOCKER_COMPOSE_CMD restart api
         log_success "Backend API đã kết nối thành công với Database mới!"
     else
-        log_success "Database TruyenKomiDb đã có sẵn đầy đủ bảng dữ liệu. Bỏ qua bước nạp lại SQL để bảo vệ dữ liệu."
+        log_success "Database NekoHentaiDb đã có sẵn đầy đủ bảng dữ liệu. Bỏ qua bước nạp lại SQL để bảo vệ dữ liệu."
     fi
 fi
 
@@ -248,30 +248,30 @@ else
     cat << 'EOF' > "$BACKUP_SCRIPT"
 #!/usr/bin/env bash
 # ==============================================================================
-# 💾 TRUYENKOMI - TỰ ĐỘNG BACKUP DATABASE POSTGRESQL & CLOUDFLARE R2 STORAGE
+# 💾 NEKOHENTAI - TỰ ĐỘNG BACKUP DATABASE POSTGRESQL & CLOUDFLARE R2 STORAGE
 # ==============================================================================
 set -e
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="${HOME}/db_backups"
-LOG_FILE="${HOME}/backup_truyenkomi.log"
+LOG_FILE="${HOME}/backup_nekohentai.log"
 
 mkdir -p "$BACKUP_DIR"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_FILE="${BACKUP_DIR}/TruyenKomiDb_${TIMESTAMP}.sql.gz"
+BACKUP_FILE="${BACKUP_DIR}/NekoHentaiDb_${TIMESTAMP}.sql.gz"
 
 echo "" >> "$LOG_FILE"
 echo "================================================================" >> "$LOG_FILE"
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] Bắt đầu tiến trình sao lưu Database TruyenKomiDb..." >> "$LOG_FILE"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] Bắt đầu tiến trình sao lưu Database NekoHentaiDb..." >> "$LOG_FILE"
 
-if ! docker ps --format '{{.Names}}' | grep -q "^truyenkomi-postgres$"; then
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] Container 'truyenkomi-postgres' không chạy! Hủy sao lưu." >> "$LOG_FILE"
+if ! docker ps --format '{{.Names}}' | grep -q "^nekohentai-postgres$"; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] Container 'nekohentai-postgres' không chạy! Hủy sao lưu." >> "$LOG_FILE"
     exit 1
 fi
 
 # 2. Cấu hình Cloudflare R2 Storage (Mặc định dùng R2 từ cloudflare.md)
-DB_PASS="TruyenKomiDbPassword2026!"
+DB_PASS="NekoHentaiDbPassword2026!"
 CF_ENDPOINT="7d2e9a7fa70afba6027908941eb6bd19.r2.cloudflarestorage.com"
 CF_ACCESS_KEY="b55550a4f61f223173b5c5b742867416"
 CF_SECRET_KEY="2afe8eb25f16ff0c74bb0521ba87c04e6313d63bb6c731224e5a70de3f21a3a3"
@@ -306,7 +306,7 @@ elif [[ "$CF_ENDPOINT" == *"backblazeb2.com"* ]]; then
     S3_PROVIDER="Backblaze"
 fi
 
-if docker exec -e PGPASSWORD="$DB_PASS" -i truyenkomi-postgres pg_dump -U postgres TruyenKomiDb 2>>"$LOG_FILE" | gzip > "$BACKUP_FILE"; then
+if docker exec -e PGPASSWORD="$DB_PASS" -i nekohentai-postgres pg_dump -U postgres NekoHentaiDb 2>>"$LOG_FILE" | gzip > "$BACKUP_FILE"; then
     FILE_SIZE=$(ls -lh "$BACKUP_FILE" 2>/dev/null | awk '{print $5}')
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS] Đã tạo bản backup thành công ($FILE_SIZE): $BACKUP_FILE" >> "$LOG_FILE"
 else
@@ -352,7 +352,7 @@ R2EOF
     fi
 fi
 
-find "$BACKUP_DIR" -type f -name "TruyenKomiDb_*.sql.gz" -mtime +14 -delete 2>/dev/null || true
+find "$BACKUP_DIR" -type f -name "NekoHentaiDb_*.sql.gz" -mtime +14 -delete 2>/dev/null || true
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS] Hoàn tất tiến trình sao lưu cơ sở dữ liệu." >> "$LOG_FILE"
 EOF
     chmod +x "$BACKUP_SCRIPT"
@@ -377,7 +377,7 @@ log_info "Đang chạy thử nghiệm 1 bản sao lưu tức thì (Test Backup).
 if bash "$BACKUP_SCRIPT"; then
     log_success "Chạy thử nghiệm sao lưu thành công! Dữ liệu đã được lưu trữ an toàn."
 else
-    log_warning "Sao lưu thử nghiệm có thông báo cần lưu ý. Bạn có thể xem log tại: $HOME/backup_truyenkomi.log"
+    log_warning "Sao lưu thử nghiệm có thông báo cần lưu ý. Bạn có thể xem log tại: $HOME/backup_nekohentai.log"
 fi
 
 # ==============================================================================
@@ -389,7 +389,7 @@ log_info "Chờ 5 giây để toàn bộ dịch vụ ổn định..."
 sleep 5
 
 echo ""
-log_info "Danh sách trạng thái các container TruyenKomi đang chạy:"
+log_info "Danh sách trạng thái các container NekoHentai đang chạy:"
 $DOCKER_COMPOSE_CMD ps
 
 # Dọn dẹp images cũ
@@ -403,11 +403,11 @@ PUBLIC_IP=$(curl -s --connect-timeout 3 https://api.ipify.org || curl -s --conne
 # KẾT QUẢ TRIỂN KHAI HOÀN TẤT
 # ==============================================================================
 echo -e "\n${GREEN}╔══════════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║           🎉 TRIỂN KHAI HỆ THỐNG TRUYENKOMI THÀNH CÔNG!              ║${NC}"
+echo -e "${GREEN}║           🎉 TRIỂN KHAI HỆ THỐNG NEKOHENTAI THÀNH CÔNG!              ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════════════════════════════╝${NC}\n"
 
 echo -e "${BOLD}🌐 CÁC ĐỊA CHỈ TRUY CẬP HỆ THỐNG:${NC}"
-echo -e "  • ${CYAN}Website Truyện Tranh (Angular UI):${NC} ${BOLD}http://${PUBLIC_IP}${NC} (hoặc https://truyenkomi.com)"
+echo -e "  • ${CYAN}Website Truyện Tranh (Angular UI):${NC} ${BOLD}http://${PUBLIC_IP}${NC} (hoặc https://nekohentai.lol)"
 echo -e "  • ${CYAN}Tài liệu Swagger Web API (.NET):${NC}  ${BOLD}http://${PUBLIC_IP}/swagger${NC} (hoặc http://${PUBLIC_IP}:5000/swagger)"
 echo -e "  • ${CYAN}Kiểm tra Healthcheck API:${NC}        ${BOLD}http://${PUBLIC_IP}/health${NC}"
 echo -e "  • ${CYAN}Trình tìm kiếm Meilisearch:${NC}       ${BOLD}http://${PUBLIC_IP}:7700${NC}"
@@ -415,11 +415,11 @@ echo -e "  • ${CYAN}Trình tìm kiếm Meilisearch:${NC}       ${BOLD}http://$
 echo -e "\n${BOLD}💾 QUẢN LÝ DỮ LIỆU & SAO LƯU (BACKUP & RESTORE):${NC}"
 echo -e "  • ${CYAN}Tự động sao lưu:${NC}               02:00 sáng mỗi ngày (Cronjob)"
 echo -e "  • ${CYAN}Thư mục backup trên VPS:${NC}        ${BOLD}${HOME}/db_backups/${NC}"
-echo -e "  • ${CYAN}Lưu trữ Cloudflare R2:${NC}          ${BOLD}r2:${CF_BUCKET:-truyenkomi}/backups/${NC}"
-echo -e "  • ${CYAN}File nhật ký sao lưu:${NC}           ${BOLD}${HOME}/backup_truyenkomi.log${NC}"
+echo -e "  • ${CYAN}Lưu trữ Cloudflare R2:${NC}          ${BOLD}r2:${CF_BUCKET:-comics}/backups/${NC}"
+echo -e "  • ${CYAN}File nhật ký sao lưu:${NC}           ${BOLD}${HOME}/backup_nekohentai.log${NC}"
 echo -e "  • ${YELLOW}Chạy backup thủ công ngay:${NC}       cd $TARGET_DIR && ./backup_db.sh"
-echo -e "  • ${YELLOW}Xem danh sách backup trên R2:${NC}    rclone ls r2:${CF_BUCKET:-truyenkomi}/backups/"
-echo -e "  • ${YELLOW}Khôi phục Database (Restore):${NC}    gunzip -c ~/db_backups/<ten_file>.sql.gz | docker exec -i truyenkomi-postgres psql -U postgres -d TruyenKomiDb"
+echo -e "  • ${YELLOW}Xem danh sách backup trên R2:${NC}    rclone ls r2:${CF_BUCKET:-comics}/backups/"
+echo -e "  • ${YELLOW}Khôi phục Database (Restore):${NC}    gunzip -c ~/db_backups/<ten_file>.sql.gz | docker exec -i nekohentai-postgres psql -U postgres -d NekoHentaiDb"
 
 echo -e "\n${BOLD}🛠️ CÁC LỆNH HỮU ÍCH QUẢN TRỊ DOCKER:${NC}"
 echo -e "  • ${YELLOW}Xem log realtime toàn bộ:${NC}         cd $TARGET_DIR && $DOCKER_COMPOSE_CMD logs -f"

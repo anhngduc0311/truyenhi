@@ -13,7 +13,7 @@ import { FooterComponent } from './components/footer/footer.component';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  title = 'truyenkomi';
+  title = 'nekohentai';
   isReaderRoute: boolean = false;
 
   constructor(private router: Router) {}

@@ -121,9 +121,9 @@
 
   <!-- ==================== TYPOGRAPHY (RIGHT: X=106) ==================== -->
   <g transform="translate(106, 12)">
-    <!-- Brand Title Text: TruyenKomi -->
+    <!-- Brand Title Text: NekoHentai -->
     <text x="0" y="46" font-family="'Quicksand', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="800" letter-spacing="-0.5">
-      <tspan fill="#ff7a1a">Truyen</tspan><tspan fill="#38bdf8">Komi</tspan>
+      <tspan fill="#ff7a1a">Neko</tspan><tspan fill="#38bdf8">Hentai</tspan>
     </text>
 
     <!-- Subtitle Badge / Tagline -->

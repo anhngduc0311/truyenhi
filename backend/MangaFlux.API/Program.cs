@@ -85,7 +85,7 @@ if (!string.IsNullOrEmpty(redisConnectionString))
     builder.Services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = redisConnectionString;
-        options.InstanceName = "TruyenKomi_";
+        options.InstanceName = "NekoHentai_";
     });
 
     try
@@ -205,9 +205,9 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
         ValidateIssuer = true,
-        ValidIssuer = jwtSettings["Issuer"] ?? "TruyenKomiAPI",
+        ValidIssuer = jwtSettings["Issuer"] ?? "NekoHentaiAPI",
         ValidateAudience = true,
-        ValidAudience = jwtSettings["Audience"] ?? "TruyenKomiClient",
+        ValidAudience = jwtSettings["Audience"] ?? "NekoHentaiClient",
         ClockSkew = TimeSpan.Zero
     };
 });
@@ -216,7 +216,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "TruyenKomi Web API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "NekoHentai Web API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -248,7 +248,7 @@ app.UseExceptionHandler();
 
 // Enable Swagger for API documentation & testing
 app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "TruyenKomi API v1"));
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "NekoHentai API v1"));
 
 app.UseCors("AllowAngularApp");
 app.UseMiddleware<AntiScraperMiddleware>();
@@ -321,13 +321,13 @@ using (var scope = app.Services.CreateScope())
 
         try
         {
-            var adminUser = db.Users.FirstOrDefault(u => u.Username == "admin" || u.Email == "admin@truyenkomi.com");
+            var adminUser = db.Users.FirstOrDefault(u => u.Username == "admin" || u.Email == "admin@nekohentai.lol" || u.Email == "admin@truyenkomi.com");
             if (adminUser == null)
             {
                 db.Users.Add(new User
                 {
                     Username = "admin",
-                    Email = "admin@truyenkomi.com",
+                    Email = "admin@nekohentai.lol",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
                     FullName = "Quản Trị Viên",
                     Role = "Admin",
@@ -340,7 +340,7 @@ using (var scope = app.Services.CreateScope())
             else
             {
                 adminUser.Username = "admin";
-                adminUser.Email = "admin@truyenkomi.com";
+                adminUser.Email = "admin@nekohentai.lol";
                 adminUser.Role = "Admin";
                 adminUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123");
                 adminUser.IsLocked = false;

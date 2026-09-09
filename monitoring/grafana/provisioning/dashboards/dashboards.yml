@@ -1,9 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: 'TruyenKomi Dashboards'
+  - name: 'NekoHentai Dashboards'
     orgId: 1
-    folder: 'TruyenKomi APM'
+    folder: 'NekoHentai APM'
     type: file
     disableDeletion: false
     updateIntervalSeconds: 10

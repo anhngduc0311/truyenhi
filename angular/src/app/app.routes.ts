@@ -36,70 +36,70 @@ export function chapterUrlMatcher(segments: UrlSegment[]): UrlMatchResult | null
 }
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent, title: 'TruyenKomi - Trang Chủ' },
+  { path: '', component: HomeComponent, title: 'NekoHentai - Trang Chủ' },
   { 
     path: 'comics', 
     loadComponent: () => import('./components/comic-list/comic-list.component').then(m => m.ComicListComponent), 
-    title: 'Danh Sách Truyện Tranh - TruyenKomi' 
+    title: 'Danh Sách Truyện Tranh - NekoHentai' 
   },
   { 
     path: 'categories', 
     loadComponent: () => import('./components/category-list/category-list.component').then(m => m.CategoryListComponent), 
-    title: 'Thể Loại Truyện - TruyenKomi' 
+    title: 'Thể Loại Truyện - NekoHentai' 
   },
   { 
     path: 'comic/:slug', 
     loadComponent: () => import('./components/comic-detail/comic-detail.component').then(m => m.ComicDetailComponent), 
-    title: 'Chi Tiết Truyện - TruyenKomi' 
+    title: 'Chi Tiết Truyện - NekoHentai' 
   },
   { 
     matcher: chapterUrlMatcher, 
     loadComponent: () => import('./components/chapter-read/chapter-read.component').then(m => m.ChapterReadComponent), 
-    title: 'Đọc Chapter - TruyenKomi' 
+    title: 'Đọc Chapter - NekoHentai' 
   },
   { 
     path: 'read/:id', 
     loadComponent: () => import('./components/chapter-read/chapter-read.component').then(m => m.ChapterReadComponent), 
-    title: 'Đọc Chapter - TruyenKomi' 
+    title: 'Đọc Chapter - NekoHentai' 
   },
   { 
     path: 'search', 
     loadComponent: () => import('./components/search/search.component').then(m => m.SearchComponent), 
-    title: 'Tìm Kiếm Truyện - TruyenKomi' 
+    title: 'Tìm Kiếm Truyện - NekoHentai' 
   },
   { 
     path: 'auth', 
     loadComponent: () => import('./components/auth/auth.component').then(m => m.AuthComponent), 
-    title: 'Đăng Nhập & Đăng Ký - TruyenKomi' 
+    title: 'Đăng Nhập & Đăng Ký - NekoHentai' 
   },
   { 
     path: 'followed', 
     loadComponent: () => import('./components/followed/followed.component').then(m => m.FollowedComponent), 
-    title: 'Truyện Theo Dõi - TruyenKomi', 
+    title: 'Truyện Theo Dõi - NekoHentai', 
     canActivate: [authGuard] 
   },
   { 
     path: 'history', 
     loadComponent: () => import('./components/history/history.component').then(m => m.HistoryComponent), 
-    title: 'Lịch Sử Đọc - TruyenKomi', 
+    title: 'Lịch Sử Đọc - NekoHentai', 
     canActivate: [authGuard] 
   },
   { 
     path: 'profile', 
     loadComponent: () => import('./components/profile/profile.component').then(m => m.ProfileComponent), 
-    title: 'Trang Cá Nhân - TruyenKomi', 
+    title: 'Trang Cá Nhân - NekoHentai', 
     canActivate: [authGuard] 
   },
   { 
     path: 'notifications', 
     loadComponent: () => import('./components/notifications/notifications.component').then(m => m.NotificationsComponent), 
-    title: 'Thông Báo - TruyenKomi', 
+    title: 'Thông Báo - NekoHentai', 
     canActivate: [authGuard] 
   },
   { 
     path: 'settings', 
     loadComponent: () => import('./components/settings/settings.component').then(m => m.SettingsComponent), 
-    title: 'Cài Đặt Tài Khoản - TruyenKomi', 
+    title: 'Cài Đặt Tài Khoản - NekoHentai', 
     canActivate: [authGuard] 
   },
   
@@ -107,34 +107,34 @@ export const routes: Routes = [
   { 
     path: 'about', 
     loadComponent: () => import('./components/about/about.component').then(m => m.AboutComponent), 
-    title: 'Giới Thiệu - TruyenKomi' 
+    title: 'Giới Thiệu - NekoHentai' 
   },
   { 
     path: 'contact', 
     loadComponent: () => import('./components/contact/contact.component').then(m => m.ContactComponent), 
-    title: 'Liên Hệ & Hỗ Trợ - TruyenKomi' 
+    title: 'Liên Hệ & Hỗ Trợ - NekoHentai' 
   },
   { 
     path: 'terms', 
     loadComponent: () => import('./components/terms/terms.component').then(m => m.TermsComponent), 
-    title: 'Điều Khoản Sử Dụng - TruyenKomi' 
+    title: 'Điều Khoản Sử Dụng - NekoHentai' 
   },
   { 
     path: 'privacy', 
     loadComponent: () => import('./components/privacy/privacy.component').then(m => m.PrivacyComponent), 
-    title: 'Chính Sách Bảo Mật - TruyenKomi' 
+    title: 'Chính Sách Bảo Mật - NekoHentai' 
   },
   { 
     path: 'faq', 
     loadComponent: () => import('./components/faq/faq.component').then(m => m.FaqComponent), 
-    title: 'Câu Hỏi Thường Gặp (FAQ) - TruyenKomi' 
+    title: 'Câu Hỏi Thường Gặp (FAQ) - NekoHentai' 
   },
 
   // Status & Error Pages
   { 
     path: 'maintenance', 
     loadComponent: () => import('./components/maintenance/maintenance.component').then(m => m.MaintenanceComponent), 
-    title: 'Hệ Thống Bảo Trì - TruyenKomi' 
+    title: 'Hệ Thống Bảo Trì - NekoHentai' 
   },
   { 
     path: 'comic-unavailable', 
@@ -144,62 +144,62 @@ export const routes: Routes = [
   { 
     path: '404', 
     loadComponent: () => import('./components/not-found/not-found.component').then(m => m.NotFoundComponent), 
-    title: '404 Not Found - TruyenKomi' 
+    title: '404 Not Found - NekoHentai' 
   },
 
   // Admin Routes
   { 
     path: 'admin', 
     loadComponent: () => import('./components/admin/admin.component').then(m => m.AdminComponent), 
-    title: 'Admin Quản Lý - TruyenKomi', 
+    title: 'Admin Quản Lý - NekoHentai', 
     canActivate: [adminGuard] 
   },
   { 
     path: 'admin/stories', 
     loadComponent: () => import('./components/admin-stories/admin-stories.component').then(m => m.AdminStoriesComponent), 
-    title: 'Quản Lý Truyện - TruyenKomi', 
+    title: 'Quản Lý Truyện - NekoHentai', 
     canActivate: [adminGuard] 
   },
   { 
     path: 'admin/stories/create', 
     loadComponent: () => import('./components/admin-story-form/admin-story-form.component').then(m => m.AdminStoryFormComponent), 
-    title: 'Thêm / Sửa Truyện - TruyenKomi', 
+    title: 'Thêm / Sửa Truyện - NekoHentai', 
     canActivate: [adminGuard] 
   },
   { 
     path: 'admin/stories/edit/:id', 
     loadComponent: () => import('./components/admin-story-form/admin-story-form.component').then(m => m.AdminStoryFormComponent), 
-    title: 'Chỉnh Sửa Truyện - TruyenKomi', 
+    title: 'Chỉnh Sửa Truyện - NekoHentai', 
     canActivate: [adminGuard] 
   },
   { 
     path: 'admin/stories/:id/chapters', 
     loadComponent: () => import('./components/admin-chapters/admin-chapters.component').then(m => m.AdminChaptersComponent), 
-    title: 'Quản Lý Chapter - TruyenKomi', 
+    title: 'Quản Lý Chapter - NekoHentai', 
     canActivate: [adminGuard] 
   },
   { 
     path: 'admin/genres', 
     loadComponent: () => import('./components/admin-genres/admin-genres.component').then(m => m.AdminGenresComponent), 
-    title: 'Quản Lý Thể Loại - TruyenKomi', 
+    title: 'Quản Lý Thể Loại - NekoHentai', 
     canActivate: [adminGuard] 
   },
   { 
     path: 'admin/users', 
     loadComponent: () => import('./components/admin-users/admin-users.component').then(m => m.AdminUsersComponent), 
-    title: 'Quản Lý Người Dùng - TruyenKomi', 
+    title: 'Quản Lý Người Dùng - NekoHentai', 
     canActivate: [adminGuard] 
   },
   { 
     path: 'admin/comments', 
     loadComponent: () => import('./components/admin-comments/admin-comments.component').then(m => m.AdminCommentsComponent), 
-    title: 'Quản Lý Bình Luận - TruyenKomi', 
+    title: 'Quản Lý Bình Luận - NekoHentai', 
     canActivate: [adminGuard] 
   },
   { 
     path: 'admin/reports', 
     loadComponent: () => import('./components/admin-reports/admin-reports.component').then(m => m.AdminReportsComponent), 
-    title: 'Quản Lý Báo Lỗi - TruyenKomi', 
+    title: 'Quản Lý Báo Lỗi - NekoHentai', 
     canActivate: [adminGuard] 
   },
 
@@ -207,6 +207,6 @@ export const routes: Routes = [
   { 
     path: '**', 
     loadComponent: () => import('./components/not-found/not-found.component').then(m => m.NotFoundComponent), 
-    title: '404 Not Found - TruyenKomi' 
+    title: '404 Not Found - NekoHentai' 
   }
 ];

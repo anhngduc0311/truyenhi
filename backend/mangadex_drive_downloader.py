@@ -4,9 +4,9 @@
 =============================================================================
 🚀 MangaDex to Cloud Storage & Web Synchronizer
 =============================================================================
-Author: TruyenKomi Team
-Target Cloud Storage Bucket: truyenkomi (Google Cloud Storage / R2)
-Web API: https://truyenkomi.com/api
+Author: NekoHentai Team
+Target Cloud Storage Bucket: nekohentai (Google Cloud Storage / R2)
+Web API: https://nekohentai.lol/api
 
 Thiết lập chuẩn:
   ☑️ Tự động tải lên Cloud Storage Bucket & Đồng bộ Web API: BẬT
@@ -104,9 +104,9 @@ load_env_file()
 GCS_ENDPOINT = os.getenv("R2_ENDPOINT", "storage.googleapis.com")
 GCS_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "GOOGQHRXVRS7YCR24JBLB33S")
 GCS_SECRET_KEY = os.getenv("R2_SECRET_KEY", "3Iamo8whmuUeT2B+CMtRnfW6qdIsmwXVec47tF52")
-GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "truyenkomi")
-CDN_BASE_URL = os.getenv("R2_CDN_BASE_URL", "https://img.truyenkomi.site").rstrip("/")
-DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "https://truyenkomi.com/api").rstrip("/")
+GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "nekohentai")
+CDN_BASE_URL = os.getenv("R2_CDN_BASE_URL", "https://img.nekohentai.lol").rstrip("/")
+DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "https://nekohentai.lol/api").rstrip("/")
 
 MANGADEX_API_BASE = "https://api.mangadex.org"
 MANGADEX_UPLOADS_BASE = "https://uploads.mangadex.org"
@@ -254,7 +254,7 @@ def check_chapter_exists_on_cloud(slug: str, chap_num_str: str, cdn_base_url: st
 
 def get_existing_chapters_from_web(api_base_url: str, slug: str, session: requests.Session = None) -> set:
     """
-    Truy vấn Web API (TruyenKomi) để lấy danh sách các số chapter đã tồn tại trong database.
+    Truy vấn Web API (NekoHentai) để lấy danh sách các số chapter đã tồn tại trong database.
     Trả về set các chapter key đã chuẩn hóa (vd: {'1', '2', '2.5'}).
     """
     if not api_base_url or not slug:
@@ -297,7 +297,7 @@ def sync_chapter_to_web_api(
     categories: list = None,
     session: requests.Session = None
 ) -> bool:
-    """Đồng bộ chapter lên TruyenKomi Web API để hiển thị ngay trên Website"""
+    """Đồng bộ chapter lên NekoHentai Web API để hiển thị ngay trên Website"""
     params = {
         "comicTitle": comic_title,
         "comicSlug": comic_slug,
@@ -331,7 +331,7 @@ def sync_chapter_to_web_api(
         "imageUrls": image_urls
     }
     headers = {
-        "User-Agent": "TruyenKomi-Sync/2.0",
+        "User-Agent": "NekoHentai-Sync/2.0",
         "Content-Type": "application/json"
     }
     http_client = session or requests
@@ -525,7 +525,7 @@ class MangaDexClient:
     def __init__(self, lang: str = DEFAULT_LANG):
         self.lang = lang
         self.session = create_reusable_session(pool_size=32)
-        self.session.headers.update({"User-Agent": "TruyenKomi-Ubuntu-Sync/2.0 (https://truyenkomi.com)"})
+        self.session.headers.update({"User-Agent": "NekoHentai-Ubuntu-Sync/2.0 (https://nekohentai.lol)"})
         self._last_request_time = 0.0
         self._min_interval = 0.22
 
@@ -841,7 +841,7 @@ class MangaDexSynchronizer:
     ) -> tuple:
         """
         Kiểm tra đa tầng xem chapter đã được tải / đồng bộ hay chưa:
-        1. Web API (Website TruyenKomi)
+        1. Web API (Website NekoHentai)
         2. Checkpoint tiến trình (mangadex_sync_state.json)
         3. Ổ cứng máy chủ (Local Temp Files)
         4. Cloud Storage Bucket (CDN)
@@ -850,7 +850,7 @@ class MangaDexSynchronizer:
 
         # 1. Kiểm tra trên Web API (Chính xác 100% với dữ liệu website)
         if web_existing_chapters and norm_key in web_existing_chapters:
-            return True, "Web API TruyenKomi"
+            return True, "Web API NekoHentai"
 
         # 2. Kiểm tra Checkpoint file tiến trình
         if self.state.is_chapter_synced(manga_id, norm_key):
@@ -1078,7 +1078,7 @@ class MangaDexSynchronizer:
                         session=self.api_session
                     )
                     if synced:
-                        log_success(f"    🌐 Đã đồng bộ {chap_title} lên Website TruyenKomi thành công!")
+                        log_success(f"    🌐 Đã đồng bộ {chap_title} lên Website NekoHentai thành công!")
 
             # Ghi nhận hoàn thành chapter vào checkpoint
             self.state.mark_chapter_synced(manga_id, num_str)

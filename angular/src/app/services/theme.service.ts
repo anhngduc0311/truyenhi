@@ -21,7 +21,7 @@ export class ThemeService {
   }
 
   initTheme(): void {
-    const saved = (localStorage.getItem('truyenkomi_theme') || localStorage.getItem('truyengg_theme') || localStorage.getItem('truyenkomi_theme')) as 'light' | 'dark';
+    const saved = (localStorage.getItem('nekohentai_theme') || localStorage.getItem('truyenkomi_theme') || localStorage.getItem('truyengg_theme')) as 'light' | 'dark';
     const theme = saved || 'light';
     this.applyTheme(theme);
   }
@@ -37,8 +37,7 @@ export class ThemeService {
 
   private applyTheme(theme: 'light' | 'dark'): void {
     this.themeSubject.next(theme);
-    localStorage.setItem('truyenkomi_theme', theme);
-    localStorage.setItem('truyengg_theme', theme);
+    localStorage.setItem('nekohentai_theme', theme);
     localStorage.setItem('truyenkomi_theme', theme);
 
     if (typeof document !== 'undefined') {

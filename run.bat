@@ -1,12 +1,12 @@
 @echo off
 chcp 65001 >nul
-title TruyenKomi Launcher
+title NekoHentai Launcher
 setlocal
 
 :MENU
 cls
 echo ===============================================================================
-echo                  TRUYENKOMI COMIC PLATFORM - CONTROL PANEL
+echo                  NEKOHENTAI COMIC PLATFORM - CONTROL PANEL
 echo ===============================================================================
 echo.
 echo   [1] Khoi chay TOAN BO (Docker + Backend .NET + Frontend Angular)
@@ -33,24 +33,24 @@ goto INVALID
 :START_ALL
 cls
 echo ===============================================================================
-echo DANG KHOI CHAY HE THONG TRUYENKOMI...
+echo DANG KHOI CHAY HE THONG NEKOHENTAI...
 echo ===============================================================================
 echo.
 echo [1/3] Khoi dong Docker Containers...
 docker-compose up -d >nul 2>&1
 
 echo [2/3] Mo Backend .NET API tren cua so rieng (Port 5000)...
-start "TruyenKomi - Backend API" cmd /k "cd /d ""%~dp0backend\TruyenKomi.API"" && dotnet run --environment Production"
+start "NekoHentai - Backend API" cmd /k "cd /d ""%~dp0backend\MangaFlux.API"" && dotnet run --environment Production"
 
 timeout /t 3 >nul
 
 echo [3/3] Mo Frontend Angular tren cua so rieng (Port 4200)...
-start "TruyenKomi - Frontend Angular" cmd /k "cd /d ""%~dp0angular"" && npm run start:prod"
+start "NekoHentai - Frontend Angular" cmd /k "cd /d ""%~dp0angular"" && npm run start:prod"
 
 echo.
 echo ===============================================================================
 echo DA KHOI CHAY XONG!
-echo  - Frontend Web : http://localhost:4200 (hoac https://truyenkomi.com)
+echo  - Frontend Web : http://localhost:4200 (hoac https://nekohentai.lol)
 echo  - Backend API  : http://localhost:5000 (Swagger: http://localhost:5000/swagger)
 echo ===============================================================================
 echo.
@@ -60,13 +60,13 @@ goto MENU
 :START_BACKEND
 cls
 echo Dang khoi chay Backend .NET Web API...
-start "TruyenKomi - Backend API" cmd /k "cd /d ""%~dp0backend\TruyenKomi.API"" && dotnet run --environment Production"
+start "NekoHentai - Backend API" cmd /k "cd /d ""%~dp0backend\MangaFlux.API"" && dotnet run --environment Production"
 goto MENU
 
 :START_FRONTEND
 cls
 echo Dang khoi chay Frontend Angular...
-start "TruyenKomi - Frontend Angular" cmd /k "cd /d ""%~dp0angular"" && npm run start:prod"
+start "NekoHentai - Frontend Angular" cmd /k "cd /d ""%~dp0angular"" && npm run start:prod"
 goto MENU
 
 :START_GUI

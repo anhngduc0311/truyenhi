@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 =============================================================================
-🛠️ TRUYENKOMI - CÔNG CỤ CẬP NHẬT LẠI NGÀY TẠO & NGÀY CẬP NHẬT CHO TRUYỆN
+🛠️ NEKOHENTAI - CÔNG CỤ CẬP NHẬT LẠI NGÀY TẠO & NGÀY CẬP NHẬT CHO TRUYỆN
 =============================================================================
 Tự động quét các bộ truyện trong database hoặc qua Web API:
 1. Gọi API /api/comics/fix-dates để tự động sửa ngày tạo/ngày cập nhật dựa trên các chapter đã tải.
@@ -21,10 +21,10 @@ if sys.platform == 'win32':
     except Exception:
         pass
 
-DEFAULT_API_URL = "https://truyenkomi.com/api"
+DEFAULT_API_URL = "https://nekohentai.lol/api"
 MANGADEX_API_BASE = "https://api.mangadex.org"
 SYNC_HEADERS = {
-    "User-Agent": "TruyenKomi-Sync/2.0",
+    "User-Agent": "NekoHentai-Sync/2.0",
     "Content-Type": "application/json"
 }
 
@@ -47,7 +47,7 @@ def sync_manga_mangadex_date(slug: str, mangadex_id: str, api_url: str = DEFAULT
     print(f"🔍 Đang truy vấn thông tin gốc từ MangaDex (ID: {mangadex_id})...")
     md_url = f"{MANGADEX_API_BASE}/manga/{mangadex_id}"
     try:
-        res = requests.get(md_url, headers={"User-Agent": "TruyenKomi-Sync/2.0"}, timeout=20)
+        res = requests.get(md_url, headers={"User-Agent": "NekoHentai-Sync/2.0"}, timeout=20)
         if res.status_code != 200:
             print(f"⚠️ Không tìm thấy truyện trên MangaDex: {res.status_code}")
             return False
@@ -79,7 +79,7 @@ def sync_manga_mangadex_date(slug: str, mangadex_id: str, api_url: str = DEFAULT
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🚀 TRUYENKOMI - CẬP NHẬT NGÀY TẠO TRUYỆN")
+    print("🚀 NEKOHENTAI - CẬP NHẬT NGÀY TẠO TRUYỆN")
     print("=" * 60)
     
     api_target = DEFAULT_API_URL

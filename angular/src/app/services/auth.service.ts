@@ -15,11 +15,12 @@ export class AuthService {
   }
 
   private loadUserFromStorage(): void {
-    const userJson = localStorage.getItem('truyenkomi_user');
+    const userJson = localStorage.getItem('nekohentai_user') || localStorage.getItem('truyenkomi_user');
     if (userJson) {
       try {
         this.currentUserSubject.next(JSON.parse(userJson));
       } catch (e) {
+        localStorage.removeItem('nekohentai_user');
         localStorage.removeItem('truyenkomi_user');
       }
     }
@@ -37,39 +38,31 @@ export class AuthService {
     return this.currentUserValue?.role?.toLowerCase() === 'admin';
   }
 
+  private saveUserToStorage(user: User): void {
+    if (user && user.token) {
+      localStorage.setItem('nekohentai_token', user.token);
+      localStorage.setItem('nekohentai_user', JSON.stringify(user));
+      localStorage.setItem('truyenkomi_token', user.token);
+      localStorage.setItem('truyenkomi_user', JSON.stringify(user));
+      this.currentUserSubject.next(user);
+    }
+  }
+
   login(credentials: { usernameOrEmail: string; password: string }): Observable<User> {
     return this.api.post<User>('auth/login', credentials).pipe(
-      tap((user) => {
-        if (user && user.token) {
-          localStorage.setItem('truyenkomi_token', user.token);
-          localStorage.setItem('truyenkomi_user', JSON.stringify(user));
-          this.currentUserSubject.next(user);
-        }
-      })
+      tap((user) => this.saveUserToStorage(user))
     );
   }
 
   googleLogin(idToken: string): Observable<User> {
     return this.api.post<User>('auth/google-login', { idToken }).pipe(
-      tap((user) => {
-        if (user && user.token) {
-          localStorage.setItem('truyenkomi_token', user.token);
-          localStorage.setItem('truyenkomi_user', JSON.stringify(user));
-          this.currentUserSubject.next(user);
-        }
-      })
+      tap((user) => this.saveUserToStorage(user))
     );
   }
 
   register(data: { username: string; email: string; password: string; fullName?: string }): Observable<User> {
     return this.api.post<User>('auth/register', data).pipe(
-      tap((user) => {
-        if (user && user.token) {
-          localStorage.setItem('truyenkomi_token', user.token);
-          localStorage.setItem('truyenkomi_user', JSON.stringify(user));
-          this.currentUserSubject.next(user);
-        }
-      })
+      tap((user) => this.saveUserToStorage(user))
     );
   }
 
@@ -77,6 +70,7 @@ export class AuthService {
     const current = this.currentUserValue;
     if (current) {
       const updatedUser = { ...current, ...updatedUserPartial };
+      localStorage.setItem('nekohentai_user', JSON.stringify(updatedUser));
       localStorage.setItem('truyenkomi_user', JSON.stringify(updatedUser));
       this.currentUserSubject.next(updatedUser);
     }
@@ -84,13 +78,7 @@ export class AuthService {
 
   refreshToken(): Observable<User> {
     return this.api.post<User>('auth/refresh-token', {}).pipe(
-      tap((user) => {
-        if (user && user.token) {
-          localStorage.setItem('truyenkomi_token', user.token);
-          localStorage.setItem('truyenkomi_user', JSON.stringify(user));
-          this.currentUserSubject.next(user);
-        }
-      })
+      tap((user) => this.saveUserToStorage(user))
     );
   }
 
@@ -99,6 +87,8 @@ export class AuthService {
       next: () => {},
       error: () => {}
     });
+    localStorage.removeItem('nekohentai_token');
+    localStorage.removeItem('nekohentai_user');
     localStorage.removeItem('truyenkomi_token');
     localStorage.removeItem('truyenkomi_user');
     this.currentUserSubject.next(null);

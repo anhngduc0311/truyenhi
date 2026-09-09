@@ -2,8 +2,8 @@
   <div class="nav-container">
     <!-- LEFT: Brand Logo -->
     <div class="nav-brand">
-      <a routerLink="/" title="TruyenKomi - Đọc truyện tranh online" (click)="closeMobileMenu()">
-        <img src="assets/logo.svg" alt="TruyenKomi" class="nav-logo-svg" />
+      <a routerLink="/" title="NekoHentai - Đọc truyện tranh online" (click)="closeMobileMenu()">
+        <img src="assets/logo.svg" alt="NekoHentai" class="nav-logo-svg" />
       </a>
     </div>
 
@@ -162,7 +162,7 @@
               <span *ngIf="getUserRealm()" class="realm-badge" [ngClass]="getUserRealm()!.frameClass.replace('avatar-frame-', 'realm-')">
                 <i class="fa fa-shield"></i> {{ getUserRealm()!.title }}
               </span>
-              <span *ngIf="!getUserRealm()" class="user-role-badge">Độc Giả TruyenKomi</span>
+              <span *ngIf="!getUserRealm()" class="user-role-badge">Độc Giả NekoHentai</span>
             </div>
             <div class="user-dropdown-links">
               <a routerLink="/profile" (click)="closeUserDropdown()" class="dropdown-link">
@@ -334,7 +334,7 @@
         <i class="fa fa-trophy trophy-icon"></i>
         <div>
           <h2 class="modal-title">Bảng Xếp Hạng Tu Vi Độc Giả</h2>
-          <span class="modal-subtitle">Vinh danh cao thủ đọc truyện nhiều tu vi nhất TruyenKomi</span>
+          <span class="modal-subtitle">Vinh danh cao thủ đọc truyện nhiều tu vi nhất NekoHentai</span>
         </div>
       </div>
       <button class="btn-close-modal" (click)="closeLeaderboard()" aria-label="Đóng">

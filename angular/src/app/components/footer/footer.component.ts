@@ -14,15 +14,15 @@ import { RouterModule } from '@angular/router';
           <!-- Column 1: Brand & Disclaimer -->
           <div class="footer-col-brand">
             <div class="footer-logo">
-              <a routerLink="/" title="TruyenKomi - Nền tảng đọc truyện tranh Next-Gen">
-                <img src="assets/logo.svg" alt="TruyenKomi" class="footer-logo-svg" />
+              <a routerLink="/" title="NekoHentai - Nền tảng đọc truyện tranh Next-Gen">
+                <img src="assets/logo.svg" alt="NekoHentai" class="footer-logo-svg" />
               </a>
             </div>
             <p class="footer-about">
-              <strong>TruyenKomi</strong> là nền tảng đọc truyện tranh Manga, Manhwa, Manhua sắc nét chuẩn HD. Toàn bộ tài nguyên được đóng góp bởi cộng đồng và sưu tầm từ internet.
+              <strong>NekoHentai</strong> là nền tảng đọc truyện tranh Manga, Manhwa, Manhua sắc nét chuẩn HD. Toàn bộ tài nguyên được đóng góp bởi cộng đồng và sưu tầm từ internet.
             </p>
             <div class="footer-social-links">
-              <a href="https://t.me/truyenkomi" target="_blank" rel="nofollow" class="social-icon-btn tg" title="Telegram">
+              <a href="https://t.me/nekohentai" target="_blank" rel="nofollow" class="social-icon-btn tg" title="Telegram">
                 <i class="fa fa-paper-plane"></i>
               </a>
               <a href="https://discord.com" target="_blank" rel="nofollow" class="social-icon-btn dc" title="Discord">
@@ -66,7 +66,7 @@ import { RouterModule } from '@angular/router';
         <!-- Bottom Copyright Row -->
         <div class="footer-bottom-row">
           <p class="copyright-text">
-            © 2026 <strong>TruyenKomi</strong>. All rights reserved. Trải nghiệm đọc truyện đỉnh cao.
+            © 2026 <strong>NekoHentai</strong>. All rights reserved. Trải nghiệm đọc truyện đỉnh cao.
           </p>
           <div class="policy-links">
             <a routerLink="/privacy">Chính Sách Bảo Mật</a>

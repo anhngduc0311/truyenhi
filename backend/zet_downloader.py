@@ -4,7 +4,7 @@
 =============================================================================
 🚀 Manga Downloader (ZetTruyen & MangaDex Vietnamese Hub)
 =============================================================================
-Author: TruyenKomi Team
+Author: NekoHentai Team
 Description: Tool tải truyện siêu tốc từ ZetTruyen và MangaDex (Tiếng Việt),
              hỗ trợ tìm kiếm, duyệt danh sách, đa luồng, tự động ghép ảnh
              (Image Stitching), xuất PDF và đồng bộ Cloud Storage / Web API.
@@ -88,8 +88,8 @@ DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:5000/api")
 GCS_ENDPOINT = os.getenv("R2_ENDPOINT", "storage.googleapis.com")
 GCS_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "GOOGQHRXVRS7YCR24JBLB33S")
 GCS_SECRET_KEY = os.getenv("R2_SECRET_KEY", "3Iamo8whmuUeT2B+CMtRnfW6qdIsmwXVec47tF52")
-GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "truyenkomi")
-CDN_BASE_URL = os.getenv("R2_CDN_BASE_URL", "https://img.truyenkomi.site").rstrip("/")
+GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "nekohentai")
+CDN_BASE_URL = os.getenv("R2_CDN_BASE_URL", "https://img.nekohentai.lol").rstrip("/")
 
 
 def slugify(text: str) -> str:
@@ -170,7 +170,7 @@ def sync_chapter_to_web_api(
     comic_updated_at: str = None,
     categories: list = None
 ) -> bool:
-    """Đồng bộ truyện và chapter lên TruyenKomi Web API"""
+    """Đồng bộ truyện và chapter lên NekoHentai Web API"""
     params = {
         "comicTitle": comic_title,
         "comicSlug": comic_slug,
@@ -178,7 +178,7 @@ def sync_chapter_to_web_api(
     }
     if author: 
         if "zettruyen" in author.lower() or "zet truyen" in author.lower():
-            author = "TRUYENKOMI"
+            author = "NEKOHENTAI"
         params["author"] = author
     if translator_group: params["translatorGroup"] = translator_group
     if other_names: params["otherNames"] = other_names
@@ -239,7 +239,7 @@ class BaseMangaDownloader:
         self.genres = []
         self.http_session = requests.Session()
         self.http_session.headers.update({
-            "User-Agent": "TruyenKomi-Downloader/1.0 (https://truyenkomi.com)"
+            "User-Agent": "NekoHentai-Downloader/1.0 (https://nekohentai.lol)"
         })
 
     def _sanitize_name(self, name: str) -> str:
@@ -558,7 +558,7 @@ class BaseMangaDownloader:
             table.add_column("Giá trị", style="green")
             table.add_row("Tên truyện", title)
             table.add_row("Slug", self.slug)
-            table.add_row("Nguồn", getattr(self, 'source_name', 'TruyenKomi'))
+            table.add_row("Nguồn", getattr(self, 'source_name', 'NekoHentai'))
             table.add_row("Tác giả", self.author)
             table.add_row("Nhóm dịch", self.translator_group)
             table.add_row("Thể loại", ", ".join(self.genres[:5]) if self.genres else "Manga")
@@ -769,7 +769,7 @@ class ZetMangaDownloader(BaseMangaDownloader):
                 if val and len(val) < 30: self.age_limit = val
 
         if self.author and ("zettruyen" in self.author.lower() or "zet truyen" in self.author.lower()):
-            self.author = "TRUYENKOMI"
+            self.author = "NEKOHENTAI"
 
         m_view = re.search(r'Lượt xem\s*[:：]?\s*([\d,.]+)', page_text, re.I)
         if m_view:
@@ -1014,7 +1014,7 @@ class MangaDexDownloader(BaseMangaDownloader):
             params["title"] = query
 
         url = f"{MANGADEX_API_BASE}/manga"
-        headers = {"User-Agent": "TruyenKomi-Downloader/1.0 (https://truyenkomi.com)"}
+        headers = {"User-Agent": "NekoHentai-Downloader/1.0 (https://nekohentai.lol)"}
         
         for retry in range(MAX_RETRIES):
             res = requests.get(url, params=params, headers=headers, timeout=TIMEOUT)
@@ -1109,7 +1109,7 @@ class MangaDexDownloader(BaseMangaDownloader):
                 params["order[latestUploadedChapter]"] = "desc"
 
             url = f"{MANGADEX_API_BASE}/manga"
-            headers = {"User-Agent": "TruyenKomi-Downloader/1.0 (https://truyenkomi.com)"}
+            headers = {"User-Agent": "NekoHentai-Downloader/1.0 (https://nekohentai.lol)"}
 
             res = None
             for retry in range(MAX_RETRIES):

@@ -12,7 +12,7 @@ import { RouterLink } from '@angular/router';
       <!-- Header -->
       <div class="page-header text-center">
         <h1><i class="fa-solid fa-headset text-gradient"></i> Liên Hệ & Hỗ Trợ</h1>
-        <p>Bạn có thắc mắc, yêu cầu bản quyền hoặc đề xuất hợp tác quảng cáo? Hãy gửi tin nhắn cho TruyenKomi!</p>
+        <p>Bạn có thắc mắc, yêu cầu bản quyền hoặc đề xuất hợp tác quảng cáo? Hãy gửi tin nhắn cho NekoHentai!</p>
       </div>
 
       <div class="contact-grid">
@@ -26,7 +26,7 @@ import { RouterLink } from '@angular/router';
               <div class="info-icon"><i class="fa-solid fa-envelope"></i></div>
               <div class="info-text">
                 <span class="label">Email Hỗ Trợ:</span>
-                <span class="value">support&#64;truyenkomi.com</span>
+                <span class="value">support&#64;nekohentai.lol</span>
               </div>
             </div>
 
@@ -34,7 +34,7 @@ import { RouterLink } from '@angular/router';
               <div class="info-icon icon-discord"><i class="fa-brands fa-discord"></i></div>
               <div class="info-text">
                 <span class="label">Discord Community:</span>
-                <span class="value">discord.gg/truyenkomi</span>
+                <span class="value">discord.gg/nekohentai</span>
               </div>
             </div>
 
@@ -42,7 +42,7 @@ import { RouterLink } from '@angular/router';
               <div class="info-icon icon-telegram"><i class="fa-brands fa-telegram"></i></div>
               <div class="info-text">
                 <span class="label">Telegram Admin:</span>
-                <span class="value">&#64;truyenkomi_official</span>
+                <span class="value">&#64;nekohentai_official</span>
               </div>
             </div>
 
@@ -67,7 +67,7 @@ import { RouterLink } from '@angular/router';
           <h3>Gửi Tin Nhắn Phản Hồi</h3>
 
           <div class="alert alert-success" *ngIf="submittedSuccess">
-            <i class="fa-solid fa-circle-check"></i> Cảm ơn bạn! Tin nhắn của bạn đã được gửi thành công. Đội ngũ TruyenKomi sẽ liên hệ lại sớm nhất.
+            <i class="fa-solid fa-circle-check"></i> Cảm ơn bạn! Tin nhắn của bạn đã được gửi thành công. Đội ngũ NekoHentai sẽ liên hệ lại sớm nhất.
           </div>
 
           <form (ngSubmit)="onSubmit()" *ngIf="!submittedSuccess">

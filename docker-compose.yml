@@ -2,13 +2,13 @@ services:
   # 1. Database - PostgreSQL
   postgres:
     image: postgres:16-alpine
-    container_name: truyenkomi-postgres
+    container_name: nekohentai-postgres
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=TruyenKomiDb
+      - POSTGRES_DB=NekoHentaiDb
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=TruyenKomiDbPassword2026!
+      - POSTGRES_PASSWORD=NekoHentaiDbPassword2026!
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -17,7 +17,7 @@ services:
   # 2. Cache - Redis
   redis:
     image: redis:7-alpine
-    container_name: truyenkomi-redis
+    container_name: nekohentai-redis
     ports:
       - "6379:6379"
     restart: always
@@ -27,11 +27,11 @@ services:
   # 3. Search Engine - Meilisearch
   meilisearch:
     image: getmeili/meilisearch:v1.10
-    container_name: truyenkomi-meilisearch
+    container_name: nekohentai-meilisearch
     ports:
       - "7700:7700"
     environment:
-      - MEILI_MASTER_KEY=TruyenKomiMeiliMasterKey2026!
+      - MEILI_MASTER_KEY=NekoHentaiMeiliMasterKey2026!
       - MEILI_ENV=production
       - MEILI_NO_ANALYTICS=true
     restart: always
@@ -43,28 +43,28 @@ services:
     build:
       context: ./backend/MangaFlux.API
       dockerfile: Dockerfile
-    container_name: truyenkomi-api
+    container_name: nekohentai-api
     restart: always
     ports:
       - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - DB_CONNECTION_STRING=Host=postgres;Port=5432;Database=TruyenKomiDb;Username=postgres;Password=TruyenKomiDbPassword2026!;
+      - DB_CONNECTION_STRING=Host=postgres;Port=5432;Database=NekoHentaiDb;Username=postgres;Password=NekoHentaiDbPassword2026!;
       - REDIS_CONNECTION_STRING=redis:6379,abortConnect=false
       - MEILISEARCH_HOST=http://meilisearch:7700
-      - MEILI_MASTER_KEY=TruyenKomiMeiliMasterKey2026!
-      - JWT_SECRET=${JWT_SECRET:-TruyenKomiSecretKeyForJwtTokenGeneration2026SuperSecure!}
-      - JWT_ISSUER=${JWT_ISSUER:-TruyenKomiAPI}
-      - JWT_AUDIENCE=${JWT_AUDIENCE:-TruyenKomiClient}
+      - MEILI_MASTER_KEY=NekoHentaiMeiliMasterKey2026!
+      - JWT_SECRET=${JWT_SECRET:-NekoHentaiSecretKeyForJwtTokenGeneration2026SuperSecure!}
+      - JWT_ISSUER=${JWT_ISSUER:-NekoHentaiAPI}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-NekoHentaiClient}
       - JWT_EXPIRY_DAYS=${JWT_EXPIRY_DAYS:-7}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-510177815251-88f3mqoiatfct4jj0bhnuhmol985ae0s.apps.googleusercontent.com}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-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}
       - R2_ENDPOINT=${R2_ENDPOINT:-storage.googleapis.com}
       - R2_ACCESS_KEY=${R2_ACCESS_KEY:-GOOGQHRXVRS7YCR24JBLB33S}
       - R2_SECRET_KEY=${R2_SECRET_KEY:-3Iamo8whmuUeT2B+CMtRnfW6qdIsmwXVec47tF52}
-      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-truyenkomi}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-nekohentai}
       - R2_SECURE=${R2_SECURE:-true}
-      - R2_CDN_BASE_URL=${R2_CDN_BASE_URL:-https://img.truyenkomi.site}
+      - R2_CDN_BASE_URL=${R2_CDN_BASE_URL:-https://img.nekohentai.lol}
     depends_on:
       - postgres
       - redis
@@ -75,7 +75,7 @@ services:
     build:
       context: ./angular
       dockerfile: Dockerfile
-    container_name: truyenkomi-frontend
+    container_name: nekohentai-frontend
     restart: always
     ports:
       - "4200:80"
@@ -83,7 +83,7 @@ services:
   # 6. Gateway / Reverse Proxy - Nginx
   nginx:
     image: nginx:alpine
-    container_name: truyenkomi-nginx
+    container_name: nekohentai-nginx
     ports:
       - "80:80"
       - "8080:80"

@@ -5,4 +5,4 @@ Disallow: /profile
 Disallow: /settings
 Disallow: /api/
 
-Sitemap: https://truyenkomi.com/sitemap.xml
+Sitemap: https://nekohentai.lol/sitemap.xml

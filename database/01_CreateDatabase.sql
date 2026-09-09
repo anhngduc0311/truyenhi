@@ -1,5 +1,5 @@
 -- ============================================================================
--- TRUYENKOMI DATABASE CREATION SCRIPT (POSTGRESQL)
+-- NEKOHENTAI DATABASE CREATION SCRIPT (POSTGRESQL)
 -- ============================================================================
 
 -- 1. Table: Users

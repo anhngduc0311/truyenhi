@@ -1,9 +1,9 @@
 # 🚀 Hướng Dẫn: Tải Toàn Bộ Truyện MangaDex Lưu Vào Cloud Storage Bucket & Web API Trên Ubuntu
 
-Tài liệu này hướng dẫn chi tiết cách chạy file **`tai_mangadex_ubuntu.sh`** trên máy tính hoặc máy chủ **Ubuntu / Debian** để cào toàn bộ hơn **6.600+ bộ truyện Tiếng Việt** trên MangaDex và lưu tự động vào Cloud Storage Bucket & Web API TruyenKomi:
-👉 **Cloud Storage Bucket**: `truyenkomi` (Google Cloud Storage / R2 S3 API)  
-👉 **CDN Base URL**: `https://img.truyenkomi.site`  
-👉 **Web API**: `https://truyenkomi.com/api`  
+Tài liệu này hướng dẫn chi tiết cách chạy file **`tai_mangadex_ubuntu.sh`** trên máy tính hoặc máy chủ **Ubuntu / Debian** để cào toàn bộ hơn **6.600+ bộ truyện Tiếng Việt** trên MangaDex và lưu tự động vào Cloud Storage Bucket & Web API NekoHentai:
+👉 **Cloud Storage Bucket**: `nekohentai` (Google Cloud Storage / R2 S3 API)  
+👉 **CDN Base URL**: `https://img.nekohentai.lol`  
+👉 **Web API**: `https://nekohentai.lol/api`  
 👉 **Bộ nhớ ảo Swap**: Tự động tạo 4GB / 2GB Swap chống tràn RAM khi chạy đa luồng  
 👉 *(Đã tắt lưu trữ trên Google Drive - Không cần cấu hình Rclone hay OAuth Token nữa)*
 
@@ -12,7 +12,7 @@ Tài liệu này hướng dẫn chi tiết cách chạy file **`tai_mangadex_ubu
 ## ⚙️ Thiết Lập Mặc Định (Khớp 100% Giao Diện Của Bạn)
 
 File script đã được cấu hình mặc định sẵn các tùy chọn xử lý chính xác như sau:
-* ☑️ **Tự động tải lên Cloud Storage Bucket & Đồng bộ Web API**: `BẬT` (Lưu trực tiếp vào bucket `truyenkomi` & đồng bộ website)
+* ☑️ **Tự động tải lên Cloud Storage Bucket & Đồng bộ Web API**: `BẬT` (Lưu trực tiếp vào bucket `nekohentai` & đồng bộ website)
 * ☑️ **Tự động tạo bộ nhớ ảo Swap (4GB/2GB)**: `BẬT` (Ngăn chặn tràn RAM / OOM Killer khi chạy 32 luồng)
 * ☑️ **Bỏ qua chapter đã có trên máy / Cloud (Tránh tải trùng / Resume)**: `BẬT` (Kiểm tra và bỏ qua chapter đã tải)
 * ⬜ **MangaDex Data-Saver (Tải ảnh nén nhẹ tiết kiệm mạng)**: `TẮT` (**Tải ẢNH GỐC** chất lượng cao nhất)
@@ -89,8 +89,8 @@ Lần đầu tiên khởi chạy:
 ```text
 ================================================================
 🚀 MANGADEX TO CLOUD STORAGE & WEB SYNCHRONIZER (UBUNTU)
-   Cloud Bucket: truyenkomi (Google Cloud Storage / R2)
-   Web API:      https://truyenkomi.com/api
+   Cloud Bucket: nekohentai (Google Cloud Storage / R2)
+   Web API:      https://nekohentai.lol/api
    Bộ nhớ ảo:    🟢 4096MB (Đã kích hoạt)
    Google Drive: ĐÃ TẮT (Chỉ lưu Cloud Bucket & Web)
 ================================================================
@@ -129,10 +129,10 @@ Chọn thao tác [0-6]:
 
 ## 📁 Cấu Trúc File Lưu Trữ Trên Cloud Storage Bucket
 
-Trong Cloud Bucket **`truyenkomi`**, dữ liệu ảnh WebP sẽ được lưu theo cấu trúc chuẩn:
+Trong Cloud Bucket **`nekohentai`**, dữ liệu ảnh WebP sẽ được lưu theo cấu trúc chuẩn:
 
 ```text
-truyenkomi (Bucket)/
+nekohentai (Bucket)/
 ├── covers/
 │   ├── komi-san-wa-komyushou-desu.webp
 │   ├── solo-leveling.webp
