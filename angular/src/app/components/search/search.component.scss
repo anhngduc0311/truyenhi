@@ -1,0 +1,93 @@
+/* ============================================================================
+   SEARCH COMPONENT SCSS
+   ============================================================================ */
+
+.search-page {
+  padding: 16px 0 40px;
+
+  .truyengg-search-panel {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 16px 20px;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 20px;
+
+    .search-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+
+      .search-input {
+        flex: 1;
+        font-family: var(--font-family);
+        font-size: 14.5px;
+        padding: 10px 16px;
+        border: 1.5px solid var(--border-subtle);
+        border-radius: 50px;
+        background-color: var(--bg-page);
+        color: var(--text-main);
+        outline: none;
+
+        &:focus {
+          border-color: var(--primary-orange);
+        }
+      }
+
+      .btn-search-action {
+        padding: 10px 24px;
+        background-color: var(--primary-orange);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 14px;
+        border-radius: 50px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background-color 0.2s;
+
+        &:hover {
+          background-color: #d96e12;
+        }
+      }
+    }
+
+    .filter-controls-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+
+      .field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        label {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text-main);
+          display: flex;
+          align-items: center;
+          gap: 5px;
+
+          i {
+            color: var(--primary-orange);
+          }
+        }
+
+        select {
+          font-family: var(--font-family);
+          font-size: 13px;
+          padding: 6px 12px;
+          border: 1px solid var(--border-subtle);
+          border-radius: 6px;
+          background-color: var(--bg-page);
+          color: var(--text-main);
+          outline: none;
+          cursor: pointer;
+          min-width: 140px;
+        }
+      }
+    }
+  }
+}

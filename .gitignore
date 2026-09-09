@@ -1,0 +1,197 @@
+# ==========================================
+# Node / Angular / Frontend
+# ==========================================
+node_modules/
+.angular/
+dist/
+tmp/
+out-tsc/
+bazel-out/
+.cache/
+.parcel-cache/
+.npm/
+.turbo/
+
+# Logs & Debugging
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# ==========================================
+# Python (Crawlers, GUI & Automation)
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.pytest_cache/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ==========================================
+# Comic Downloader Outputs & Media Dumps
+# ==========================================
+downloads/
+temp_downloads/
+stitched_output/
+uploads/
+output/
+*.pdf
+
+# ==========================================
+# .NET / C# (Backend)
+# ==========================================
+**/bin/
+**/obj/
+[Bb]in/
+[Oo]bj/
+**/publish/
+publish/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+*.pidb
+*.booproj
+.vs/
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]ld/
+[Ll]og/
+[Ll]ogs/
+GeneratedFiles/
+
+# Test Results & Code Coverage
+TestResults/
+[Tt]est[Rr]esult*/
+coverage/
+*.coverage
+*.coveragexml
+*.lcov
+*.opencover.xml
+
+# .NET Core appsettings secrets / local overrides
+appsettings.Local.json
+appsettings.*.Local.json
+appsettings.secrets.json
+secrets.json
+
+# ==========================================
+# Binaries & Installers
+# ==========================================
+*.exe
+*.msi
+*.dll
+*.com
+*.dmg
+*.iso
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+.env
+.env.local
+.env.*.local
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+
+# ==========================================
+# Docker / Containers / Databases Local Data
+# ==========================================
+docker-compose.override.yml
+dump.rdb
+mssql_data/
+redis_data/
+minio_data/
+data/
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.mdf
+*.ldf
+*.ndf
+*.bak
+
+# ==========================================
+# IDEs & Editors
+# ==========================================
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains (Rider, WebStorm, IntelliJ, PyCharm)
+.idea/
+*.iml
+*.sln.iml
+.fleet/
+
+# Sublime / Vim / General Editors
+*.swp
+*~
+*.sublime-workspace
+*.sublime-project
+
+# ==========================================
+# Operating System Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Thumbs.db:encryptable
+desktop.ini
+
+# ==========================================
+# Temp Files & Test Reports
+# ==========================================
+*.tmp
+*.temp
+test-results/
+playwright-report/
+cypress/videos/
+cypress/screenshots/
+
+# ==========================================
+# Rclone & Cloud Credentials
+# ==========================================
+rclone.exe
+rclone.conf
+rclone_token.txt
+*.token
+

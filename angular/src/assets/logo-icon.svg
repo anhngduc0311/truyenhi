@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="iconFoxFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff8533" />
+      <stop offset="60%" stop-color="#fd5400" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+
+    <linearGradient id="iconCyanGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="60%" stop-color="#0ea5e9" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+
+    <linearGradient id="iconCreamFur" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#ffedd5" />
+    </linearGradient>
+
+    <filter id="iconNeonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Outer Container -->
+  <rect x="4" y="4" width="92" height="92" rx="24" fill="#18181b" />
+  <rect x="4" y="4" width="92" height="92" rx="24" fill="none" stroke="url(#iconFoxFur)" stroke-width="2.5" stroke-opacity="0.85" />
+
+  <g transform="translate(6, 6)">
+    <!-- Fluffy Tail with Cyan Tip -->
+    <path d="M 62 60 C 76 54 82 40 76 28 C 70 32 68 42 60 48 Z" fill="url(#iconFoxFur)" />
+    <path d="M 76 28 C 78 33 75 38 72 40 C 71 35 73 31 76 28 Z" fill="url(#iconCyanGlow)" />
+
+    <!-- Left Ear -->
+    <path d="M 22 36 L 16 12 C 22 14 30 20 34 28 Z" fill="url(#iconFoxFur)" stroke="#18181b" stroke-width="1.5" stroke-linejoin="round" />
+    <path d="M 22 32 L 18 16 C 22 18 27 22 30 27 Z" fill="url(#iconCreamFur)" />
+
+    <!-- Right Ear -->
+    <path d="M 66 36 L 72 12 C 66 14 58 20 54 28 Z" fill="url(#iconFoxFur)" stroke="#18181b" stroke-width="1.5" stroke-linejoin="round" />
+    <path d="M 66 32 L 70 16 C 66 18 61 22 58 27 Z" fill="url(#iconCreamFur)" />
+
+    <!-- Fox Head Base -->
+    <ellipse cx="44" cy="40" rx="24" ry="20" fill="url(#iconFoxFur)" />
+
+    <!-- Cheeks Fluff (White/Cream) -->
+    <path d="M 20 42 C 20 50 30 56 44 56 C 58 56 68 50 68 42 C 66 45 60 46 56 42 C 50 48 38 48 32 42 C 28 46 22 45 20 42 Z" fill="url(#iconCreamFur)" />
+
+    <!-- Forehead Hair Tuft -->
+    <path d="M 44 22 C 42 26 44 29 44 31 C 45 29 47 26 46 22 Z" fill="#ffedd5" />
+
+    <!-- Expressive Anime Eyes (Cyan Sparkling) -->
+    <!-- Left Eye -->
+    <ellipse cx="32" cy="38" rx="4.5" ry="6" fill="#0f172a" />
+    <ellipse cx="32" cy="39" rx="3.5" ry="5" fill="url(#iconCyanGlow)" />
+    <circle cx="33.5" cy="36" r="1.8" fill="#ffffff" />
+    <circle cx="31" cy="41" r="0.9" fill="#ffffff" />
+
+    <!-- Right Eye -->
+    <ellipse cx="56" cy="38" rx="4.5" ry="6" fill="#0f172a" />
+    <ellipse cx="56" cy="39" rx="3.5" ry="5" fill="url(#iconCyanGlow)" />
+    <circle cx="57.5" cy="36" r="1.8" fill="#ffffff" />
+    <circle cx="55" cy="41" r="0.9" fill="#ffffff" />
+
+    <!-- Nose & Happy Mouth -->
+    <ellipse cx="44" cy="44" rx="2" ry="1.4" fill="#0f172a" />
+    <path d="M 41 46.5 Q 44 49 47 46.5" stroke="#0f172a" stroke-width="1.4" stroke-linecap="round" fill="none" />
+    <!-- Blush Cheeks -->
+    <ellipse cx="24" cy="42" rx="3" ry="1.5" fill="#f43f5e" fill-opacity="0.5" />
+    <ellipse cx="64" cy="42" rx="3" ry="1.5" fill="#f43f5e" fill-opacity="0.5" />
+
+    <!-- Glowing Manga Book -->
+    <g transform="translate(14, 48)" filter="url(#iconNeonGlow)">
+      <path d="M 30 28 Q 15 32 2 28 L 4 10 Q 15 14 30 11 Q 45 14 56 10 L 58 28 Q 45 32 30 28 Z" 
+            fill="#090d16" stroke="url(#iconCyanGlow)" stroke-width="2" stroke-linejoin="round" />
+      <rect x="7" y="14" width="9" height="10" rx="1.5" fill="#38bdf8" fill-opacity="0.35" stroke="#38bdf8" stroke-width="0.8" />
+      <rect x="18" y="14" width="8" height="10" rx="1.5" fill="#fd5400" fill-opacity="0.35" stroke="#fd5400" stroke-width="0.8" />
+      <rect x="34" y="14" width="19" height="10" rx="1.5" fill="#38bdf8" fill-opacity="0.2" stroke="#38bdf8" stroke-width="0.8" />
+      <path d="M 40 16 L 40 22 M 46 16 L 40 19 L 46 22" stroke="url(#iconCyanGlow)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    </g>
+
+    <!-- Little Paws Gripping Book -->
+    <ellipse cx="26" cy="59" rx="3.5" ry="2.5" fill="url(#iconCreamFur)" stroke="#ea580c" stroke-width="1" />
+    <ellipse cx="62" cy="59" rx="3.5" ry="2.5" fill="url(#iconCreamFur)" stroke="#ea580c" stroke-width="1" />
+
+    <!-- Sparkles -->
+    <path d="M 12 28 L 13 30.5 L 15.5 31.5 L 13 32.5 L 12 35 L 11 32.5 L 8.5 31.5 L 11 30.5 Z" fill="#38bdf8" />
+    <path d="M 74 24 L 75 26 L 77 27 L 75 28 L 74 30 L 73 28 L 71 27 L 73 26 Z" fill="#fd5400" />
+  </g>
+</svg>

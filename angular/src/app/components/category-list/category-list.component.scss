@@ -1,0 +1,100 @@
+/* ============================================================================
+   CATEGORY LIST SCSS
+   ============================================================================ */
+
+.category-page {
+  padding: 16px 0 40px;
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 10px;
+
+    @media (max-width: 992px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
+
+    .truyengg-category-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+        border-color: var(--primary-blue);
+
+        .cat-header h3 {
+          color: var(--primary-blue);
+        }
+
+        .cat-footer span {
+          color: var(--primary-orange);
+        }
+      }
+
+      .cat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+
+        h3 {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--text-main);
+          margin: 0;
+          transition: color 0.2s;
+        }
+
+        .count {
+          font-size: 11px;
+          font-weight: 700;
+          background-color: rgba(79, 107, 249, 0.12);
+          color: var(--primary-blue);
+          padding: 2px 8px;
+          border-radius: 50px;
+        }
+      }
+
+      .desc {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        line-height: 1.5;
+        margin: 0 0 12px;
+        flex: 1;
+      }
+
+      .cat-footer {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--primary-blue);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        span {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          transition: color 0.2s;
+        }
+      }
+    }
+  }
+}

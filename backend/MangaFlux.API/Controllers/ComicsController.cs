@@ -1,0 +1,287 @@
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using TruyenKomi.API.DTOs;
+using TruyenKomi.API.Services;
+
+namespace TruyenKomi.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class ComicsController : ControllerBase
+    {
+        private readonly IComicService _comicService;
+        private readonly ISearchEngineService _searchEngineService;
+
+        public ComicsController(IComicService comicService, ISearchEngineService searchEngineService)
+        {
+            _comicService = comicService;
+            _searchEngineService = searchEngineService;
+        }
+
+        [HttpGet("featured")]
+        public async Task<IActionResult> GetFeatured([FromQuery] string? criteria = null, [FromQuery] int count = 10)
+        {
+            var comics = await _comicService.GetFeaturedComicsAsync(criteria, count);
+            return Ok(comics);
+        }
+
+        [HttpGet("latest")]
+        public async Task<IActionResult> GetLatest([FromQuery] int count = 12)
+        {
+            var comics = await _comicService.GetLatestComicsAsync(count);
+            return Ok(comics);
+        }
+
+        [HttpGet("autocomplete")]
+        public async Task<IActionResult> Autocomplete([FromQuery] string? q, [FromQuery] int limit = 6)
+        {
+            if (string.IsNullOrWhiteSpace(q)) return Ok(new List<SearchAutocompleteDto>());
+            var results = await _searchEngineService.QuickSearchAsync(q, limit);
+            return Ok(results);
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search(
+            [FromQuery] string? q, 
+            [FromQuery] string? category, 
+            [FromQuery] string? status, 
+            [FromQuery] string? sortBy, 
+            [FromQuery] string? country,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 24)
+        {
+            var comics = await _comicService.SearchComicsAsync(q, category, status, sortBy, country, page, pageSize);
+            return Ok(comics);
+        }
+
+        [HttpPost("advanced-search")]
+        public async Task<IActionResult> AdvancedSearch([FromBody] SearchFilterDto filter)
+        {
+            var results = await _searchEngineService.AdvancedSearchAsync(filter);
+            return Ok(results);
+        }
+
+        [HttpGet("advanced-search")]
+        public async Task<IActionResult> AdvancedSearchGet(
+            [FromQuery] string? q,
+            [FromQuery] string? includeCategories,
+            [FromQuery] string? excludeCategories,
+            [FromQuery] string? status,
+            [FromQuery] string? country,
+            [FromQuery] int? minChapters,
+            [FromQuery] string? sortBy,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 24)
+        {
+            var filter = new SearchFilterDto
+            {
+                Query = q,
+                IncludeCategories = string.IsNullOrWhiteSpace(includeCategories) 
+                    ? null 
+                    : includeCategories.Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries).ToList(),
+                ExcludeCategories = string.IsNullOrWhiteSpace(excludeCategories) 
+                    ? null 
+                    : excludeCategories.Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries).ToList(),
+                Status = status,
+                Country = country,
+                MinChapters = minChapters,
+                SortBy = sortBy ?? "latest",
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var results = await _searchEngineService.AdvancedSearchAsync(filter);
+            return Ok(results);
+        }
+
+        [HttpGet("{slug}")]
+        public async Task<IActionResult> GetBySlug(string slug)
+        {
+            var comic = await _comicService.GetComicBySlugAsync(slug);
+            if (comic == null) return NotFound(new { message = "Không tìm thấy truyện." });
+            return Ok(comic);
+        }
+
+        [HttpPost("import-scraped")]
+        public async Task<IActionResult> ImportScraped(
+            [FromBody] ChapterCreateDto dto, 
+            [FromQuery] string comicTitle, 
+            [FromQuery] string comicSlug, 
+            [FromQuery] string coverImage,
+            [FromQuery] string? author = null,
+            [FromQuery] string? translatorGroup = null,
+            [FromQuery] string? otherNames = null,
+            [FromQuery] string? ageLimit = "13+",
+            [FromQuery] int? comicViews = null,
+            [FromQuery] DateTime? comicCreatedAt = null,
+            [FromQuery] DateTime? comicUpdatedAt = null,
+            [FromQuery] string? categories = null)
+        {
+            if (!string.IsNullOrWhiteSpace(author) && (author.Trim().Equals("ZETTRUYEN", StringComparison.OrdinalIgnoreCase) || author.Trim().Equals("ZET TRUYEN", StringComparison.OrdinalIgnoreCase)))
+            {
+                author = "TRUYENKOMI";
+            }
+
+            var existingComic = await _comicService.GetComicBySlugAsync(comicSlug);
+            int comicId;
+            if (existingComic == null)
+            {
+                DateTime initCreatedAt = comicCreatedAt.HasValue
+                    ? DateTime.SpecifyKind(comicCreatedAt.Value, DateTimeKind.Utc)
+                    : (dto.CreatedAt.HasValue ? DateTime.SpecifyKind(dto.CreatedAt.Value, DateTimeKind.Utc) : (dto.PublishedAt.HasValue ? DateTime.SpecifyKind(dto.PublishedAt.Value, DateTimeKind.Utc) : DateTime.UtcNow));
+
+                DateTime initUpdatedAt = comicUpdatedAt.HasValue
+                    ? DateTime.SpecifyKind(comicUpdatedAt.Value, DateTimeKind.Utc)
+                    : (dto.PublishedAt.HasValue ? DateTime.SpecifyKind(dto.PublishedAt.Value, DateTimeKind.Utc) : (dto.CreatedAt.HasValue ? DateTime.SpecifyKind(dto.CreatedAt.Value, DateTimeKind.Utc) : initCreatedAt));
+
+                var created = await _comicService.CreateComicAsync(new ComicCreateUpdateDto
+                {
+                    Title = comicTitle,
+                    Slug = comicSlug,
+                    Description = $"Truyện {comicTitle} Tiếng Việt bản dịch Full mới nhất.",
+                    CoverImage = coverImage,
+                    BannerImage = coverImage,
+                    Author = string.IsNullOrWhiteSpace(author) ? "Đang cập nhật" : author,
+                    TranslatorGroup = string.IsNullOrWhiteSpace(translatorGroup) ? "Đang cập nhật" : translatorGroup,
+                    OtherNames = otherNames,
+                    AgeLimit = string.IsNullOrWhiteSpace(ageLimit) ? "13+" : ageLimit,
+                    Status = "Ongoing",
+                    IsFeatured = true,
+                    IsPublic = true,
+                    CreatedAt = initCreatedAt,
+                    UpdatedAt = initUpdatedAt
+                });
+                comicId = created.Id;
+                if ((comicViews.HasValue && comicViews.Value > 0) || comicCreatedAt.HasValue || comicUpdatedAt.HasValue)
+                {
+                    await _comicService.UpdateComicMetadataAsync(comicId, author, translatorGroup, otherNames, ageLimit, coverImage, comicViews, comicCreatedAt, comicUpdatedAt);
+                }
+            }
+            else
+            {
+                comicId = existingComic.Id;
+                await _comicService.UpdateComicMetadataAsync(comicId, author, translatorGroup, otherNames, ageLimit, coverImage, comicViews, comicCreatedAt, comicUpdatedAt);
+            }
+
+            if (!string.IsNullOrWhiteSpace(categories))
+            {
+                var catList = categories.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                if (catList.Any())
+                {
+                    await _comicService.SyncComicCategoriesAsync(comicId, catList);
+                }
+            }
+
+            dto.ComicId = comicId;
+            var chapter = await _comicService.AddChapterAsync(dto);
+            return Ok(new { comicId, comicSlug, chapterId = chapter.Id });
+        }
+
+        [HttpPost("{slug}/sync-metadata")]
+        public async Task<IActionResult> SyncMetadata(
+            string slug,
+            [FromQuery] string? author = null,
+            [FromQuery] string? translatorGroup = null,
+            [FromQuery] string? otherNames = null,
+            [FromQuery] string? ageLimit = null,
+            [FromQuery] string? coverImage = null,
+            [FromQuery] int? comicViews = null,
+            [FromQuery] DateTime? comicCreatedAt = null,
+            [FromQuery] DateTime? comicUpdatedAt = null,
+            [FromQuery] string? categories = null)
+        {
+            var comic = await _comicService.GetComicBySlugAsync(slug);
+            if (comic == null) return NotFound();
+
+            await _comicService.UpdateComicMetadataAsync(comic.Id, author, translatorGroup, otherNames, ageLimit, coverImage, comicViews, comicCreatedAt, comicUpdatedAt);
+
+            if (!string.IsNullOrWhiteSpace(categories))
+            {
+                var catList = categories.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                if (catList.Any())
+                {
+                    await _comicService.SyncComicCategoriesAsync(comic.Id, catList);
+                }
+            }
+
+            var updated = await _comicService.GetComicBySlugAsync(slug);
+            return Ok(updated);
+        }
+
+        [HttpPost("fix-dates")]
+        public async Task<IActionResult> FixComicDates()
+        {
+            var count = await _comicService.FixAllComicDatesAsync();
+            return Ok(new { success = true, updatedComics = count });
+        }
+
+        [HttpGet("{id:int}/comments")]
+        public async Task<IActionResult> GetComicComments(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            int? currentUserId = null;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim != null && int.TryParse(userIdClaim, out int uid))
+            {
+                currentUserId = uid;
+            }
+
+            var result = await _comicService.GetComicCommentsAsync(id, page, pageSize, currentUserId);
+            return Ok(result);
+        }
+
+        [HttpGet("{slug}/comments")]
+        public async Task<IActionResult> GetComicCommentsBySlug(string slug, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            int? currentUserId = null;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim != null && int.TryParse(userIdClaim, out int uid))
+            {
+                currentUserId = uid;
+            }
+
+            var result = await _comicService.GetComicCommentsBySlugAsync(slug, page, pageSize, currentUserId);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [EnableRateLimiting("comment-limiter")]
+        [HttpPost("comments")]
+        public async Task<IActionResult> AddComment([FromBody] CreateCommentDto dto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var comment = await _comicService.AddCommentAsync(userId, dto);
+            return Ok(comment);
+        }
+
+        [Authorize]
+        [EnableRateLimiting("comment-limiter")]
+        [HttpPost("comments/{id}/like")]
+        public async Task<IActionResult> LikeComment(int id)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            var result = await _comicService.LikeCommentAsync(userId, id);
+            return Ok(new { success = result });
+        }
+
+        [EnableRateLimiting("report-limiter")]
+        [HttpPost("comments/{id}/report")]
+        public async Task<IActionResult> ReportComment(int id, [FromBody] ReportCommentDto dto)
+        {
+            var result = await _comicService.ReportCommentAsync(id, InputSanitizer.SanitizePlainText(dto.Reason));
+            return Ok(new { success = result });
+        }
+    }
+}

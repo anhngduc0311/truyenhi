@@ -1,0 +1,304 @@
+<div class="comic-detail-page" *ngIf="comic && !isLoading; else detailSkeleton">
+  <!-- ==================== 1. CINEMATIC HERO BACKDROP ==================== -->
+  <section class="detail-hero-section">
+    <div class="hero-backdrop" [style.background-image]="'url(' + (comic.bannerImage || comic.coverImage) + ')'"></div>
+    <div class="hero-gradient-overlay"></div>
+
+    <div class="div_middle hero-inner-container">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb-modern">
+        <a routerLink="/"><i class="fa fa-home"></i> Trang Chủ</a>
+        <i class="fa fa-angle-right sep"></i>
+        <a routerLink="/comics">Truyện Tranh</a>
+        <i class="fa fa-angle-right sep"></i>
+        <span class="current" [title]="comic.title">{{ comic.title }}</span>
+      </nav>
+
+      <!-- Main Comic Info Card (Glassmorphism) -->
+      <div class="comic-main-card glass-panel">
+        <!-- Cover Column -->
+        <div class="comic-cover-box">
+          <div class="cover-card-3d">
+            <img [src]="comic.coverImage" [alt]="comic.title" (error)="onImgError($event)" class="cover-img" />
+          </div>
+
+          <div class="cover-quick-stats desktop-only">
+            <div class="stat-pill"><i class="fa fa-star text-amber"></i> {{ comic.rating || '5.0' }} / 5</div>
+            <div class="stat-pill"><i class="fa fa-eye"></i> {{ formatViews(comic.views) }}</div>
+          </div>
+        </div>
+
+        <!-- Details Info Column -->
+        <div class="comic-details-info">
+          <!-- Header Meta Block (Badges, Title, Quick Meta) -->
+          <div class="comic-header-meta">
+            <div class="badge-row">
+              <span class="status-badge" [ngClass]="comic.status === 'Completed' ? 'status-completed' : 'status-ongoing'">
+                <span class="pulse-dot"></span>
+                {{ comic.status === 'Completed' ? 'Đã Hoàn Thành' : 'Đang Tiến Hành' }}
+              </span>
+              <span class="country-badge" *ngIf="comic.country">{{ comic.country }}</span>
+            </div>
+
+            <h1 class="comic-title">{{ comic.title }}</h1>
+
+            <div class="comic-mobile-quick-meta">
+              <span class="meta-item author-item" *ngIf="comic.author">
+                <i class="fa fa-pencil"></i> {{ comic.author }}
+              </span>
+              <span class="meta-item stat-item">
+                <i class="fa fa-star text-amber"></i> {{ comic.rating || '5.0' }}
+              </span>
+              <span class="meta-item stat-item">
+                <i class="fa fa-eye"></i> {{ formatViews(comic.views) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- CTA Actions Row (All 4 buttons unified) -->
+          <div class="cta-actions-row">
+            <a 
+              *ngIf="firstChapterNumber !== null" 
+              [routerLink]="['/read', comic.slug, 'chuong-' + firstChapterNumber]" 
+              (mouseenter)="prefetchFirstChapter()"
+              class="btn-cta btn-read-first"
+              title="Đọc từ Chapter {{ firstChapterNumber }}"
+            >
+              <i class="fa fa-book-open"></i>
+              <span>Đọc Từ Đầu</span>
+            </a>
+
+            <a 
+              *ngIf="latestChapterNumber !== null" 
+              [routerLink]="['/read', comic.slug, 'chuong-' + latestChapterNumber]" 
+              (mouseenter)="prefetchChapter(latestChapterNumber)"
+              class="btn-cta btn-read-latest"
+              title="Đọc Chapter {{ latestChapterNumber }} mới nhất"
+            >
+              <i class="fa fa-bolt"></i>
+              <span>Đọc Mới Nhất</span>
+            </a>
+
+            <button 
+              class="btn-cta btn-bookmark" 
+              [class.bookmarked]="isBookmarked"
+              (click)="toggleBookmark()"
+            >
+              <i class="fa" [ngClass]="isBookmarked ? 'fa-heart text-danger' : 'fa-heart-o'"></i>
+              <span>{{ isBookmarked ? 'Đã Theo Dõi' : 'Theo Dõi' }}</span>
+            </button>
+
+            <button class="btn-cta btn-like" [class.liked]="isLiked" (click)="toggleLike()">
+              <i class="fa" [ngClass]="isLiked ? 'fa-thumbs-up' : 'fa-thumbs-o-up'"></i>
+              <span>{{ likesCount }} Thích</span>
+            </button>
+          </div>
+
+          <!-- Genres Block -->
+          <div class="spec-genres-block" *ngIf="comic.categories && comic.categories.length > 0">
+            <span class="spec-label">Thể loại</span>
+            <div class="genres-row">
+              <a 
+                *ngFor="let cat of comic.categories" 
+                [routerLink]="['/comics']" 
+                [queryParams]="{ category: cat.slug }" 
+                class="genre-tag"
+              >
+                {{ cat.name }}
+              </a>
+            </div>
+          </div>
+
+          <!-- Meta Grid (2 Columns Layout) -->
+          <div class="comic-specs-grid">
+            <!-- Row 1 -->
+            <div class="spec-cell">
+              <span class="spec-label">Tác giả</span>
+              <span class="spec-value">{{ comic.author || 'Đang cập nhật' }}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">Lượt xem</span>
+              <span class="spec-value">{{ formatViews(comic.views) }} lượt xem</span>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="spec-cell">
+              <span class="spec-label">Nhóm dịch</span>
+              <span class="spec-value text-translator">{{ comic.translatorGroup || 'Đang cập nhật' }}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">Cập nhật</span>
+              <span class="spec-value">{{ comic.updatedAt | date:'dd/MM/yyyy' }}</span>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="spec-cell">
+              <span class="spec-label">Tổng số chap</span>
+              <span class="spec-value">{{ comic.chapters ? comic.chapters.length : (comic.totalChapters || 0) }}</span>
+            </div>
+            <div class="spec-cell">
+              <span class="spec-label">Độ tuổi</span>
+              <span class="spec-value">{{ comic.ageLimit || '13+' }}</span>
+            </div>
+
+            <!-- Row 4 -->
+            <div class="spec-cell">
+              <span class="spec-label">Ngày tạo</span>
+              <span class="spec-value">{{ (comic.createdAt || comic.updatedAt) | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="spec-cell" *ngIf="comic.country">
+              <span class="spec-label">Quốc gia</span>
+              <span class="spec-value">{{ comic.country }}</span>
+            </div>
+
+            <!-- Full Width: Tên khác -->
+            <div class="spec-cell cell-full-width" *ngIf="comic.otherNames">
+              <span class="spec-label">Tên khác</span>
+              <span class="spec-value">{{ comic.otherNames }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 2. MAIN BODY (SYNOPSIS, CHAPTERS, COMMENTS) ==================== -->
+  <div class="div_middle detail-body-layout">
+    <!-- LEFT COLUMN (70%): SYNOPSIS & CHAPTER LIST -->
+    <div class="body-left">
+      <!-- Synopsis Block -->
+      <section class="section-block glass-card">
+        <div class="block-header">
+          <i class="fa fa-info-circle icon-orange"></i>
+          <h3>Nội Dung Tóm Tắt</h3>
+        </div>
+        <div class="synopsis-content">
+          <p>{{ comic.description || 'Nội dung truyện đang được cập nhật...' }}</p>
+        </div>
+      </section>
+
+      <!-- Chapters List Block -->
+      <section class="section-block glass-card chapters-section">
+        <div class="block-header chapters-header">
+          <div class="header-title">
+            <i class="fa fa-list-ol icon-cyan"></i>
+            <h3>Danh Sách Chương ({{ comic.chapters ? comic.chapters.length : 0 }})</h3>
+          </div>
+
+          <div class="chapter-controls">
+            <!-- Chapter Search Input -->
+            <div class="chapter-search-box">
+              <i class="fa fa-search"></i>
+              <input type="text" [(ngModel)]="chapterSearchQuery" placeholder="Nhập số chap..." />
+            </div>
+
+            <!-- Sort Toggle Button -->
+            <button class="btn-sort" (click)="toggleSort()" [title]="sortOrder === 'desc' ? 'Mới nhất trước' : 'Cũ nhất trước'">
+              <i class="fa" [ngClass]="sortOrder === 'desc' ? 'fa-sort-numeric-desc' : 'fa-sort-numeric-asc'"></i>
+              <span>{{ sortOrder === 'desc' ? 'Mới Nhất' : 'Cũ Nhất' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Chapter Viewport -->
+        <div class="chapters-list-viewport" *ngIf="filteredChapters.length > 0; else noChapters">
+          <div class="chapters-grid">
+            <a 
+              *ngFor="let chap of filteredChapters" 
+              [routerLink]="['/read', comic.slug, 'chuong-' + chap.chapterNumber]" 
+              (mouseenter)="prefetchChapter(chap.chapterNumber)"
+              class="chapter-row"
+            >
+              <span class="chap-name">Chapter {{ chap.chapterNumber }} <span class="chap-title" *ngIf="chap.title && chap.title !== 'Chapter ' + chap.chapterNumber && chap.title !== 'Chương ' + chap.chapterNumber">- {{ chap.title }}</span></span>
+              <div class="chap-meta">
+                <span class="chap-date"><i class="fa fa-clock-o"></i> {{ (chap.publishedAt || chap.createdAt) | date:'dd/MM/yyyy' }}</span>
+                <span class="chap-views" *ngIf="chap.views !== undefined && chap.views > 0"><i class="fa fa-eye"></i> {{ chap.views | number }}</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <ng-template #noChapters>
+          <div class="no-chapters-box">
+            <i class="fa fa-book text-muted"></i>
+            <p>Không tìm thấy chương nào phù hợp.</p>
+          </div>
+        </ng-template>
+      </section>
+
+      <!-- Comments Block -->
+      <section class="section-block glass-card comments-section">
+        <div class="block-header">
+          <i class="fa fa-comments icon-orange"></i>
+          <h3>Bình Luận ({{ totalComments }})</h3>
+        </div>
+
+        <!-- Add Comment Input Box -->
+        <div class="comment-input-area">
+          <textarea 
+            [(ngModel)]="commentContent" 
+            placeholder="Chia sẻ cảm nghĩ của bạn về bộ truyện này..." 
+            rows="3"
+          ></textarea>
+          <div class="comment-submit-row">
+            <button (click)="submitComment()" class="btn-send-comment">
+              <i class="fa fa-paper-plane"></i> Gửi Bình Luận
+            </button>
+          </div>
+        </div>
+
+        <!-- Comments List -->
+        <div class="comments-list" *ngIf="comments && comments.length > 0">
+          <div class="comment-card" *ngFor="let cm of comments">
+            <div class="avatar-frame-container comment-avatar-frame" [ngClass]="cm.userAvatarFrame || 'avatar-frame-default'">
+              <img [src]="cm.userAvatar || 'assets/default-avatar.svg'" (error)="onAvatarError($event)" alt="Avatar" class="user-avatar" />
+            </div>
+            <div class="comment-body">
+              <div class="comment-user-row">
+                <div class="comment-user-meta">
+                  <span class="user-name">{{ cm.username }}</span>
+                  <span *ngIf="cm.userRealm" class="realm-badge" [ngClass]="cm.userRealm.frameClass.replace('avatar-frame-', 'realm-')">
+                    {{ cm.userRealm.title }}
+                  </span>
+                </div>
+                <span class="comment-time"><i class="fa fa-clock-o"></i> {{ cm.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="comment-text">{{ cm.content }}</p>
+            </div>
+          </div>
+
+          <div class="load-more-comments" *ngIf="hasMoreComments">
+            <button (click)="loadMoreComments()" class="btn-load-more" [disabled]="isLoadingComments">
+              <span *ngIf="!isLoadingComments">Xem Thêm Bình Luận</span>
+              <span *ngIf="isLoadingComments"><i class="fa fa-spinner fa-spin"></i> Đang tải...</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="no-comments-box" *ngIf="comments.length === 0 && !isLoadingComments">
+          <p class="text-muted text-center" style="padding: 1.5rem 0;">Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ cảm nghĩ!</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT COLUMN (30%): SIDEBAR RECOMMENDATIONS -->
+    <div class="body-right">
+      <div class="sidebar-sticky-widget glass-card">
+        <div class="widget-header">
+          <i class="fa fa-fire text-orange"></i>
+          <h4>Gợi Ý Cho Bạn</h4>
+        </div>
+        <p class="sidebar-note">Đọc thêm những bộ truyện cùng thể loại cực hấp dẫn tại TruyenKomi.</p>
+        <a [routerLink]="['/comics']" class="btn-browse-all">Khám Phá Toàn Bộ <i class="fa fa-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SKELETON LOADING TEMPLATE -->
+<ng-template #detailSkeleton>
+  <div class="div_middle" style="padding-top: 40px;">
+    <div class="skeleton" style="height: 380px; border-radius: 20px; margin-bottom: 24px;"></div>
+    <div class="skeleton" style="height: 200px; border-radius: 20px;"></div>
+  </div>
+</ng-template>

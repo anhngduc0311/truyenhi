@@ -1,0 +1,790 @@
+.admin-page {
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 1.2rem;
+  }
+
+  .header-content {
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-main);
+
+      @media (max-width: 768px) { font-size: 1.45rem; }
+
+      i {
+        font-size: 1.7rem;
+      }
+    }
+
+    p {
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      font-size: 0.95rem;
+      @media (max-width: 768px) { font-size: 0.85rem; }
+    }
+  }
+
+  .btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.1rem;
+    font-weight: 700;
+    border-radius: var(--radius-pill);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    transition: var(--transition);
+
+    &:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--primary-orange);
+      color: var(--primary-orange);
+      box-shadow: var(--shadow-orange-glow);
+    }
+  }
+}
+
+.tab-content {
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+/* ==========================================================================
+   DASHBOARD TAB STYLES
+   ========================================================================== */
+
+.dashboard-tab {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  border-radius: var(--radius-md);
+  gap: 1rem;
+  color: var(--text-muted);
+
+  i {
+    font-size: 2.5rem;
+    color: var(--primary-orange);
+  }
+}
+
+/* 1. STATS GRID (4 METRIC CARDS) */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 576px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+.stat-card {
+  padding: 1.4rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  background: var(--glass-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+    gap: 0.8rem;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.85rem;
+    gap: 0.6rem;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+  }
+
+  .card-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+
+    @media (max-width: 576px) {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      font-size: 1.2rem;
+    }
+  }
+
+  .card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+    flex: 1;
+
+    .card-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      @media (max-width: 576px) {
+        font-size: 0.72rem;
+        letter-spacing: 0;
+      }
+    }
+
+    .card-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.1;
+
+      @media (max-width: 576px) {
+        font-size: 1.35rem;
+      }
+    }
+
+    .card-subtext {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      @media (max-width: 576px) {
+        font-size: 0.68rem;
+      }
+    }
+  }
+
+  /* Card Colors & Glows */
+  &.card-cyan {
+    .card-icon {
+      background: var(--primary-cyan-light);
+      color: var(--primary-cyan);
+    }
+    &:hover {
+      box-shadow: var(--shadow-cyan-glow);
+      border-color: var(--primary-cyan);
+    }
+  }
+
+  &.card-purple {
+    .card-icon {
+      background: rgba(168, 85, 247, 0.15);
+      color: #a855f7;
+    }
+    &:hover {
+      box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
+      border-color: #a855f7;
+    }
+  }
+
+  &.card-green {
+    .card-icon {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+    &:hover {
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+      border-color: #10b981;
+    }
+  }
+
+  &.card-orange {
+    .card-icon {
+      background: var(--primary-orange-light);
+      color: var(--primary-orange);
+    }
+    &:hover {
+      box-shadow: var(--shadow-orange-glow);
+      border-color: var(--primary-orange);
+    }
+  }
+}
+
+/* 2. READING VIEWS CHART SECTION */
+.chart-section {
+  padding: 1.6rem;
+  border-radius: var(--radius-md);
+  background: var(--glass-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+
+    .title-wrap {
+      h3 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+
+        i {
+          color: var(--primary-orange);
+        }
+      }
+
+      .chart-subtitle {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 0.2rem;
+        display: block;
+      }
+    }
+
+    .chart-badge-info {
+      .peak-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.85rem;
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        color: #f59e0b;
+        border-radius: var(--radius-pill);
+        font-size: 0.82rem;
+        font-weight: 600;
+
+        i {
+          color: #f59e0b;
+        }
+
+        strong {
+          color: var(--text-main);
+        }
+      }
+    }
+  }
+
+  .chart-body {
+    position: relative;
+    width: 100%;
+    margin-bottom: 1.2rem;
+  }
+
+  .svg-chart-container {
+    position: relative;
+    width: 100%;
+    height: 180px;
+
+    .svg-chart {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .chart-bars-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      padding: 0 10px;
+
+      .bar-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        justify-content: flex-end;
+        flex: 1;
+        max-width: 45px;
+
+        .bar-fill-wrap {
+          width: 16px;
+          height: 130px;
+          display: flex;
+          align-items: flex-end;
+          position: relative;
+          cursor: pointer;
+
+          &:hover {
+            .bar-fill {
+              background: linear-gradient(180deg, #ff7a1a 0%, #fd5400 100%);
+              box-shadow: 0 0 12px rgba(253, 84, 0, 0.6);
+            }
+            .bar-tooltip {
+              opacity: 1;
+              transform: translateY(-6px);
+            }
+          }
+
+          .bar-fill {
+            width: 100%;
+            background: linear-gradient(180deg, rgba(253, 84, 0, 0.7) 0%, rgba(253, 84, 0, 0.2) 100%);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, box-shadow 0.2s;
+            position: relative;
+          }
+
+          .bar-tooltip {
+            position: absolute;
+            top: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-surface);
+            color: var(--primary-orange);
+            border: 1px solid var(--border-color);
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
+            z-index: 5;
+          }
+        }
+
+        .bar-date {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          margin-top: 8px;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+
+  .chart-footer {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+
+    .stat-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+
+      span {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+
+        i {
+          color: var(--primary-orange);
+        }
+
+        strong {
+          color: var(--text-main);
+        }
+      }
+    }
+  }
+}
+
+/* 3. DASHBOARD TWO-COLUMN SECTION */
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+
+  @media (max-width: 992px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-card {
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  background: var(--glass-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      i {
+        color: var(--primary-orange);
+      }
+    }
+
+    .badge {
+      padding: 3px 9px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+
+      &-primary {
+        background: var(--primary-orange-light);
+        color: var(--primary-orange);
+      }
+
+      &-secondary {
+        background: var(--bg-elevated);
+        color: var(--text-muted);
+      }
+    }
+  }
+}
+
+/* Top Comics List */
+.top-comics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+
+  .top-comic-item {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    transition: var(--transition-fast);
+
+    &:hover {
+      border-color: var(--primary-orange);
+      background: var(--bg-card-hover);
+      transform: translateX(4px);
+    }
+
+    .rank-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg-input);
+      color: var(--text-muted);
+      font-weight: 800;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      &.rank-1 {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+      }
+
+      &.rank-2 {
+        background: linear-gradient(135deg, #94a3b8, #64748b);
+        color: #fff;
+      }
+
+      &.rank-3 {
+        background: linear-gradient(135deg, #b45309, #78350f);
+        color: #fff;
+      }
+    }
+
+    .comic-thumb {
+      width: 44px;
+      height: 60px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--bg-input);
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .comic-details {
+      flex: 1;
+      min-width: 0;
+
+      .comic-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.2rem;
+
+        h4 {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--text-main);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .comic-views {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: var(--primary-orange);
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
+        }
+      }
+
+      .comic-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-bottom: 0.4rem;
+
+        .status-pill {
+          padding: 1px 6px;
+          border-radius: 4px;
+          background: var(--bg-input);
+          font-size: 10px;
+          font-weight: 700;
+        }
+      }
+
+      .views-bar-track {
+        height: 4px;
+        background: var(--bg-input);
+        border-radius: 2px;
+        overflow: hidden;
+
+        .views-bar-fill {
+          height: 100%;
+          background: var(--grad-primary);
+          border-radius: 2px;
+          transition: width 0.5s ease;
+        }
+      }
+    }
+
+    .action-btn {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+  }
+}
+
+/* Recent Chapters List */
+.recent-chapters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+
+  .recent-chapter-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    transition: var(--transition-fast);
+
+    &:hover {
+      border-color: var(--primary-cyan);
+      background: var(--bg-card-hover);
+      transform: translateX(4px);
+    }
+
+    .chapter-comic-thumb {
+      width: 44px;
+      height: 56px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--bg-input);
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .chapter-info {
+      flex: 1;
+      min-width: 0;
+
+      .chapter-title-line {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.2rem;
+
+        .chapter-number {
+          font-size: 0.82rem;
+          font-weight: 800;
+          color: #fff;
+          background: var(--primary-cyan);
+          padding: 2px 7px;
+          border-radius: 4px;
+          line-height: 1;
+        }
+
+        .chapter-name {
+          font-size: 0.9rem;
+          font-weight: 700;
+          color: var(--text-main);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+
+      .chapter-comic-name {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .chapter-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.2rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+
+      .time-tag {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   BROADCAST TAB FORM
+   ========================================================================== */
+.admin-form {
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+
+      label {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      input, textarea, select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: var(--text-main);
+        font-size: 0.95rem;
+        transition: var(--transition-fast);
+
+        &:focus {
+          border-color: var(--primary-orange);
+          box-shadow: 0 0 0 3px var(--primary-orange-light);
+          background: var(--bg-surface);
+        }
+      }
+    }
+  }
+
+  .form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
