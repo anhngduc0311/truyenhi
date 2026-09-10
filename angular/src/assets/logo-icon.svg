@@ -1,90 +1,139 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" fill="none">
   <defs>
-    <linearGradient id="iconFoxFur" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff8533" />
-      <stop offset="60%" stop-color="#fd5400" />
-      <stop offset="100%" stop-color="#ea580c" />
+    <!-- Cute Chibi Black Fur (Midnight Charcoal) -->
+    <linearGradient id="chibiFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d3345" />
+      <stop offset="50%" stop-color="#181c28" />
+      <stop offset="100%" stop-color="#0c0f18" />
     </linearGradient>
 
-    <linearGradient id="iconCyanGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38bdf8" />
-      <stop offset="60%" stop-color="#0ea5e9" />
-      <stop offset="100%" stop-color="#0284c7" />
+    <!-- Kawaii Pink Inner Ear Gradient -->
+    <linearGradient id="chibiPinkEar" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff7eb6" />
+      <stop offset="100%" stop-color="#f43f5e" />
     </linearGradient>
 
-    <linearGradient id="iconCreamFur" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" />
-      <stop offset="100%" stop-color="#ffedd5" />
+    <!-- Sparkling Anime Eye Gradient (Vivid Hot Pink & Purple) -->
+    <linearGradient id="chibiEye" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff60a0" />
+      <stop offset="45%" stop-color="#ff2a85" />
+      <stop offset="85%" stop-color="#9333ea" />
+      <stop offset="100%" stop-color="#581c87" />
     </linearGradient>
 
-    <filter id="iconNeonGlow" x="-30%" y="-30%" width="160%" height="160%">
+    <!-- Neon Rim Gradient -->
+    <linearGradient id="chibiRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff2a85" />
+      <stop offset="50%" stop-color="#d946ef" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+
+    <!-- Soft Glow Filter -->
+    <filter id="chibiGlow" x="-30%" y="-30%" width="160%" height="160%">
       <feGaussianBlur stdDeviation="2" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
   </defs>
 
-  <!-- Outer Container -->
-  <rect x="4" y="4" width="92" height="92" rx="24" fill="#18181b" />
-  <rect x="4" y="4" width="92" height="92" rx="24" fill="none" stroke="url(#iconFoxFur)" stroke-width="2.5" stroke-opacity="0.85" />
+  <!-- Container Box: Dark Cyber Squircle with Cute Rounded Corners -->
+  <rect x="4" y="4" width="92" height="92" rx="26" fill="#090b12" />
+  <rect x="4" y="4" width="92" height="92" rx="26" fill="none" stroke="url(#chibiRim)" stroke-width="2.2" stroke-opacity="0.9" />
 
   <g transform="translate(6, 6)">
-    <!-- Fluffy Tail with Cyan Tip -->
-    <path d="M 62 60 C 76 54 82 40 76 28 C 70 32 68 42 60 48 Z" fill="url(#iconFoxFur)" />
-    <path d="M 76 28 C 78 33 75 38 72 40 C 71 35 73 31 76 28 Z" fill="url(#iconCyanGlow)" />
+    <!-- Cute Fluffy Tail (Curling up on the right with a pink bow/tip) -->
+    <path d="M 58 64 C 76 62 84 48 78 34 C 76 28 69 29 70 35 C 72 44 66 52 56 55 Z" fill="url(#chibiFur)" />
+    <path d="M 78 34 C 80 28 73 25 70 33 C 72 30 75 29 76 32 Z" fill="#ff2a85" />
 
+    <!-- Cute Fluffy Cat Ears -->
     <!-- Left Ear -->
-    <path d="M 22 36 L 16 12 C 22 14 30 20 34 28 Z" fill="url(#iconFoxFur)" stroke="#18181b" stroke-width="1.5" stroke-linejoin="round" />
-    <path d="M 22 32 L 18 16 C 22 18 27 22 30 27 Z" fill="url(#iconCreamFur)" />
+    <path d="M 22 36 L 15 10 C 23 13 32 18 37 28 Z" fill="url(#chibiFur)" stroke="#0c0f18" stroke-width="1.2" stroke-linejoin="round" />
+    <path d="M 22 32 L 18 15 C 23 18 29 22 32 28 Z" fill="url(#chibiPinkEar)" fill-opacity="0.9" />
+    <!-- Fluffy Tuft in Ear -->
+    <path d="M 23 30 Q 26 27 28 31 Q 25 32 23 30 Z" fill="#ffffff" opacity="0.8" />
 
     <!-- Right Ear -->
-    <path d="M 66 36 L 72 12 C 66 14 58 20 54 28 Z" fill="url(#iconFoxFur)" stroke="#18181b" stroke-width="1.5" stroke-linejoin="round" />
-    <path d="M 66 32 L 70 16 C 66 18 61 22 58 27 Z" fill="url(#iconCreamFur)" />
+    <path d="M 66 36 L 73 10 C 65 13 56 18 51 28 Z" fill="url(#chibiFur)" stroke="#0c0f18" stroke-width="1.2" stroke-linejoin="round" />
+    <path d="M 66 32 L 70 15 C 65 18 59 22 56 28 Z" fill="url(#chibiPinkEar)" fill-opacity="0.9" />
+    <!-- Fluffy Tuft in Ear -->
+    <path d="M 65 30 Q 62 27 60 31 Q 63 32 65 30 Z" fill="#ffffff" opacity="0.8" />
 
-    <!-- Fox Head Base -->
-    <ellipse cx="44" cy="40" rx="24" ry="20" fill="url(#iconFoxFur)" />
+    <!-- Round Chubby Chibi Head -->
+    <ellipse cx="44" cy="41" rx="26" ry="21" fill="url(#chibiFur)" />
 
-    <!-- Cheeks Fluff (White/Cream) -->
-    <path d="M 20 42 C 20 50 30 56 44 56 C 58 56 68 50 68 42 C 66 45 60 46 56 42 C 50 48 38 48 32 42 C 28 46 22 45 20 42 Z" fill="url(#iconCreamFur)" />
+    <!-- Chubby Cheeks Fluff (Cute Silhouette expansion) -->
+    <path d="M 18 43 C 16 48 22 55 31 58 C 36 59.5 44 60 52 58 C 61 55 67 48 65 43 C 68 47 64 54 58 57 C 50 61 38 61 30 57 C 24 54 20 47 18 43 Z" fill="url(#chibiFur)" />
 
-    <!-- Forehead Hair Tuft -->
-    <path d="M 44 22 C 42 26 44 29 44 31 C 45 29 47 26 46 22 Z" fill="#ffedd5" />
+    <!-- Cute Forehead Heart Mark / Highlight -->
+    <path d="M 44 24 C 42 21 39 22 39 25 C 39 28 44 31 44 31 C 44 31 49 28 49 25 C 49 22 46 21 44 24 Z" fill="#ff2a85" fill-opacity="0.75" />
 
-    <!-- Expressive Anime Eyes (Cyan Sparkling) -->
+    <!-- HUGE SPARKLING KAWAII ANIME EYES -->
     <!-- Left Eye -->
-    <ellipse cx="32" cy="38" rx="4.5" ry="6" fill="#0f172a" />
-    <ellipse cx="32" cy="39" rx="3.5" ry="5" fill="url(#iconCyanGlow)" />
-    <circle cx="33.5" cy="36" r="1.8" fill="#ffffff" />
-    <circle cx="31" cy="41" r="0.9" fill="#ffffff" />
+    <ellipse cx="31" cy="39" rx="6.5" ry="8" fill="#080a10" />
+    <ellipse cx="31" cy="39.5" rx="5.5" ry="7" fill="url(#chibiEye)" />
+    <!-- Big Catchlight Highlight (Top) -->
+    <ellipse cx="33" cy="36" rx="2.5" ry="3" fill="#ffffff" />
+    <!-- Medium Star Highlight (Bottom right) -->
+    <circle cx="29" cy="43" r="1.3" fill="#ffffff" />
+    <!-- Tiny Sparkle (Bottom left) -->
+    <circle cx="34" cy="42.5" r="0.8" fill="#ffffff" />
 
     <!-- Right Eye -->
-    <ellipse cx="56" cy="38" rx="4.5" ry="6" fill="#0f172a" />
-    <ellipse cx="56" cy="39" rx="3.5" ry="5" fill="url(#iconCyanGlow)" />
-    <circle cx="57.5" cy="36" r="1.8" fill="#ffffff" />
-    <circle cx="55" cy="41" r="0.9" fill="#ffffff" />
+    <ellipse cx="57" cy="39" rx="6.5" ry="8" fill="#080a10" />
+    <ellipse cx="57" cy="39.5" rx="5.5" ry="7" fill="url(#chibiEye)" />
+    <!-- Big Catchlight Highlight (Top) -->
+    <ellipse cx="59" cy="36" rx="2.5" ry="3" fill="#ffffff" />
+    <!-- Medium Star Highlight (Bottom right) -->
+    <circle cx="55" cy="43" r="1.3" fill="#ffffff" />
+    <!-- Tiny Sparkle (Bottom left) -->
+    <circle cx="60" cy="42.5" r="0.8" fill="#ffffff" />
 
-    <!-- Nose & Happy Mouth -->
-    <ellipse cx="44" cy="44" rx="2" ry="1.4" fill="#0f172a" />
-    <path d="M 41 46.5 Q 44 49 47 46.5" stroke="#0f172a" stroke-width="1.4" stroke-linecap="round" fill="none" />
-    <!-- Blush Cheeks -->
-    <ellipse cx="24" cy="42" rx="3" ry="1.5" fill="#f43f5e" fill-opacity="0.5" />
-    <ellipse cx="64" cy="42" rx="3" ry="1.5" fill="#f43f5e" fill-opacity="0.5" />
+    <!-- Sweet Anime Blush (Glowing Pink Ovals with cute hatch marks) -->
+    <ellipse cx="21" cy="46" rx="4.5" ry="2.2" fill="#ff2a85" fill-opacity="0.45" />
+    <line x1="19" y1="45" x2="21" y2="47" stroke="#ff2a85" stroke-width="0.8" stroke-linecap="round" />
+    <line x1="22" y1="45" x2="24" y2="47" stroke="#ff2a85" stroke-width="0.8" stroke-linecap="round" />
 
-    <!-- Glowing Manga Book -->
-    <g transform="translate(14, 48)" filter="url(#iconNeonGlow)">
-      <path d="M 30 28 Q 15 32 2 28 L 4 10 Q 15 14 30 11 Q 45 14 56 10 L 58 28 Q 45 32 30 28 Z" 
-            fill="#090d16" stroke="url(#iconCyanGlow)" stroke-width="2" stroke-linejoin="round" />
-      <rect x="7" y="14" width="9" height="10" rx="1.5" fill="#38bdf8" fill-opacity="0.35" stroke="#38bdf8" stroke-width="0.8" />
-      <rect x="18" y="14" width="8" height="10" rx="1.5" fill="#fd5400" fill-opacity="0.35" stroke="#fd5400" stroke-width="0.8" />
-      <rect x="34" y="14" width="19" height="10" rx="1.5" fill="#38bdf8" fill-opacity="0.2" stroke="#38bdf8" stroke-width="0.8" />
-      <path d="M 40 16 L 40 22 M 46 16 L 40 19 L 46 22" stroke="url(#iconCyanGlow)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-    </g>
+    <ellipse cx="67" cy="46" rx="4.5" ry="2.2" fill="#ff2a85" fill-opacity="0.45" />
+    <line x1="65" y1="45" x2="67" y2="47" stroke="#ff2a85" stroke-width="0.8" stroke-linecap="round" />
+    <line x1="68" y1="45" x2="70" y2="47" stroke="#ff2a85" stroke-width="0.8" stroke-linecap="round" />
 
-    <!-- Little Paws Gripping Book -->
-    <ellipse cx="26" cy="59" rx="3.5" ry="2.5" fill="url(#iconCreamFur)" stroke="#ea580c" stroke-width="1" />
-    <ellipse cx="62" cy="59" rx="3.5" ry="2.5" fill="url(#iconCreamFur)" stroke="#ea580c" stroke-width="1" />
+    <!-- Tiny Cute Pink Button Nose -->
+    <ellipse cx="44" cy="44.5" rx="1.8" ry="1.3" fill="#ff7eb6" />
 
-    <!-- Sparkles -->
-    <path d="M 12 28 L 13 30.5 L 15.5 31.5 L 13 32.5 L 12 35 L 11 32.5 L 8.5 31.5 L 11 30.5 Z" fill="#38bdf8" />
-    <path d="M 74 24 L 75 26 L 77 27 L 75 28 L 74 30 L 73 28 L 71 27 L 73 26 Z" fill="#fd5400" />
+    <!-- Super Cute :3 Kitty Mouth -->
+    <path d="M 40.5 46.5 Q 42.5 49 44 47 Q 45.5 49 47.5 46.5" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" fill="none" />
+
+    <!-- Cute Kitty Whiskers (2 gentle curved lines on each side) -->
+    <path d="M 14 43 Q 19 44 23 45" stroke="#94a3b8" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.65" />
+    <path d="M 13 47 Q 18 48 23 48" stroke="#94a3b8" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.65" />
+
+    <path d="M 74 43 Q 69 44 65 45" stroke="#94a3b8" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.65" />
+    <path d="M 75 47 Q 70 48 65 48" stroke="#94a3b8" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.65" />
+
+    <!-- Cute Collar with Glowing Heart / Bell Charm -->
+    <path d="M 33 56 Q 44 61 55 56" stroke="url(#chibiRim)" stroke-width="2.6" stroke-linecap="round" fill="none" />
+    <!-- Heart Bell Charm -->
+    <path d="M 44 59 C 42.5 57 40 58 40 60 C 40 62.5 44 65 44 65 C 44 65 48 62.5 48 60 C 48 58 45.5 57 44 59 Z" fill="#ff2a85" filter="url(#chibiGlow)" />
+    <circle cx="44" cy="61" r="0.8" fill="#ffffff" />
+
+    <!-- Two Little Paws (🐾) Popping Up -->
+    <ellipse cx="28" cy="62" rx="4.2" ry="3.2" fill="url(#chibiFur)" stroke="#ff2a85" stroke-width="1" />
+    <circle cx="26.5" cy="61.5" r="0.8" fill="#ff7eb6" />
+    <circle cx="28" cy="60.5" r="0.8" fill="#ff7eb6" />
+    <circle cx="29.5" cy="61.5" r="0.8" fill="#ff7eb6" />
+    <ellipse cx="28" cy="63" rx="1.5" ry="1.1" fill="#ff7eb6" />
+
+    <ellipse cx="60" cy="62" rx="4.2" ry="3.2" fill="url(#chibiFur)" stroke="#ff2a85" stroke-width="1" />
+    <circle cx="58.5" cy="61.5" r="0.8" fill="#ff7eb6" />
+    <circle cx="60" cy="60.5" r="0.8" fill="#ff7eb6" />
+    <circle cx="61.5" cy="61.5" r="0.8" fill="#ff7eb6" />
+    <ellipse cx="60" cy="63" rx="1.5" ry="1.1" fill="#ff7eb6" />
+
+    <!-- Floating Kawaii Sparkles & Hearts -->
+    <!-- Mini Heart (Top Left) -->
+    <path d="M 12 25 C 10.5 23 8 24 8 26 C 8 28.5 12 31 12 31 C 12 31 16 28.5 16 26 C 16 24 13.5 23 12 25 Z" fill="#ff2a85" />
+    <!-- Sparkle Star (Top Right) -->
+    <path d="M 75 20 L 76 22.5 L 78.5 23.5 L 76 24.5 L 75 27 L 74 24.5 L 71.5 23.5 L 74 22.5 Z" fill="#d946ef" />
+    <!-- Tiny Sparkle (Bottom) -->
+    <path d="M 44 72 L 44.8 74 L 46.8 74.8 L 44.8 75.6 L 44 77.6 L 43.2 75.6 L 41.2 74.8 L 43.2 74 Z" fill="#ff2a85" />
   </g>
 </svg>
