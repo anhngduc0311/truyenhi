@@ -58,7 +58,7 @@ namespace TruyenKomi.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"Cache GetAsync notice for key '{key}': {ex.Message}");
+                _logger.LogDebug($"Cache GetAsync notice for key '{key}': {ex.Message}");
                 return default;
             }
         }
@@ -77,7 +77,7 @@ namespace TruyenKomi.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"Cache SetAsync notice for key '{key}': {ex.Message}");
+                _logger.LogDebug($"Cache SetAsync notice for key '{key}': {ex.Message}");
             }
         }
 
@@ -167,7 +167,7 @@ namespace TruyenKomi.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"Cache RemoveByPatternAsync notice for pattern '{pattern}': {ex.Message}");
+                _logger.LogDebug($"Cache RemoveByPatternAsync notice for pattern '{pattern}': {ex.Message}");
             }
         }
 
@@ -179,7 +179,7 @@ namespace TruyenKomi.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"Cache RemoveAsync notice for key '{key}': {ex.Message}");
+                _logger.LogDebug($"Cache RemoveAsync notice for key '{key}': {ex.Message}");
             }
         }
 
@@ -202,7 +202,7 @@ namespace TruyenKomi.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"Cache IncrementAsync notice for key '{key}': {ex.Message}");
+                _logger.LogDebug($"Cache IncrementAsync notice for key '{key}': {ex.Message}");
                 return 0;
             }
         }
@@ -230,7 +230,7 @@ namespace TruyenKomi.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"Cache GetKeysAsync notice for pattern '{pattern}': {ex.Message}");
+                _logger.LogDebug($"Cache GetKeysAsync notice for pattern '{pattern}': {ex.Message}");
             }
             return keys.Distinct().ToList();
         }
@@ -270,7 +270,7 @@ namespace TruyenKomi.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning($"Cache GetAndResetCountAsync notice for key '{key}': {ex.Message}");
+                _logger.LogDebug($"Cache GetAndResetCountAsync notice for key '{key}': {ex.Message}");
                 return 0;
             }
         }

@@ -90,7 +90,7 @@ namespace TruyenKomi.Tests
 
             var mockCache = new Mock<ICacheService>();
             mockCache.Setup(c => c.GetOrSetAsync(It.IsAny<string>(), It.IsAny<Func<Task<List<SearchAutocompleteDto>>>>(), It.IsAny<TimeSpan?>()))
-                .Returns<string, Func<Task<List<SearchAutocompleteDto>>>, TimeSpan?>((key, cb, ttl) => cb());
+                .Returns(async (string key, Func<Task<List<SearchAutocompleteDto>>> cb, TimeSpan? ttl) => await cb());
 
             var searchService = new SearchEngineService(db, mockCache.Object);
 

@@ -32,8 +32,8 @@ namespace TruyenKomi.Tests
 
             var mockNotificationService = new Mock<INotificationService>();
             var mockCache = new Mock<ICacheService>();
-            mockCache.Setup(c => c.GetOrSetAsync(It.IsAny<string>(), It.IsAny<Func<Task<System.Collections.Generic.List<CategoryDto>>>>(), It.IsAny<TimeSpan?>()))
-                .Returns<string, Func<Task<System.Collections.Generic.List<CategoryDto>>>, TimeSpan?>((key, cb, ttl) => cb());
+            mockCache.Setup(c => c.GetOrSetAsync(It.IsAny<string>(), It.IsAny<Func<Task<List<CategoryDto>>>>(), It.IsAny<TimeSpan?>()))
+                .Returns(async (string key, Func<Task<List<CategoryDto>>> cb, TimeSpan? ttl) => await cb());
             var mockGamification = new Mock<IGamificationService>();
             var comicService = new ComicService(db, mockNotificationService.Object, mockCache.Object, mockGamification.Object);
 
@@ -139,7 +139,7 @@ namespace TruyenKomi.Tests
             var mockNotificationService = new Mock<INotificationService>();
             var mockCache = new Mock<ICacheService>();
             mockCache.Setup(c => c.GetOrSetAsync(It.IsAny<string>(), It.IsAny<Func<Task<List<ComicDto>>>>(), It.IsAny<TimeSpan?>()))
-                .Returns<string, Func<Task<List<ComicDto>>>, TimeSpan?>((k, cb, ttl) => cb());
+                .Returns(async (string k, Func<Task<List<ComicDto>>> cb, TimeSpan? ttl) => await cb());
             var mockGamification = new Mock<IGamificationService>();
             var comicService = new ComicService(db, mockNotificationService.Object, mockCache.Object, mockGamification.Object);
 

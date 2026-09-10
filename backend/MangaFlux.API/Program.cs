@@ -80,23 +80,43 @@ builder.Services.AddDbContext<MangaDbContext>(options =>
 // 2. Register Application Services, Distributed Caching & Exception Handling
 var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING") 
                             ?? builder.Configuration.GetConnectionString("Redis");
+
+StackExchange.Redis.IConnectionMultiplexer? redisMuxer = null;
 if (!string.IsNullOrEmpty(redisConnectionString))
 {
+    try
+    {
+        var redisOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionString);
+        redisOptions.ConnectTimeout = 1500;
+        redisOptions.SyncTimeout = 1500;
+        redisOptions.AbortOnConnectFail = false;
+
+        var muxer = StackExchange.Redis.ConnectionMultiplexer.Connect(redisOptions);
+        if (muxer.IsConnected)
+        {
+            redisMuxer = muxer;
+            Console.WriteLine("[Redis] Successfully connected to Redis server.");
+        }
+        else
+        {
+            Console.WriteLine("[Redis] Redis server is not reachable. Auto-fallback to In-Memory distributed cache.");
+            muxer.Dispose();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Redis] Connection failed: {ex.Message}. Falling back to In-Memory distributed cache.");
+    }
+}
+
+if (redisMuxer != null)
+{
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(redisMuxer);
     builder.Services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = redisConnectionString;
         options.InstanceName = "NekoHentai_";
     });
-
-    try
-    {
-        var muxer = StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString);
-        builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(muxer);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Redis connection notice: {ex.Message}");
-    }
 }
 else
 {
