@@ -25,8 +25,14 @@
     <!-- Main Content -->
     <div class="profile-wrapper" *ngIf="!isLoadingProfile && profile">
       <!-- Header Hero Card -->
-      <div class="profile-card glass-panel">
-        <div class="profile-header-banner"></div>
+      <div class="profile-card glass-panel wuxia-panel">
+        <span class="wuxia-corner tl"></span>
+        <span class="wuxia-corner tr"></span>
+        <span class="wuxia-corner bl"></span>
+        <span class="wuxia-corner br"></span>
+        <div class="profile-header-banner">
+          <div class="banner-wuxia-overlay"></div>
+        </div>
         
         <div class="profile-info-content">
           <div class="avatar-wrapper">
@@ -39,7 +45,7 @@
               />
             </div>
             <span class="role-badge" [class.admin-badge]="profile.role === 'Admin'">
-              {{ profile.role === 'Admin' ? 'Quản trị viên' : 'Thành viên' }}
+              {{ profile.role === 'Admin' ? '⚔️ Chưởng Môn' : '🗡️ Tán Tu' }}
             </span>
           </div>
 
@@ -53,14 +59,14 @@
               <!-- Realm Badge -->
               <span 
                 *ngIf="gamification?.realm || profile.realm" 
-                class="realm-badge" 
+                class="realm-badge wuxia-realm-badge" 
                 [ngClass]="(gamification?.realm?.frameClass || profile.realm?.frameClass || 'realm-luyen-khi').replace('avatar-frame-', 'realm-')"
               >
                 <i class="fa fa-shield"></i>
                 <span>{{ gamification?.realm?.title || profile.realm?.title }}</span>
               </span>
 
-              <span *ngIf="profile.activeBadge" class="custom-badge-pill">
+              <span *ngIf="profile.activeBadge" class="custom-badge-pill wuxia-title-pill">
                 {{ profile.activeBadge }}
               </span>
             </div>
@@ -73,13 +79,13 @@
 
               <div class="meta-item">
                 <i class="fa fa-calendar-check-o meta-icon"></i>
-                <span>Tham gia: {{ profile.createdAt | date:'dd/MM/yyyy' }}</span>
+                <span>Nhập môn: {{ profile.createdAt | date:'dd/MM/yyyy' }}</span>
               </div>
             </div>
           </div>
 
           <div class="profile-actions-top">
-            <a routerLink="/settings" class="btn-profile-settings">
+            <a routerLink="/settings" class="btn-profile-settings wuxia-btn-secondary">
               <i class="fa fa-cog"></i> <span>Cài Đặt</span>
             </a>
           </div>
@@ -89,7 +95,11 @@
       <!-- Quick Stats Grid -->
       <div class="stats-grid">
         <!-- EXP / Tu Vi -->
-        <div class="stat-card glass-panel cultivation-stat">
+        <div class="stat-card glass-panel cultivation-stat wuxia-panel">
+          <span class="wuxia-corner tl"></span>
+          <span class="wuxia-corner tr"></span>
+          <span class="wuxia-corner bl"></span>
+          <span class="wuxia-corner br"></span>
           <div class="stat-card-header">
             <div class="stat-icon-wrapper exp">
               <i class="fa fa-bolt"></i>
@@ -105,71 +115,87 @@
         </div>
 
         <!-- Chuỗi Điểm Danh -->
-        <div class="stat-card glass-panel streak-stat">
+        <div class="stat-card glass-panel streak-stat wuxia-panel">
+          <span class="wuxia-corner tl"></span>
+          <span class="wuxia-corner tr"></span>
+          <span class="wuxia-corner bl"></span>
+          <span class="wuxia-corner br"></span>
           <div class="stat-card-header">
             <div class="stat-icon-wrapper streak">
               <i class="fa fa-fire"></i>
             </div>
             <span class="stat-badge" [class.checked]="gamification?.hasCheckedInToday">
-              {{ gamification?.hasCheckedInToday ? 'Đã điểm danh ✔' : 'Chưa điểm danh' }}
+              {{ gamification?.hasCheckedInToday ? 'Đã Tĩnh Tọa ✔' : 'Chưa Tĩnh Tọa' }}
             </span>
           </div>
           <div class="stat-card-body">
             <div class="stat-value text-streak">
               {{ (gamification?.attendanceStreak ?? profile.attendanceStreak ?? 0) }} <span class="stat-unit">Ngày</span>
             </div>
-            <div class="stat-label">Chuỗi Điểm Danh Liên Tiếp</div>
+            <div class="stat-label">Chuỗi Tĩnh Tọa Tu Đạo</div>
           </div>
         </div>
 
         <!-- Truyện Theo Dõi -->
-        <div class="stat-card glass-panel">
+        <div class="stat-card glass-panel wuxia-panel">
+          <span class="wuxia-corner tl"></span>
+          <span class="wuxia-corner tr"></span>
+          <span class="wuxia-corner bl"></span>
+          <span class="wuxia-corner br"></span>
           <div class="stat-card-header">
             <div class="stat-icon-wrapper followed">
               <i class="fa fa-bookmark"></i>
             </div>
             <a routerLink="/followed" class="stat-action-btn">
-              <span>Xem danh sách</span> <i class="fa fa-arrow-right"></i>
+              <span>Xem tàng thư</span> <i class="fa fa-arrow-right"></i>
             </a>
           </div>
           <div class="stat-card-body">
             <div class="stat-value">{{ profile.followedCount || 0 }}</div>
-            <div class="stat-label">Truyện đang theo dõi</div>
+            <div class="stat-label">Điển tịch theo dõi</div>
           </div>
         </div>
 
         <!-- Bình Luận -->
-        <div class="stat-card glass-panel">
+        <div class="stat-card glass-panel wuxia-panel">
+          <span class="wuxia-corner tl"></span>
+          <span class="wuxia-corner tr"></span>
+          <span class="wuxia-corner bl"></span>
+          <span class="wuxia-corner br"></span>
           <div class="stat-card-header">
             <div class="stat-icon-wrapper comments">
               <i class="fa fa-comments"></i>
             </div>
-            <span class="stat-badge">Hoạt động sôi nổi</span>
+            <span class="stat-badge">Luận đạo giang hồ</span>
           </div>
           <div class="stat-card-body">
             <div class="stat-value">{{ profile.commentsCount || 0 }}</div>
-            <div class="stat-label">Bình luận đã gửi</div>
+            <div class="stat-label">Bút tích luận kiếm</div>
           </div>
         </div>
       </div>
 
       <!-- Tab Navigation -->
-      <div class="profile-tabs glass-panel">
+      <div class="profile-tabs glass-panel wuxia-panel">
+        <span class="wuxia-corner tl"></span>
+        <span class="wuxia-corner tr"></span>
+        <span class="wuxia-corner bl"></span>
+        <span class="wuxia-corner br"></span>
         <button 
           class="tab-btn" 
           [class.active]="activeTab === 'cultivation'" 
           (click)="activeTab = 'cultivation'"
         >
           <i class="fa fa-bolt"></i>
-          <span>Cảnh Giới Tu Tiên</span>
+          <span>Đạo Đài & Cảnh Giới</span>
         </button>
         <button 
           class="tab-btn" 
           [class.active]="activeTab === 'frames'" 
           (click)="activeTab = 'frames'"
         >
-          <i class="fa fa-magic"></i>
-          <span>Khung Avatar & Huy Hiệu</span>
+          <i class="fa fa-shield"></i>
+          <span>Tàng Bảo Các (Pháp Bảo)</span>
           <span class="tab-badge" *ngIf="gamification?.unlockedFrames?.length">{{ gamification?.unlockedFrames?.length }}</span>
         </button>
         <button 
@@ -177,43 +203,52 @@
           [class.active]="activeTab === 'comments'" 
           (click)="activeTab = 'comments'"
         >
-          <i class="fa fa-history"></i>
-          <span>Lịch Sử Bình Luận</span>
+          <i class="fa fa-book"></i>
+          <span>Luận Đạo & Lưu Bút</span>
           <span class="tab-badge" *ngIf="comments.length">{{ comments.length }}</span>
         </button>
       </div>
 
       <!-- TAB 1: CẢNH GIỚI TU TIÊN & ĐIỂM DANH -->
       <div class="tab-content" *ngIf="activeTab === 'cultivation'">
-        <div class="cultivation-panel glass-panel">
+        <div class="cultivation-panel glass-panel wuxia-panel">
+          <span class="wuxia-corner tl"></span>
+          <span class="wuxia-corner tr"></span>
+          <span class="wuxia-corner bl"></span>
+          <span class="wuxia-corner br"></span>
           <!-- Banner Cảnh Giới -->
           <div class="cultivation-header">
             <div class="realm-visual-wrap">
-              <div class="realm-orb" [ngClass]="(gamification?.realm?.frameClass || 'avatar-frame-luyen-khi').replace('avatar-frame-', 'orb-')">
-                <i class="fa fa-shield"></i>
+              <div class="realm-orb-container">
+                <div class="realm-runes-ring"></div>
+                <div class="realm-orb" [ngClass]="(gamification?.realm?.frameClass || 'avatar-frame-luyen-khi').replace('avatar-frame-', 'orb-')">
+                  <i class="fa fa-shield"></i>
+                </div>
               </div>
               <div class="realm-info-box">
-                <span class="realm-subtitle">Cảnh Giới Hiện Tại</span>
+                <div class="wuxia-tag"><i class="fa fa-fire"></i> ĐẠO CƠ BẢN MỆNH</div>
                 <h2 class="realm-title" [style.color]="gamification?.realm?.color || '#10b981'">
                   {{ gamification?.realm?.title || 'Luyện Khí Sơ Kỳ - Cấp 1' }}
                 </h2>
-                <p class="realm-desc">{{ gamification?.realm?.auraDescription || 'Lục quang thanh sơ - Hộ thể sơ cấp' }}</p>
+                <p class="realm-desc">
+                  <i class="fa fa-magic"></i> {{ gamification?.realm?.auraDescription || 'Lục quang thanh sơ - Kiếm khí sơ nhập đan điền' }}
+                </p>
               </div>
             </div>
 
             <!-- Nút Điểm Danh Hàng Ngày -->
             <div class="checkin-cta-box">
               <button 
-                class="btn-checkin" 
+                class="btn-checkin wuxia-btn" 
                 [disabled]="isCheckingIn || gamification?.hasCheckedInToday"
                 (click)="checkIn()"
               >
-                <i class="fa" [ngClass]="gamification?.hasCheckedInToday ? 'fa-check' : (isCheckingIn ? 'fa-spinner fa-spin' : 'fa-calendar-plus-o')"></i>
-                <span>{{ gamification?.hasCheckedInToday ? 'Đã Điểm Danh Hôm Nay' : (isCheckingIn ? 'Đang Điểm Danh...' : 'Điểm Danh Nhận +20 EXP') }}</span>
+                <i class="fa" [ngClass]="gamification?.hasCheckedInToday ? 'fa-check-circle' : (isCheckingIn ? 'fa-spinner fa-spin' : 'fa-sun-o')"></i>
+                <span>{{ gamification?.hasCheckedInToday ? 'Đã Tĩnh Tọa Hôm Nay' : (isCheckingIn ? 'Đang Tĩnh Tọa...' : 'Tĩnh Tọa Hấp Thu +20 EXP') }}</span>
               </button>
               <div class="streak-subtext">
                 <i class="fa fa-fire text-streak"></i>
-                <span>Chuỗi {{ gamification?.attendanceStreak || 0 }} ngày liên tục (+10 EXP mốc 7 ngày)</span>
+                <span>Đạo hạnh liên tục {{ gamification?.attendanceStreak || 0 }} ngày (+10 EXP mốc 7 ngày)</span>
               </div>
             </div>
           </div>
@@ -221,57 +256,58 @@
           <!-- Thanh Tiến Trình Đột Phá -->
           <div class="exp-progress-container" *ngIf="gamification">
             <div class="exp-progress-meta">
-              <span class="progress-title">Tiến trình đột phá cấp tiếp theo</span>
+              <span class="progress-title"><i class="fa fa-compass"></i> Linh Khí Đột Phá Bình Cảnh</span>
               <span class="progress-val">
                 <strong>{{ gamification.currentLevelExp }}</strong> / {{ gamification.expForNextLevel }} EXP 
                 ({{ gamification.progressPercent }}%)
               </span>
             </div>
-            <div class="progress-bar-track">
+            <div class="progress-bar-track wuxia-track">
               <div 
                 class="progress-bar-fill" 
                 [style.width.%]="gamification.progressPercent"
                 [style.background]="gamification.realm.color"
               >
                 <div class="progress-glow"></div>
+                <div class="progress-light-sweep"></div>
               </div>
             </div>
           </div>
 
           <!-- Quy Tắc Tu Tiên & Kiếm EXP -->
           <div class="cultivation-guide-grid">
-            <div class="guide-card">
-              <div class="guide-icon read"><i class="fa fa-book-open"></i></div>
+            <div class="guide-card wuxia-scroll-card">
+              <div class="guide-icon read"><i class="fa fa-book"></i></div>
               <div class="guide-info">
-                <h4>Đọc Chương Truyện</h4>
-                <p>Cộng <strong>+10 EXP</strong> cho mỗi chương đọc mới khi lật trang hoặc hoàn thành.</p>
+                <h4>Lĩnh Ngộ Điển Tịch</h4>
+                <p>Đọc chương truyện mới, hấp thu tinh hoa đan điền cộng <strong>+10 EXP</strong>.</p>
               </div>
               <span class="exp-pill">+10 EXP</span>
             </div>
 
-            <div class="guide-card">
+            <div class="guide-card wuxia-scroll-card">
               <div class="guide-icon comment"><i class="fa fa-commenting-o"></i></div>
               <div class="guide-info">
-                <h4>Gửi Bình Luận</h4>
-                <p>Cộng <strong>+5 EXP</strong> khi chia sẻ cảm nghĩ, thảo luận cùng cộng đồng.</p>
+                <h4>Luận Đạo Luận Kiếm</h4>
+                <p>Gửi bình luận đàm đạo cùng đồng đạo giang hồ nhận <strong>+5 EXP</strong>.</p>
               </div>
               <span class="exp-pill">+5 EXP</span>
             </div>
 
-            <div class="guide-card">
+            <div class="guide-card wuxia-scroll-card">
               <div class="guide-icon checkin"><i class="fa fa-calendar-check-o"></i></div>
               <div class="guide-info">
-                <h4>Điểm Danh Hàng Ngày</h4>
-                <p>Cộng <strong>+20 EXP</strong> mỗi ngày. Thưởng thêm +10 EXP chuỗi 7 ngày!</p>
+                <h4>Nhật Thường Tĩnh Tọa</h4>
+                <p>Điểm danh mỗi ngày cộng <strong>+20 EXP</strong>. Chuỗi 7 ngày thưởng thêm đại bổ!</p>
               </div>
               <span class="exp-pill">+20 EXP</span>
             </div>
 
-            <div class="guide-card">
+            <div class="guide-card wuxia-scroll-card">
               <div class="guide-icon rating"><i class="fa fa-star"></i></div>
               <div class="guide-info">
-                <h4>Đánh Giá Truyện 5 Sao</h4>
-                <p>Cộng <strong>+10 EXP</strong> cho mỗi lần đánh giá và review truyện mới.</p>
+                <h4>Phẩm Bình Tiên Thư</h4>
+                <p>Đánh giá 5 sao chất lượng bộ truyện cộng <strong>+10 EXP</strong> tu vi.</p>
               </div>
               <span class="exp-pill">+10 EXP</span>
             </div>
@@ -279,27 +315,38 @@
         </div>
       </div>
 
-      <!-- TAB 2: KHUNG AVATAR & HUY HIỆU -->
+      <!-- TAB 2: TÀNG BẢO CÁC & PHÁP BẢO HỘ THỂ -->
       <div class="tab-content" *ngIf="activeTab === 'frames'">
-        <div class="section-container glass-panel">
-          <div class="section-header">
+        <div class="section-container glass-panel wuxia-panel">
+          <span class="wuxia-corner tl"></span>
+          <span class="wuxia-corner tr"></span>
+          <span class="wuxia-corner bl"></span>
+          <span class="wuxia-corner br"></span>
+          
+          <div class="section-header wuxia-section-header">
             <div>
               <h2 class="section-title">
-                <i class="fa fa-magic title-icon"></i>
-                <span>Tủ Khung Avatar Động</span>
+                <i class="fa fa-shield title-icon"></i>
+                <span>Tàng Bảo Các - Pháp Bảo Hộ Thể</span>
               </h2>
-              <p class="section-subtitle">Mở khóa khung viền phát sáng động theo cảnh giới tu tiên và thành tích đọc truyện.</p>
+              <p class="section-subtitle">Khắc ấn linh bảo hộ thân, ngự kiếm tụ khí và kích hoạt hào quang thần thông theo đẳng cấp tu vi.</p>
             </div>
           </div>
 
           <div class="frames-grid" *ngIf="gamification">
             <div 
-              class="frame-card glass-panel" 
+              class="frame-card glass-panel wuxia-frame-card" 
               *ngFor="let frame of gamification.unlockedFrames"
               [class.frame-active]="frame.isActive"
               [class.frame-locked]="!frame.isUnlocked"
             >
+              <span class="wuxia-corner tl"></span>
+              <span class="wuxia-corner tr"></span>
+              <span class="wuxia-corner bl"></span>
+              <span class="wuxia-corner br"></span>
+
               <div class="frame-preview-box">
+                <div class="frame-aura-halo"></div>
                 <div class="avatar-frame-container" [ngClass]="frame.frameClass">
                   <img [src]="profile.avatar || defaultAvatar" alt="Preview" class="preview-avatar" />
                 </div>
@@ -310,24 +357,24 @@
                 <p class="frame-desc">{{ frame.description }}</p>
                 <div class="frame-req">
                   <i class="fa" [ngClass]="frame.isUnlocked ? 'fa-unlock text-success' : 'fa-lock text-warning'"></i>
-                  <span>Yêu cầu: {{ frame.requiredRealm }} ({{ frame.requiredExp }} EXP)</span>
+                  <span>{{ frame.requiredRealm }} ({{ frame.requiredExp }} EXP)</span>
                 </div>
               </div>
 
               <div class="frame-actions">
                 <button 
                   *ngIf="frame.isUnlocked && !frame.isActive"
-                  class="btn-equip-frame" 
+                  class="btn-equip-frame wuxia-equip-btn" 
                   [disabled]="isEquippingFrame"
                   (click)="equipFrame(frame)"
                 >
-                  <i class="fa fa-check"></i> Trang Bị
+                  <i class="fa fa-bolt"></i> Ngự Khí Trang Bị
                 </button>
-                <span *ngIf="frame.isActive" class="badge-equipped">
-                  <i class="fa fa-check-circle"></i> Đang Sử Dụng
+                <span *ngIf="frame.isActive" class="badge-equipped wuxia-seal-active">
+                  <i class="fa fa-certificate"></i> ĐANG NGỰ THỂ
                 </span>
-                <span *ngIf="!frame.isUnlocked" class="badge-locked">
-                  <i class="fa fa-lock"></i> Chưa Đủ Tu Vi
+                <span *ngIf="!frame.isUnlocked" class="badge-locked wuxia-seal-locked">
+                  <i class="fa fa-lock"></i> PHONG ẤN TU VI
                 </span>
               </div>
             </div>

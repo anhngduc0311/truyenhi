@@ -5,9 +5,15 @@
       <li>
         <a routerLink="/"><i class="fa fa-home"></i> <span>Trang Chủ</span></a>
       </li>
-      <li>
-        <span class="active">{{ getPageHeading() }}</span>
-      </li>
+      <ng-container *ngFor="let crumb of getBreadcrumbs(); let last = last">
+        <li *ngIf="!last">
+          <a *ngIf="crumb.url" [routerLink]="crumb.url" [queryParams]="crumb.queryParams">{{ crumb.label }}</a>
+          <span *ngIf="!crumb.url">{{ crumb.label }}</span>
+        </li>
+        <li *ngIf="last">
+          <span class="active">{{ crumb.label }}</span>
+        </li>
+      </ng-container>
     </ol>
 
     <div class="main_content">

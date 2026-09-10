@@ -136,7 +136,7 @@ export class ProfileComponent implements OnInit {
   }
 
   get defaultAvatar(): string {
-    return 'assets/default-avatar.svg';
+    return 'assets/mascot.png';
   }
 
   onAvatarError(event: Event): void {

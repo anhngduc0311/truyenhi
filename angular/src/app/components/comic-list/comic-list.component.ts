@@ -177,6 +177,38 @@ export class ComicListComponent implements OnInit {
     return pages;
   }
 
+  getBreadcrumbs(): { label: string, url?: string, queryParams?: any }[] {
+    if (this.selectedCategory) {
+      const cat = this.categories.find(c => c.slug === this.selectedCategory);
+      return [
+        { label: 'Thể Loại', url: '/categories' },
+        { label: cat ? cat.name : this.selectedCategory }
+      ];
+    }
+    if (this.selectedCountry && this.selectedCountry !== 'All') {
+      const match = this.countries.find(c => 
+        c.value.toLowerCase() === this.selectedCountry.toLowerCase() || 
+        (c.value === 'Nhật Bản' && (this.selectedCountry.toLowerCase() === 'japan' || this.selectedCountry.toLowerCase() === 'manga')) ||
+        (c.value === 'Hàn Quốc' && (this.selectedCountry.toLowerCase() === 'korea' || this.selectedCountry.toLowerCase() === 'manhwa')) ||
+        (c.value === 'Trung Quốc' && (this.selectedCountry.toLowerCase() === 'china' || this.selectedCountry.toLowerCase() === 'manhua'))
+      );
+      return [
+        { label: 'Quốc Gia' },
+        { label: match ? match.label : this.selectedCountry }
+      ];
+    }
+    if (this.selectedSort && ['day', 'week', 'month'].includes(this.selectedSort.toLowerCase())) {
+      const map: Record<string, string> = { day: 'Top Ngày', week: 'Top Tuần', month: 'Top Tháng' };
+      return [
+        { label: 'Bảng Xếp Hạng' },
+        { label: map[this.selectedSort.toLowerCase()] || this.selectedSort }
+      ];
+    }
+    return [
+      { label: this.getPageHeading() }
+    ];
+  }
+
   getPageHeading(): string {
     if (this.selectedCountry && this.selectedCountry !== 'All') {
       const match = this.countries.find(c => 
@@ -186,28 +218,28 @@ export class ComicListComponent implements OnInit {
         (c.value === 'Trung Quốc' && (this.selectedCountry.toLowerCase() === 'china' || this.selectedCountry.toLowerCase() === 'manhua'))
       );
       if (match) {
-        return `TRUYỆN HENTAI ${match.label.toUpperCase()}`;
+        return `Truyện Hentai ${match.label}`;
       }
-      return `TRUYỆN HENTAI ${this.selectedCountry.toUpperCase()}`;
+      return `Truyện Hentai ${this.selectedCountry}`;
     }
     if (this.selectedCategory) {
       const cat = this.categories.find(c => c.slug === this.selectedCategory);
-      if (cat) return `TRUYỆN HENTAI - THỂ LOẠI ${cat.name.toUpperCase()}`;
+      if (cat) return `Thể Loại: ${cat.name}`;
     }
 
     switch (this.selectedSort?.toLowerCase()) {
-      case 'day': return 'BẢNG XẾP HẠNG - TOP NGÀY';
-      case 'week': return 'BẢNG XẾP HẠNG - TOP TUẦN';
-      case 'month': return 'BẢNG XẾP HẠNG - TOP THÁNG';
-      case 'favorite': return 'TRUYỆN HENTAI ĐƯỢC YÊU THÍCH NHẤT';
-      case 'new': return 'TRUYỆN HENTAI MỚI ĐĂNG GẦN ĐÂY';
-      case 'full': return 'TRUYỆN HENTAI ĐÃ HOÀN THÀNH (FULL)';
-      case 'random': return 'KHÁM PHÁ TRUYỆN HENTAI NGẪU NHIÊN';
-      case 'views': return 'TRUYỆN HENTAI XEM NHIỀU NHẤT';
-      case 'rating': return 'TRUYỆN HENTAI ĐÁNH GIÁ CAO NHẤT';
-      case 'chapters': return 'TRUYỆN HENTAI NHIỀU CHƯƠNG NHẤT';
-      case 'latest': return 'TRUYỆN HENTAI MỚI CẬP NHẬT';
-      default: return 'DANH SÁCH TRUYỆN HENTAI & DOUJINSHI';
+      case 'day': return 'Bảng Xếp Hạng - Top Ngày';
+      case 'week': return 'Bảng Xếp Hạng - Top Tuần';
+      case 'month': return 'Bảng Xếp Hạng - Top Tháng';
+      case 'favorite': return 'Truyện Được Yêu Thích Nhất';
+      case 'new': return 'Truyện Mới Đăng Gần Đây';
+      case 'full': return 'Truyện Đã Hoàn Thành (Full)';
+      case 'random': return 'Khám Phá Truyện Ngẫu Nhiên';
+      case 'views': return 'Truyện Xem Nhiều Nhất';
+      case 'rating': return 'Truyện Đánh Giá Cao Nhất';
+      case 'chapters': return 'Truyện Nhiều Chương Nhất';
+      case 'latest': return 'Truyện Mới Cập Nhật';
+      default: return 'Danh Sách Truyện Hentai & Doujinshi';
     }
   }
 
