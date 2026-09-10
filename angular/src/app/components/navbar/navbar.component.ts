@@ -45,6 +45,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   categories: Category[] = [];
   isMobileGenresOpen: boolean = true;
+  isMobileRankOpen: boolean = true;
 
   rankItems = [
     { label: 'Top Ngày', icon: 'fa-sun-o', query: 'day' },
@@ -368,6 +369,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   toggleMobileGenres(event?: Event): void {
     if (event) event.stopPropagation();
     this.isMobileGenresOpen = !this.isMobileGenresOpen;
+  }
+
+  toggleMobileRank(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.isMobileRankOpen = !this.isMobileRankOpen;
   }
 
   isHotGenre(name?: string): boolean {

@@ -13,10 +13,15 @@
     <div class="main_content">
       <!-- Section Heading & Filter -->
       <div class="section-heading">
-        <h1 class="text_list_update">
-          <i class="fa fa-book-open"></i> {{ getPageHeading() }}
-        </h1>
-        <span class="text-muted" style="font-size: 13px;" *ngIf="!isLoading">({{ totalCount }} truyện)</span>
+        <div class="heading-left-group">
+          <h1 class="text_list_update">
+            <i class="fa fa-book-open"></i> {{ getPageHeading() }}
+          </h1>
+          <span class="text-muted" style="font-size: 13px;" *ngIf="!isLoading">({{ totalCount }} truyện)</span>
+        </div>
+        <button *ngIf="selectedSort === 'random'" class="btn-reroll-random" (click)="shuffleRandom()" title="Lấy danh sách ngẫu nhiên khác">
+          <i class="fa fa-random"></i> <span>Đổi Danh Sách Khác</span>
+        </button>
       </div>
 
       <!-- Filter Controls Bar -->
@@ -39,9 +44,9 @@
         <div class="filter-item">
           <label><i class="fa fa-info-circle"></i> Trạng thái:</label>
           <select [(ngModel)]="selectedStatus" (change)="onFilterChange()" class="filter-select">
-            <option value="All">Tất cả</option>
+            <option value="All">Tất cả trạng thái</option>
             <option value="Ongoing">Đang tiến hành</option>
-            <option value="Completed">Hoàn thành</option>
+            <option value="Completed">Đã hoàn thành</option>
           </select>
         </div>
 
@@ -49,9 +54,16 @@
           <label><i class="fa fa-sort-amount-desc"></i> Sắp xếp:</label>
           <select [(ngModel)]="selectedSort" (change)="onFilterChange()" class="filter-select">
             <option value="latest">Mới cập nhật</option>
+            <option value="day">Top Ngày</option>
+            <option value="week">Top Tuần</option>
+            <option value="month">Top Tháng</option>
+            <option value="favorite">Yêu thích nhất</option>
+            <option value="new">Truyện mới đăng</option>
+            <option value="full">Truyện Full</option>
             <option value="views">Lượt xem nhiều nhất</option>
             <option value="rating">Đánh giá cao nhất</option>
             <option value="chapters">Số chapter nhiều nhất</option>
+            <option value="random">Ngẫu nhiên</option>
             <option value="title">Tên A-Z</option>
           </select>
         </div>

@@ -275,6 +275,26 @@
       THEO DÕI
     </a>
 
+    <!-- Rankings Accordion Section -->
+    <div class="mobile-category-accordion">
+      <button class="mobile-nav-item mobile-category-toggle" [class.active]="isMobileRankOpen" (click)="toggleMobileRank($event)">
+        <span>XẾP HẠNG & CHỌN LỌC</span>
+        <i class="fa fa-caret-down caret-icon" [class.rotate]="isMobileRankOpen"></i>
+      </button>
+
+      <div class="mobile-genres-grid" *ngIf="isMobileRankOpen">
+        <a 
+          *ngFor="let r of rankItems" 
+          [routerLink]="['/comics']" 
+          [queryParams]="{ sort: r.query }" 
+          (click)="closeMobileMenu()" 
+          class="mobile-genre-link"
+        >
+          <i class="fa" [ngClass]="r.icon"></i> {{ r.label }}
+        </a>
+      </div>
+    </div>
+
     <!-- Category Accordion Section -->
     <div class="mobile-category-accordion">
       <button class="mobile-nav-item mobile-category-toggle" [class.active]="isMobileGenresOpen" (click)="toggleMobileGenres($event)">

@@ -279,16 +279,31 @@ namespace TruyenKomi.API.Services
                     (c.OtherNames != null && c.OtherNames.Contains(qText)));
             }
 
-            // 7. Total Count directly in SQL Server
+            if (string.Equals(filter.SortBy, "full", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(filter.SortBy, "completed", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(filter.Status) || filter.Status == "All")
+                {
+                    query = query.Where(c => c.Status == "Completed");
+                }
+            }
+
+            // 7. Total Count directly in Database
             int totalCount = await query.CountAsync();
 
-            // 8. Sorting directly in SQL Server
+            // 8. Sorting directly in Database
             query = (filter.SortBy?.ToLowerInvariant()) switch
             {
-                "views" => query.OrderByDescending(c => c.Views),
+                "day" or "daily" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.UpdatedAt),
+                "week" or "weekly" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.Rating),
+                "month" or "monthly" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.Bookmarks.Count),
+                "favorite" or "likes" or "yeu-thich" => query.OrderByDescending(c => c.Bookmarks.Count).ThenByDescending(c => c.Rating),
+                "new" or "created" => query.OrderByDescending(c => c.CreatedAt).ThenByDescending(c => c.Id),
+                "views" or "hot" => query.OrderByDescending(c => c.Views),
                 "rating" => query.OrderByDescending(c => c.Rating),
                 "az" or "title" => query.OrderBy(c => c.Title),
                 "chapters" => query.OrderByDescending(c => c.Chapters.Count),
+                "random" => query.OrderBy(c => EF.Functions.Random()),
                 _ => query.OrderByDescending(c => c.UpdatedAt)
             };
 

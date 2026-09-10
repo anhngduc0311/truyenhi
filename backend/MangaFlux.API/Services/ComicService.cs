@@ -194,14 +194,29 @@ namespace TruyenKomi.API.Services
                 }
             }
 
+            if (string.Equals(sortBy, "full", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(sortBy, "completed", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(status) || status == "All")
+                {
+                    comicsQuery = comicsQuery.Where(c => c.Status == "Completed");
+                }
+            }
+
             int totalCount = await comicsQuery.CountAsync();
 
             comicsQuery = (sortBy?.ToLowerInvariant()) switch
             {
-                "views" => comicsQuery.OrderByDescending(c => c.Views),
+                "day" or "daily" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.UpdatedAt),
+                "week" or "weekly" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.Rating),
+                "month" or "monthly" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.Bookmarks.Count),
+                "favorite" or "likes" or "yeu-thich" => comicsQuery.OrderByDescending(c => c.Bookmarks.Count).ThenByDescending(c => c.Rating),
+                "new" or "created" => comicsQuery.OrderByDescending(c => c.CreatedAt).ThenByDescending(c => c.Id),
+                "views" or "hot" => comicsQuery.OrderByDescending(c => c.Views),
                 "rating" => comicsQuery.OrderByDescending(c => c.Rating),
                 "title" or "az" => comicsQuery.OrderBy(c => c.Title),
                 "chapters" => comicsQuery.OrderByDescending(c => c.Chapters.Count),
+                "random" => comicsQuery.OrderBy(c => EF.Functions.Random()),
                 _ => comicsQuery.OrderByDescending(c => c.UpdatedAt)
             };
 

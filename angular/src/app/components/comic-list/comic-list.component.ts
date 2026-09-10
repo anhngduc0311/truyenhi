@@ -68,8 +68,15 @@ export class ComicListComponent implements OnInit {
       if (this.selectedCountry === 'Nhật Bản') label = 'Manga 18+ (Nhật Bản)';
       else if (this.selectedCountry === 'Hàn Quốc') label = 'Manhwa 18+ (Hàn Quốc)';
       else if (this.selectedCountry === 'Trung Quốc') label = 'Manhua 18+ (Trung Quốc)';
-      else if (this.selectedSort === 'hot' || this.selectedSort === 'views') label = 'Hot Nhất / Xem Nhiều';
+      else if (this.selectedSort === 'day') label = 'Top Ngày Hot Nhất';
+      else if (this.selectedSort === 'week') label = 'Top Tuần Được Đọc Nhiều';
+      else if (this.selectedSort === 'month') label = 'Top Tháng Đỉnh Cao';
+      else if (this.selectedSort === 'favorite') label = 'Yêu Thích Nhất';
       else if (this.selectedSort === 'full') label = 'Đã Hoàn Thành Full';
+      else if (this.selectedSort === 'new') label = 'Mới Đăng Gần Đây';
+      else if (this.selectedSort === 'random') label = 'Ngẫu Nhiên Chọn Lọc';
+      else if (this.selectedSort === 'views' || this.selectedSort === 'hot') label = 'Hot Nhất / Xem Nhiều';
+      else if (this.selectedSort === 'rating') label = 'Đánh Giá Cao Nhất';
       else if (this.selectedSort === 'new' || this.selectedSort === 'latest') label = 'Mới Cập Nhật';
     }
     this.seoService.setCategorySeo(label);
@@ -98,6 +105,15 @@ export class ComicListComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  shuffleRandom(): void {
+    if (this.selectedSort === 'random') {
+      this.fetchComics();
+    } else {
+      this.selectedSort = 'random';
+      this.onFilterChange();
+    }
   }
 
   onFilterChange(): void {
@@ -170,15 +186,29 @@ export class ComicListComponent implements OnInit {
         (c.value === 'Trung Quốc' && (this.selectedCountry.toLowerCase() === 'china' || this.selectedCountry.toLowerCase() === 'manhua'))
       );
       if (match) {
-        return `TRUYỆN TRANH ${match.label.toUpperCase()}`;
+        return `TRUYỆN HENTAI ${match.label.toUpperCase()}`;
       }
-      return `TRUYỆN TRANH ${this.selectedCountry.toUpperCase()}`;
+      return `TRUYỆN HENTAI ${this.selectedCountry.toUpperCase()}`;
     }
     if (this.selectedCategory) {
       const cat = this.categories.find(c => c.slug === this.selectedCategory);
-      if (cat) return `TRUYỆN TRANH - THỂ LOẠI ${cat.name.toUpperCase()}`;
+      if (cat) return `TRUYỆN HENTAI - THỂ LOẠI ${cat.name.toUpperCase()}`;
     }
-    return 'DANH SÁCH TRUYỆN TRANH';
+
+    switch (this.selectedSort?.toLowerCase()) {
+      case 'day': return 'BẢNG XẾP HẠNG - TOP NGÀY';
+      case 'week': return 'BẢNG XẾP HẠNG - TOP TUẦN';
+      case 'month': return 'BẢNG XẾP HẠNG - TOP THÁNG';
+      case 'favorite': return 'TRUYỆN HENTAI ĐƯỢC YÊU THÍCH NHẤT';
+      case 'new': return 'TRUYỆN HENTAI MỚI ĐĂNG GẦN ĐÂY';
+      case 'full': return 'TRUYỆN HENTAI ĐÃ HOÀN THÀNH (FULL)';
+      case 'random': return 'KHÁM PHÁ TRUYỆN HENTAI NGẪU NHIÊN';
+      case 'views': return 'TRUYỆN HENTAI XEM NHIỀU NHẤT';
+      case 'rating': return 'TRUYỆN HENTAI ĐÁNH GIÁ CAO NHẤT';
+      case 'chapters': return 'TRUYỆN HENTAI NHIỀU CHƯƠNG NHẤT';
+      case 'latest': return 'TRUYỆN HENTAI MỚI CẬP NHẬT';
+      default: return 'DANH SÁCH TRUYỆN HENTAI & DOUJINSHI';
+    }
   }
 
   formatTimeAgo(dateStr?: string): string {
