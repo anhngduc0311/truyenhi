@@ -146,6 +146,51 @@ export class ComicDetailComponent implements OnInit {
     this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
   }
 
+  isOneshot(chap?: { title?: string; chapterNumber?: number }): boolean {
+    if (chap?.title && /oneshot|one-shot|1shot/i.test(chap.title)) {
+      return true;
+    }
+    if (this.isComicOneshot()) {
+      if (!chap || chap.chapterNumber === 1 || (this.comic?.chapters && this.comic.chapters.length === 1)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  isComicOneshot(): boolean {
+    if (!this.comic) return false;
+    if (this.comic.categories && this.comic.categories.some(c => /oneshot|one-shot/i.test(c.name || c.slug))) {
+      return true;
+    }
+    if (this.comic.title && /oneshot|one-shot/i.test(this.comic.title)) {
+      return true;
+    }
+    if (this.comic.slug && /oneshot|one-shot/i.test(this.comic.slug)) {
+      return true;
+    }
+    if (this.comic.status && /oneshot/i.test(this.comic.status)) {
+      return true;
+    }
+    if (this.comic.chapters && this.comic.chapters.length === 1 && this.comic.chapters[0].title && /oneshot|one-shot|1shot/i.test(this.comic.chapters[0].title)) {
+      return true;
+    }
+    return false;
+  }
+
+  getChapterDisplayName(chap: { title?: string; chapterNumber?: number }): string {
+    if (!chap) return '';
+    if (this.isOneshot(chap)) {
+      let t = (chap.title || '').trim();
+      t = t.replace(/^(?:chapter|chương|chap|tập)\s*[\d\.]*\s*[-:]*\s*/i, '').trim();
+      return t || 'Oneshot';
+    }
+    if (chap.title && chap.title !== `Chapter ${chap.chapterNumber}` && chap.title !== `Chương ${chap.chapterNumber}`) {
+      return `Chapter ${chap.chapterNumber} - ${chap.title}`;
+    }
+    return `Chapter ${chap.chapterNumber}`;
+  }
+
   get firstChapterNumber(): number | null {
     if (!this.comic || !this.comic.chapters || this.comic.chapters.length === 0) return null;
     return this.comic.chapters[0].chapterNumber;

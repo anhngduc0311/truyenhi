@@ -1190,9 +1190,17 @@ class MangaDownloaderGUI(ctk.CTk):
 
             num = chap["number"]
             num_str = f"{int(num)}" if isinstance(num, (int, float)) and float(num).is_integer() else f"{num}"
-            chap_title = f"Chương {num_str}"
-            if chap.get("title") and chap["title"] != chap_title:
-                chap_title += f" - {chap['title']}"
+            raw_t = (chap.get("title") or "").strip()
+            is_oneshot = bool(re.search(r'oneshot|one-shot|1shot', raw_t, re.I) or re.search(r'oneshot|one-shot', str(title or ''), re.I))
+            if is_oneshot:
+                clean_t = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', raw_t, flags=re.I).strip()
+                chap_title = clean_t or "Oneshot"
+                api_chap_title = "Oneshot"
+            else:
+                chap_title = f"Chương {num_str}"
+                if raw_t and raw_t != chap_title:
+                    chap_title += f" - {raw_t}"
+                api_chap_title = raw_t or f"Chương {num_str}"
 
             chap_dir = chapters_root_dir / f"chap{num_str}"
             chap_dir.mkdir(parents=True, exist_ok=True)
@@ -1317,7 +1325,7 @@ class MangaDownloaderGUI(ctk.CTk):
                         comic_slug=slug,
                         cover_cdn_url=cover_cdn_url or valid_cdn_urls[0],
                         chapter_num=num,
-                        chapter_title=chap.get("title", f"Chương {num_str}"),
+                        chapter_title=api_chap_title,
                         image_urls=valid_cdn_urls,
                         author=info.get("author"),
                         translator_group=chap.get("scanlation_group") or info.get("translator_group"),
@@ -1504,9 +1512,17 @@ class MangaDownloaderGUI(ctk.CTk):
 
                     num = chap["number"]
                     num_str = f"{int(num)}" if isinstance(num, (int, float)) and float(num).is_integer() else f"{num}"
-                    chap_title = f"Chương {num_str}"
-                    if chap.get("title") and chap["title"] != chap_title:
-                        chap_title += f" - {chap['title']}"
+                    raw_t = (chap.get("title") or "").strip()
+                    is_oneshot = bool(re.search(r'oneshot|one-shot|1shot', raw_t, re.I) or re.search(r'oneshot|one-shot', str(info.get("title") or ''), re.I))
+                    if is_oneshot:
+                        clean_t = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', raw_t, flags=re.I).strip()
+                        chap_title = clean_t or "Oneshot"
+                        api_chap_title = "Oneshot"
+                    else:
+                        chap_title = f"Chương {num_str}"
+                        if raw_t and raw_t != chap_title:
+                            chap_title += f" - {raw_t}"
+                        api_chap_title = raw_t or f"Chương {num_str}"
 
                     chap_dir = chapters_root_dir / f"chap{num_str}"
 
@@ -1624,7 +1640,7 @@ class MangaDownloaderGUI(ctk.CTk):
                                 comic_slug=slug,
                                 cover_cdn_url=cover_cdn_url or valid_cdn_urls[0],
                                 chapter_num=num,
-                                chapter_title=chap.get("title", f"Chương {num_str}"),
+                                chapter_title=api_chap_title,
                                 image_urls=valid_cdn_urls,
                                 author=info.get("author"),
                                 translator_group=info.get("translator_group"),

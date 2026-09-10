@@ -108,14 +108,20 @@ export class SeoService {
    * Matches Google format: Đọc Truyện [Tên Truyện] Chap X Tiếng Việt - NekoHentai
    */
   setChapterReadSeo(comicTitle: string, comicSlug: string, chapterTitle: string, chapterNumber: number, coverImage?: string): void {
-    const fullTitle = `Đọc Truyện ${comicTitle} Chap ${chapterNumber} Tiếng Việt - NekoHentai`;
-    const cleanDesc = `Đọc truyện tranh ${comicTitle} Chap ${chapterNumber} bản dịch tiếng Việt chuẩn nét full HD tại NekoHentai. Tốc độ tải cực nhanh, không giật lag, đọc mượt mà không quảng cáo.`;
+    const isChapOneshot = (chapterTitle && /oneshot|one-shot|1shot/i.test(chapterTitle)) || (comicTitle && /oneshot|one-shot/i.test(comicTitle)) || (comicSlug && /oneshot|one-shot/i.test(comicSlug));
+    const chapText = isChapOneshot ? 'Oneshot' : `Chap ${chapterNumber}`;
+    const fullTitle = isChapOneshot 
+      ? `Đọc Truyện ${comicTitle} Oneshot Tiếng Việt - NekoHentai` 
+      : `Đọc Truyện ${comicTitle} Chap ${chapterNumber} Tiếng Việt - NekoHentai`;
+    const cleanDesc = isChapOneshot
+      ? `Đọc truyện tranh ${comicTitle} Oneshot bản dịch tiếng Việt chuẩn nét full HD tại NekoHentai. Tốc độ tải cực nhanh, không giật lag, đọc mượt mà không quảng cáo.`
+      : `Đọc truyện tranh ${comicTitle} Chap ${chapterNumber} bản dịch tiếng Việt chuẩn nét full HD tại NekoHentai. Tốc độ tải cực nhanh, không giật lag, đọc mượt mà không quảng cáo.`;
     const path = `/read/${comicSlug}/chuong-${chapterNumber}`;
     const cover = coverImage || this.defaultImage;
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nekohentai.lol';
 
     this.titleService.setTitle(fullTitle);
-    this.updateBasicMeta(cleanDesc, `${comicTitle} chap ${chapterNumber}, doc ${comicTitle} chuong ${chapterNumber}, doc truyen tranh ${comicTitle}`);
+    this.updateBasicMeta(cleanDesc, isChapOneshot ? `${comicTitle} oneshot, doc ${comicTitle} oneshot, doc truyen tranh ${comicTitle}` : `${comicTitle} chap ${chapterNumber}, doc ${comicTitle} chuong ${chapterNumber}, doc truyen tranh ${comicTitle}`);
     this.updateOpenGraph(fullTitle, cleanDesc, cover, path, 'article');
     this.updateTwitterCard(fullTitle, cleanDesc, cover);
     this.setCanonicalUrl(path);
@@ -139,7 +145,7 @@ export class SeoService {
         {
           '@type': 'ListItem',
           'position': 3,
-          'name': `Chap ${chapterNumber}`,
+          'name': chapText,
           'item': `${origin}${path}`
         }
       ]

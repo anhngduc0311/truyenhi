@@ -491,13 +491,16 @@ class BaseMangaDownloader:
 
             valid_cdn_urls = [u for u in uploaded_cdn_urls if u]
             if valid_cdn_urls:
+                raw_c_title = (chapter.get("title") or "").strip()
+                is_oneshot = bool(re.search(r'oneshot|one-shot|1shot', raw_c_title, re.I) or re.search(r'oneshot|one-shot', str(self.comic_title or ''), re.I))
+                final_chapter_title = "Oneshot" if is_oneshot else (raw_c_title or f"Chương {chap_num_str}")
                 synced = sync_chapter_to_web_api(
                     api_base_url=self.api_base_url,
                     comic_title=self.comic_title or self.slug.replace("-", " ").title(),
                     comic_slug=self.slug,
                     cover_cdn_url=self.cover_cdn_url or (valid_cdn_urls[0] if valid_cdn_urls else ""),
                     chapter_num=chap_num,
-                    chapter_title=chapter.get("title", f"Chương {chap_num_str}"),
+                    chapter_title=final_chapter_title,
                     image_urls=valid_cdn_urls,
                     author=self.author,
                     translator_group=chapter.get("scanlation_group") or self.translator_group,
@@ -610,9 +613,15 @@ class BaseMangaDownloader:
         start_time = time.time()
 
         for idx, chap in enumerate(target_chaps, 1):
-            chap_title = f"Chương {chap['number']}"
-            if chap.get("title") and chap["title"] != chap_title:
-                chap_title += f" - {chap['title']}"
+            raw_t = (chap.get("title") or "").strip()
+            is_oneshot = bool(re.search(r'oneshot|one-shot|1shot', raw_t, re.I) or re.search(r'oneshot|one-shot', str(self.comic_title or ''), re.I))
+            if is_oneshot:
+                clean_t = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', raw_t, flags=re.I).strip()
+                chap_title = clean_t or "Oneshot"
+            else:
+                chap_title = f"Chương {chap['number']}"
+                if raw_t and raw_t != chap_title:
+                    chap_title += f" - {raw_t}"
             
             if HAS_RICH and console:
                 console.print(f"[bold yellow]▶ [{idx}/{len(target_chaps)}] Đang tải {chap_title}...[/bold yellow]")
@@ -1062,6 +1071,7 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
                         c_num = float(m.group(1))
                     elif "oneshot" in c_title.lower() or "1shot" in c_title.lower():
                         c_num = 1.0
+                        c_title = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', c_title, flags=re.I).strip() or "Oneshot"
                     else:
                         c_num = float(len(chapters) + 1)
                     date_td = tr.find_all("td")
@@ -1075,6 +1085,9 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
                     })
 
         chapters.reverse()
+        if len(chapters) == 1 and ("oneshot" in title.lower() or "one-shot" in title.lower() or any("oneshot" in g.lower() for g in genres)):
+            chapters[0]["title"] = "Oneshot"
+
         seen_numbers = set()
         for idx, chap in enumerate(chapters, 1):
             if chap["number"] in seen_numbers:

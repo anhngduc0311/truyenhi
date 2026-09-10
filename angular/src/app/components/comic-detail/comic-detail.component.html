@@ -62,14 +62,14 @@
               [routerLink]="['/read', comic.slug, 'chuong-' + firstChapterNumber]" 
               (mouseenter)="prefetchFirstChapter()"
               class="btn-cta btn-read-first"
-              title="Đọc từ Chapter {{ firstChapterNumber }}"
+              [title]="isComicOneshot() ? 'Đọc Oneshot' : 'Đọc từ Chapter ' + firstChapterNumber"
             >
               <i class="fa fa-book-open"></i>
-              <span>Đọc Từ Đầu</span>
+              <span>{{ isComicOneshot() ? 'Đọc Oneshot' : 'Đọc Từ Đầu' }}</span>
             </a>
 
             <a 
-              *ngIf="latestChapterNumber !== null" 
+              *ngIf="latestChapterNumber !== null && !isComicOneshot()" 
               [routerLink]="['/read', comic.slug, 'chuong-' + latestChapterNumber]" 
               (mouseenter)="prefetchChapter(latestChapterNumber)"
               class="btn-cta btn-read-latest"
@@ -209,7 +209,7 @@
               (mouseenter)="prefetchChapter(chap.chapterNumber)"
               class="chapter-row"
             >
-              <span class="chap-name">Chapter {{ chap.chapterNumber }} <span class="chap-title" *ngIf="chap.title && chap.title !== 'Chapter ' + chap.chapterNumber && chap.title !== 'Chương ' + chap.chapterNumber">- {{ chap.title }}</span></span>
+              <span class="chap-name">{{ getChapterDisplayName(chap) }}</span>
               <div class="chap-meta">
                 <span class="chap-date"><i class="fa fa-clock-o"></i> {{ (chap.publishedAt || chap.createdAt) | date:'dd/MM/yyyy' }}</span>
                 <span class="chap-views" *ngIf="chap.views !== undefined && chap.views > 0"><i class="fa fa-eye"></i> {{ chap.views | number }}</span>

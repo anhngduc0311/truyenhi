@@ -16,7 +16,7 @@
           <h2 class="comic-name">
             <a [routerLink]="['/comic', chapter.comicSlug]">{{ chapter.comicTitle }}</a>
           </h2>
-          <span class="chap-badge">Chapter {{ chapter.chapterNumber }} <span *ngIf="chapter.title">- {{ chapter.title }}</span></span>
+          <span class="chap-badge">{{ getChapterLabel(chapter) }}</span>
         </div>
       </div>
 
@@ -279,7 +279,7 @@
           </div>
           <h3 class="end-comic-title">
             <a [routerLink]="['/comic', chapter.comicSlug]">{{ chapter.comicTitle }}</a>
-            <span class="end-chap-num"> - Chapter {{ chapter.chapterNumber }}</span>
+            <span class="end-chap-num"> - {{ getChapterLabel(chapter) }}</span>
           </h3>
         </div>
 

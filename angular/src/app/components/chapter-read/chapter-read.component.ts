@@ -682,8 +682,29 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
     this.nextChapterId = currentIndex < sorted.length - 1 ? sorted[currentIndex + 1].id : null;
   }
 
-  getChapterLabel(ch: Chapter): string {
+  isOneshot(ch?: { title?: string; chapterNumber?: number }): boolean {
+    const target = ch || this.chapter;
+    if (target?.title && /oneshot|one-shot|1shot/i.test(target.title)) {
+      return true;
+    }
+    if (this.chapter) {
+      if (this.chapter.comicTitle && /oneshot|one-shot/i.test(this.chapter.comicTitle)) return true;
+      if (this.chapter.comicSlug && /oneshot|one-shot/i.test(this.chapter.comicSlug)) return true;
+      if (this.chapter.allChapters && this.chapter.allChapters.length === 1) {
+        const onlyChap = this.chapter.allChapters[0];
+        if (onlyChap?.title && /oneshot|one-shot|1shot/i.test(onlyChap.title)) return true;
+      }
+    }
+    return false;
+  }
+
+  getChapterLabel(ch: Chapter | ChapterDetail | null | undefined): string {
     if (!ch) return '';
+    if (this.isOneshot(ch)) {
+      let t = (ch.title || '').trim();
+      t = t.replace(/^(?:chapter|chương|chap|tập)\s*[\d\.]*\s*[-:]*\s*/i, '').trim();
+      return t || 'Oneshot';
+    }
     if (ch.title && ch.title !== `Chapter ${ch.chapterNumber}` && ch.title !== `Chương ${ch.chapterNumber}`) {
       return `Chapter ${ch.chapterNumber} - ${ch.title}`;
     }
