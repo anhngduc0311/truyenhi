@@ -79,7 +79,7 @@ export class AdminGenresComponent implements OnInit {
 
   loadGenres(): void {
     this.isLoading = true;
-    this.comicService.getCategories().subscribe({
+    this.comicService.getCategories(false).subscribe({
       next: (data) => {
         this.genres = data || [];
         this.applyFilters();

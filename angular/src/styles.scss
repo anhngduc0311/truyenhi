@@ -39,56 +39,7 @@
   --grad-dark-overlay: linear-gradient(180deg, rgba(10, 13, 18, 0) 0%, rgba(10, 13, 18, 0.85) 70%, #0a0d12 100%);
   --grad-card-overlay: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.9) 100%);
 
-  /* Light Theme Surface Tokens */
-  --bg-page: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-hover: #ffffff;
-  --bg-elevated: #f1f5f9;
-  --bg-input: #f1f5f9;
-
-  /* Glassmorphism Tokens (Light) */
-  --glass-bg: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(0, 0, 0, 0.07);
-  --glass-blur: blur(20px) saturate(180%);
-  --glass-card: rgba(255, 255, 255, 0.7);
-
-  /* Borders */
-  --border-color: #e2e8f0;
-  --border-subtle: #cbd5e1;
-  --border-focus: var(--primary-orange);
-
-  /* Typography Colors */
-  --text-main: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --text-inverse: #ffffff;
-
-  /* Shadows & Elevation */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08);
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
-  --shadow-orange-glow: 0 8px 25px rgba(253, 84, 0, 0.28);
-  --shadow-cyan-glow: 0 8px 25px rgba(14, 165, 233, 0.28);
-
-  /* Border Radii */
-  --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --radius-pill: 9999px;
-
-  /* Transitions */
-  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Dark Theme Surface Tokens */
-body.dark,
-[data-theme="dark"] {
+  /* Surface & Background Tokens (Permanent Dark Theme) */
   --bg-page: #0a0d12;
   --bg-surface: #12161f;
   --bg-card: #151a24;
@@ -105,6 +56,7 @@ body.dark,
   /* Borders */
   --border-color: rgba(255, 255, 255, 0.08);
   --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-focus: var(--primary-orange);
 
   /* Typography Colors */
   --text-main: #f8fafc;
@@ -112,7 +64,52 @@ body.dark,
   --text-muted: #8492a6;
   --text-inverse: #0f172a;
 
-  /* Shadows */
+  /* Shadows & Elevation */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 35px rgba(0, 0, 0, 0.55);
+  --shadow-xl: 0 24px 50px rgba(0, 0, 0, 0.7);
+  --shadow-orange-glow: 0 8px 30px rgba(253, 84, 0, 0.35);
+  --shadow-cyan-glow: 0 8px 30px rgba(14, 165, 233, 0.35);
+
+  /* Border Radii */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+
+  /* Transitions */
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enforce Dark Theme for body and data-theme */
+body,
+body.dark,
+[data-theme="dark"] {
+  --bg-page: #0a0d12;
+  --bg-surface: #12161f;
+  --bg-card: #151a24;
+  --bg-card-hover: #1c2230;
+  --bg-elevated: #1a202c;
+  --bg-input: #171c26;
+
+  --glass-bg: rgba(14, 18, 26, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-blur: blur(24px) saturate(190%);
+  --glass-card: rgba(21, 26, 36, 0.7);
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.12);
+
+  --text-main: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #8492a6;
+  --text-inverse: #0f172a;
+
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 12px 35px rgba(0, 0, 0, 0.55);

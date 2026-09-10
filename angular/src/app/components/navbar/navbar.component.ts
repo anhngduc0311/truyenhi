@@ -7,7 +7,6 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { ComicService } from '../../services/comic.service';
-import { ThemeService } from '../../services/theme.service';
 import { SearchAutocompleteItem, Category } from '../../models/comic.model';
 import { GamificationService } from '../../services/gamification.service';
 import { UserGamificationProfile, LeaderboardUser, RealmInfo } from '../../models/user.model';
@@ -22,7 +21,6 @@ import { UserGamificationProfile, LeaderboardUser, RealmInfo } from '../../model
 export class NavbarComponent implements OnInit, OnDestroy {
   public authService = inject(AuthService);
   public notificationService = inject(NotificationService);
-  public themeService = inject(ThemeService);
   private comicService = inject(ComicService);
   public gamificationService = inject(GamificationService);
   private router = inject(Router);
@@ -145,10 +143,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     } else {
       this.isAutocompleteOpen = false;
     }
-  }
-
-  toggleTheme(): void {
-    this.themeService.toggleTheme();
   }
 
   onSearchInput(): void {

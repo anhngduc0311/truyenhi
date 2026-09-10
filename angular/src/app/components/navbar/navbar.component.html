@@ -124,11 +124,6 @@
 
     <!-- RIGHT: User & Quick Actions -->
     <div class="nav-actions">
-      <!-- Theme Switch Button -->
-      <button class="action-btn theme-btn" (click)="toggleTheme()" [title]="themeService.isDarkMode ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'">
-        <i class="fa" [ngClass]="themeService.isDarkMode ? 'fa-sun-o text-amber' : 'fa-moon-o text-cyan'"></i>
-      </button>
-
       <!-- Guest State: Login / Register -->
       <ng-container *ngIf="!authService.isLoggedIn">
         <button class="btn-primary-gradient auth-btn-login" routerLink="/auth" (click)="closeMobileMenu()">

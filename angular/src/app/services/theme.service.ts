@@ -5,50 +5,42 @@ import { BehaviorSubject } from 'rxjs';
   providedIn: 'root'
 })
 export class ThemeService {
-  private themeSubject = new BehaviorSubject<'light' | 'dark'>('light');
+  private themeSubject = new BehaviorSubject<'dark'>('dark');
   public theme$ = this.themeSubject.asObservable();
 
   constructor() {
     this.initTheme();
   }
 
-  get currentTheme(): 'light' | 'dark' {
-    return this.themeSubject.value;
+  get currentTheme(): 'dark' {
+    return 'dark';
   }
 
   get isDarkMode(): boolean {
-    return this.themeSubject.value === 'dark';
+    return true;
   }
 
   initTheme(): void {
-    const saved = (localStorage.getItem('nekohentai_theme') || localStorage.getItem('truyenkomi_theme') || localStorage.getItem('truyengg_theme')) as 'light' | 'dark';
-    const theme = saved || 'light';
-    this.applyTheme(theme);
+    this.applyTheme('dark');
   }
 
   toggleTheme(): void {
-    const next = this.themeSubject.value === 'light' ? 'dark' : 'light';
-    this.applyTheme(next);
+    this.applyTheme('dark');
   }
 
   setTheme(theme: 'light' | 'dark'): void {
-    this.applyTheme(theme);
+    this.applyTheme('dark');
   }
 
-  private applyTheme(theme: 'light' | 'dark'): void {
-    this.themeSubject.next(theme);
-    localStorage.setItem('nekohentai_theme', theme);
-    localStorage.setItem('truyenkomi_theme', theme);
+  private applyTheme(theme: 'dark'): void {
+    this.themeSubject.next('dark');
+    localStorage.setItem('nekohentai_theme', 'dark');
+    localStorage.setItem('truyenkomi_theme', 'dark');
 
     if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute('data-theme', theme);
-      if (theme === 'dark') {
-        document.body.classList.remove('light');
-        document.body.classList.add('dark');
-      } else {
-        document.body.classList.remove('dark');
-        document.body.classList.add('light');
-      }
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.body.classList.remove('light');
+      document.body.classList.add('dark');
     }
   }
 }

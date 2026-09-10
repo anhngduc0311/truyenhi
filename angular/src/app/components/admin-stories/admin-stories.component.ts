@@ -85,7 +85,7 @@ export class AdminStoriesComponent implements OnInit {
       }
     });
 
-    this.comicService.getCategories().subscribe(cats => this.categories = cats);
+    this.comicService.getCategories(false).subscribe(cats => this.categories = cats);
   }
 
   applyFilters(): void {

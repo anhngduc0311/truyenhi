@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
-import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-settings',
@@ -14,7 +13,7 @@ import { ThemeService } from '../../services/theme.service';
   styleUrls: ['./settings.component.scss']
 })
 export class SettingsComponent implements OnInit {
-  activeTab: 'profile' | 'password' | 'theme' | 'notifications' | 'danger' = 'profile';
+  activeTab: 'profile' | 'password' | 'notifications' | 'danger' = 'profile';
 
   // Profile Form
   profileForm = {
@@ -35,9 +34,6 @@ export class SettingsComponent implements OnInit {
     password: ''
   };
 
-  // Theme Settings
-  currentTheme: 'dark' | 'light' = 'light';
-
   // Notification Preferences
   notificationPrefs = {
     notifyNewChapter: true,
@@ -53,13 +49,11 @@ export class SettingsComponent implements OnInit {
   constructor(
     public authService: AuthService,
     private userService: UserService,
-    public themeService: ThemeService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadUserData();
-    this.currentTheme = this.themeService.currentTheme;
     this.initNotificationPrefs();
   }
 
@@ -131,17 +125,6 @@ export class SettingsComponent implements OnInit {
         this.isSaving = false;
       }
     });
-  }
-
-  // Theme Handling
-  initTheme(): void {
-    const savedTheme = (localStorage.getItem('nekohentai_theme') || localStorage.getItem('truyenkomi_theme') as 'dark' | 'light') || 'dark';
-    this.setTheme(savedTheme as 'dark' | 'light');
-  }
-
-  setTheme(theme: 'dark' | 'light'): void {
-    this.currentTheme = theme;
-    this.themeService.setTheme(theme);
   }
 
   // Notification Preferences Handling

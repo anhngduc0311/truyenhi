@@ -139,7 +139,7 @@ export class ComicService {
     });
   }
 
-  getCategories(onlyWithComics = false): Observable<Category[]> {
+  getCategories(onlyWithComics = true): Observable<Category[]> {
     const query = onlyWithComics ? '?onlyWithComics=true' : '';
     return this.api.get<Category[]>(`categories${query}`);
   }

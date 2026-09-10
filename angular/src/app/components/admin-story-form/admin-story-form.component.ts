@@ -81,7 +81,7 @@ export class AdminStoryFormComponent implements OnInit {
   }
 
   loadCategories(): void {
-    this.comicService.getCategories().subscribe({
+    this.comicService.getCategories(false).subscribe({
       next: (cats) => this.categories = cats,
       error: (err) => console.error('Lỗi tải danh mục:', err)
     });

@@ -52,14 +52,6 @@
 
           <button 
             class="nav-tab" 
-            [class.active]="activeTab === 'theme'" 
-            (click)="activeTab = 'theme'">
-            <i class="fa fa-adjust"></i>
-            <span>Chế độ giao diện</span>
-          </button>
-
-          <button 
-            class="nav-tab" 
             [class.active]="activeTab === 'notifications'" 
             (click)="activeTab = 'notifications'">
             <i class="fa fa-bell"></i>
@@ -171,61 +163,7 @@
           </form>
         </div>
 
-        <!-- TAB 3: CHẾ ĐỘ GIAO DIỆN -->
-        <div class="tab-pane" *ngIf="activeTab === 'theme'">
-          <div class="pane-header">
-            <h2 class="pane-title"><i class="fa fa-paint-brush icon-orange"></i> Chế Độ Giao Diện (Theme)</h2>
-            <p class="pane-subtitle">Tùy chỉnh tông màu giao diện đọc truyện theo sở thích của bạn.</p>
-          </div>
-
-          <div class="theme-cards-grid">
-            <!-- Dark Card -->
-            <div 
-              class="theme-card dark-theme-card" 
-              [class.selected]="currentTheme === 'dark'"
-              (click)="setTheme('dark')"
-            >
-              <div class="theme-preview">
-                <div class="preview-header"></div>
-                <div class="preview-body">
-                  <div class="preview-line"></div>
-                  <div class="preview-block"></div>
-                </div>
-              </div>
-              <div class="theme-card-info">
-                <h3><i class="fa fa-moon-o"></i> Giao diện Tối (Dark Cyberpunk)</h3>
-                <p>Mặc định với phong cách tối màu dịu mắt, điểm nhấn Cam Neon sống động.</p>
-              </div>
-              <div class="check-icon" *ngIf="currentTheme === 'dark'">
-                <i class="fa fa-check-circle"></i>
-              </div>
-            </div>
-
-            <!-- Light Card -->
-            <div 
-              class="theme-card light-theme-card" 
-              [class.selected]="currentTheme === 'light'"
-              (click)="setTheme('light')"
-            >
-              <div class="theme-preview">
-                <div class="preview-header"></div>
-                <div class="preview-body">
-                  <div class="preview-line"></div>
-                  <div class="preview-block"></div>
-                </div>
-              </div>
-              <div class="theme-card-info">
-                <h3><i class="fa fa-sun-o"></i> Giao diện Sáng (Light Clean)</h3>
-                <p>Phong cách sáng sủa, tinh tế với tone màu trang nhã, dễ nhìn ban ngày.</p>
-              </div>
-              <div class="check-icon" *ngIf="currentTheme === 'light'">
-                <i class="fa fa-check-circle"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 4: CÀI ĐẶT THÔNG BÁO -->
+        <!-- TAB 3: CÀI ĐẶT THÔNG BÁO -->
         <div class="tab-pane" *ngIf="activeTab === 'notifications'">
           <div class="pane-header">
             <h2 class="pane-title"><i class="fa fa-bell-o icon-orange"></i> Cài Đặt Thông Báo</h2>
