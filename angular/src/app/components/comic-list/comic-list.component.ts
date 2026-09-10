@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { ComicService } from '../../services/comic.service';
 import { SeoService } from '../../services/seo.service';
 import { Comic, Category } from '../../models/comic.model';
+import { ChapterDisplayPipe } from '../../pipes/chapter-display.pipe';
 
 @Component({
   selector: 'app-comic-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, ChapterDisplayPipe],
   templateUrl: './comic-list.component.html',
   styleUrls: ['./comic-list.component.scss']
 })

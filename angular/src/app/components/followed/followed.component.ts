@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { Bookmark } from '../../models/user.model';
+import { ChapterDisplayPipe } from '../../pipes/chapter-display.pipe';
 
 @Component({
   selector: 'app-followed',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ChapterDisplayPipe],
   templateUrl: './followed.component.html',
   styleUrls: ['./followed.component.scss']
 })

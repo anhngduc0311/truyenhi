@@ -109,7 +109,7 @@
             <div class="item-meta">
               <h4 class="item-title">{{ item.title }}</h4>
               <div class="item-sub">
-                <span class="item-chapter" *ngIf="item.latestChapter">Chap {{ item.latestChapter }}</span>
+                <span class="item-chapter" *ngIf="item.latestChapter">{{ formatAutocompleteChapter(item) }}</span>
                 <span class="item-rating"><i class="fa fa-star text-amber"></i> {{ item.rating }}</span>
               </div>
             </div>
@@ -242,7 +242,7 @@
         <div class="item-meta">
           <h4 class="item-title">{{ item.title }}</h4>
           <div class="item-sub">
-            <span class="item-chapter" *ngIf="item.latestChapter">Chap {{ item.latestChapter }}</span>
+            <span class="item-chapter" *ngIf="item.latestChapter">{{ formatAutocompleteChapter(item) }}</span>
             <span class="item-rating"><i class="fa fa-star text-amber"></i> {{ item.rating }}</span>
           </div>
         </div>

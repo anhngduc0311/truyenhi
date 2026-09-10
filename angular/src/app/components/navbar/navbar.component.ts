@@ -122,6 +122,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.searchSub?.unsubscribe();
   }
 
+  formatAutocompleteChapter(item: SearchAutocompleteItem): string {
+    if (!item.latestChapter) return '';
+    if (
+      /oneshot|one-shot|1shot/i.test(item.latestChapter) ||
+      /oneshot|one-shot/i.test(item.title) ||
+      /oneshot|one-shot/i.test(item.slug)
+    ) {
+      return 'Oneshot';
+    }
+    const cleanNum = item.latestChapter.replace(/^(?:chapter|chương|chap)\s*/i, '').trim();
+    return `Chap ${cleanNum || item.latestChapter}`;
+  }
+
   toggleSearchBar(): void {
     this.isSearchOpen = !this.isSearchOpen;
     if (this.isSearchOpen) {

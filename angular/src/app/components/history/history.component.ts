@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { ReadingHistory } from '../../models/user.model';
+import { ChapterDisplayPipe } from '../../pipes/chapter-display.pipe';
 
 @Component({
   selector: 'app-history',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ChapterDisplayPipe],
   templateUrl: './history.component.html',
   styleUrls: ['./history.component.scss']
 })

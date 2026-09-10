@@ -146,6 +146,26 @@ export class ComicDetailComponent implements OnInit {
     this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
   }
 
+  isAuthorClickable(): boolean {
+    if (!this.comic?.author) return false;
+    const a = this.comic.author.trim().toLowerCase();
+    return a !== '' && a !== 'đang cập nhật' && a !== 'updating' && a !== 'n/a';
+  }
+
+  getAuthorsList(): string[] {
+    if (!this.comic?.author) return [];
+    return this.comic.author
+      .split(/[,;\/|]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && s.toLowerCase() !== 'đang cập nhật');
+  }
+
+  isTranslatorClickable(): boolean {
+    if (!this.comic?.translatorGroup) return false;
+    const t = this.comic.translatorGroup.trim().toLowerCase();
+    return t !== '' && t !== 'đang cập nhật' && t !== 'updating' && t !== 'n/a';
+  }
+
   isOneshot(chap?: { title?: string; chapterNumber?: number }): boolean {
     if (chap?.title && /oneshot|one-shot|1shot/i.test(chap.title)) {
       return true;

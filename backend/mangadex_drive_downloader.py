@@ -187,43 +187,52 @@ def parse_date_to_iso(date_val):
 
 
 # =============================================================================
-# 1. TẢI ẢNH LÊN CLOUD STORAGE BUCKET (GCS / R2) & ĐỒNG BỘ WEB API
+import boto3
+from botocore.config import Config
+
+_s3_client = None
+
+def get_s3_client():
+    global _s3_client
+    if _s3_client is None:
+        endpoint = GCS_ENDPOINT
+        endpoint_url = f"https://{endpoint}" if endpoint and not endpoint.startswith("http") else endpoint
+        _s3_client = boto3.client(
+            "s3",
+            endpoint_url=endpoint_url,
+            aws_access_key_id=GCS_ACCESS_KEY,
+            aws_secret_access_key=GCS_SECRET_KEY,
+            region_name="ap-southeast-1",
+            config=Config(signature_version="s3v4", max_pool_connections=50)
+        )
+    return _s3_client
+
+
+# =============================================================================
+# 1. TẢI ẢNH LÊN CLOUD STORAGE BUCKET (AWS S3 / R2 / GCS) & ĐỒNG BỘ WEB API
 # =============================================================================
 def upload_file_to_cloud(local_path: Path, object_name: str, content_type: str = "image/webp", session: requests.Session = None, max_retries: int = 3) -> str:
-    """Tải 1 file ảnh lên Cloud Storage Bucket (Google Cloud Storage / R2) qua persistent session tái sử dụng kết nối (Tự động thử lại 3 lần)"""
+    """Tải 1 file ảnh lên Cloud Storage Bucket (AWS S3 / R2 / GCS) qua boto3 SigV4 (Tự động thử lại 3 lần)"""
     object_name = object_name.lstrip("/")
-    url = f'https://{GCS_ENDPOINT}/{GCS_BUCKET}/{object_name}'
-
-    with open(local_path, "rb") as f:
-        data = f.read()
-
+    client = get_s3_client()
     last_err = None
-    http_client = session or requests
+
     for attempt in range(max_retries):
         try:
-            date_str = datetime.now(timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')
-            string_to_sign = f'PUT\n\n{content_type}\n{date_str}\n/{GCS_BUCKET}/{object_name}'
-            signature = hmac.new(GCS_SECRET_KEY.encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha1).digest()
-            sig_b64 = base64.b64encode(signature).decode('utf-8')
-            auth_header = f'AWS {GCS_ACCESS_KEY}:{sig_b64}'
-
-            headers = {
-                'Date': date_str,
-                'Content-Type': content_type,
-                'Authorization': auth_header
-            }
-
-            res = http_client.put(url, data=data, headers=headers, timeout=25)
-            if res.status_code in (200, 201, 204):
-                return f"{CDN_BASE_URL}/{object_name}"
-            else:
-                last_err = f"HTTP {res.status_code}: {res.text[:100]}"
-                time.sleep(0.3 * (attempt + 1))
+            with open(local_path, "rb") as f:
+                client.put_object(
+                    Bucket=GCS_BUCKET,
+                    Key=object_name,
+                    Body=f,
+                    ContentType=content_type
+                )
+            return f"{CDN_BASE_URL}/{object_name}"
         except Exception as e:
             last_err = str(e)
             time.sleep(0.3 * (attempt + 1))
 
     raise Exception(f"Upload bucket failed sau {max_retries} lần thử: {last_err}")
+
 
 
 def normalize_chapter_key(val) -> str:

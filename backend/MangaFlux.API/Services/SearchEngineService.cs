@@ -32,8 +32,8 @@ namespace TruyenKomi.API.Services
             _context = context;
             _cache = cache;
             _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-            _meiliHost = Environment.GetEnvironmentVariable("MEILISEARCH_HOST") ?? "http://localhost:7700";
-            _meiliKey = Environment.GetEnvironmentVariable("MEILI_MASTER_KEY") ?? "TruyenKomiMeiliMasterKey2026!";
+            _meiliHost = Environment.GetEnvironmentVariable("MEILISEARCH_HOST") ?? "http://localhost:7701";
+            _meiliKey = Environment.GetEnvironmentVariable("MEILI_MASTER_KEY") ?? "NekoHentaiMeiliMasterKey2026!";
         }
 
         private async Task<HttpResponseMessage?> SendMeiliRequestAsync(HttpMethod method, string path, object? body = null)

@@ -104,30 +104,42 @@ def slugify(text: str) -> str:
     return text.strip("-") or "comic"
 
 
+import boto3
+from botocore.config import Config
+
+_s3_client = None
+
+def get_s3_client():
+    global _s3_client
+    if _s3_client is None:
+        endpoint = GCS_ENDPOINT
+        endpoint_url = f"https://{endpoint}" if endpoint and not endpoint.startswith("http") else endpoint
+        _s3_client = boto3.client(
+            "s3",
+            endpoint_url=endpoint_url,
+            aws_access_key_id=GCS_ACCESS_KEY,
+            aws_secret_access_key=GCS_SECRET_KEY,
+            region_name="ap-southeast-1",
+            config=Config(signature_version="s3v4", max_pool_connections=50)
+        )
+    return _s3_client
+
+
 def upload_file_to_cloud(local_path: Path, object_name: str, content_type: str = "image/webp") -> str:
-    """Tải 1 file lên Cloud Storage (Google Cloud Storage / Cloudflare R2 S3-compatible) và trả về URL CDN"""
+    """Tải 1 file lên Cloud Storage (AWS S3 / Cloudflare R2 / GCS) và trả về URL CDN"""
     object_name = object_name.lstrip("/")
-    date_str = datetime.now(timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')
-    string_to_sign = f'PUT\n\n{content_type}\n{date_str}\n/{GCS_BUCKET}/{object_name}'
-    signature = hmac.new(GCS_SECRET_KEY.encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha1).digest()
-    sig_b64 = base64.b64encode(signature).decode('utf-8')
-    auth_header = f'AWS {GCS_ACCESS_KEY}:{sig_b64}'
-
-    url = f'https://{GCS_ENDPOINT}/{GCS_BUCKET}/{object_name}'
-    headers = {
-        'Date': date_str,
-        'Content-Type': content_type,
-        'Authorization': auth_header
-    }
-
-    with open(local_path, "rb") as f:
-        data = f.read()
-
-    res = requests.put(url, data=data, headers=headers, timeout=30)
-    if res.status_code in (200, 201, 204):
+    try:
+        client = get_s3_client()
+        with open(local_path, "rb") as f:
+            client.put_object(
+                Bucket=GCS_BUCKET,
+                Key=object_name,
+                Body=f,
+                ContentType=content_type
+            )
         return f"{CDN_BASE_URL}/{object_name}"
-    else:
-        raise Exception(f"Upload failed HTTP {res.status_code}: {res.text[:100]}")
+    except Exception as e:
+        raise Exception(f"Upload failed: {str(e)}")
 
 
 def parse_date_to_iso(date_val):

@@ -44,7 +44,13 @@
 
             <div class="comic-mobile-quick-meta">
               <span class="meta-item author-item" *ngIf="comic.author">
-                <i class="fa fa-pencil"></i> {{ comic.author }}
+                <i class="fa fa-pencil"></i>
+                <ng-container *ngIf="isAuthorClickable(); else plainMobileAuthor">
+                  <ng-container *ngFor="let a of getAuthorsList(); let last = last">
+                    <a [routerLink]="['/search']" [queryParams]="{ q: a }" class="author-link" [title]="'Xem truyện của tác giả ' + a">{{ a }}</a><span *ngIf="!last" class="author-sep">, </span>
+                  </ng-container>
+                </ng-container>
+                <ng-template #plainMobileAuthor>{{ comic.author }}</ng-template>
               </span>
               <span class="meta-item stat-item">
                 <i class="fa fa-star text-amber"></i> {{ comic.rating || '5.0' }}
@@ -114,7 +120,14 @@
             <!-- Row 1 -->
             <div class="spec-cell">
               <span class="spec-label">Tác giả</span>
-              <span class="spec-value">{{ comic.author || 'Đang cập nhật' }}</span>
+              <div class="authors-links-wrapper" *ngIf="isAuthorClickable(); else plainSpecAuthor">
+                <ng-container *ngFor="let a of getAuthorsList(); let last = last">
+                  <a [routerLink]="['/search']" [queryParams]="{ q: a }" class="spec-value author-link" [title]="'Xem truyện của tác giả ' + a">{{ a }}</a><span *ngIf="!last" class="author-sep">, </span>
+                </ng-container>
+              </div>
+              <ng-template #plainSpecAuthor>
+                <span class="spec-value">{{ comic.author || 'Đang cập nhật' }}</span>
+              </ng-template>
             </div>
             <div class="spec-cell">
               <span class="spec-label">Lượt xem</span>
@@ -124,7 +137,14 @@
             <!-- Row 2 -->
             <div class="spec-cell">
               <span class="spec-label">Nhóm dịch</span>
-              <span class="spec-value text-translator">{{ comic.translatorGroup || 'Đang cập nhật' }}</span>
+              <a *ngIf="isTranslatorClickable(); else plainTranslator" 
+                 [routerLink]="['/search']" 
+                 [queryParams]="{ q: comic.translatorGroup }" 
+                 class="spec-value text-translator author-link" 
+                 [title]="'Xem truyện của nhóm ' + comic.translatorGroup">{{ comic.translatorGroup }}</a>
+              <ng-template #plainTranslator>
+                <span class="spec-value text-translator">{{ comic.translatorGroup || 'Đang cập nhật' }}</span>
+              </ng-template>
             </div>
             <div class="spec-cell">
               <span class="spec-label">Cập nhật</span>

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ComicService } from '../../services/comic.service';
 import { Comic } from '../../models/comic.model';
+import { ChapterDisplayPipe } from '../../pipes/chapter-display.pipe';
 
 @Component({
   selector: 'app-comic-removed',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ChapterDisplayPipe],
   template: `
     <div class="container comic-removed-page text-center">
       <div class="card-removed bg-glass">
@@ -42,7 +43,7 @@ import { Comic } from '../../models/comic.model';
           <div class="comic-card bg-glass" *ngFor="let comic of recommendedComics">
             <a [routerLink]="['/comic', comic.slug]" class="cover-wrapper">
               <img [src]="comic.coverImage || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=400&q=80'" [alt]="comic.title" loading="lazy" />
-              <span class="chapter-badge">Chap {{ comic.latestChapter?.chapterNumber || 1 }}</span>
+              <span class="chapter-badge">{{ comic.latestChapter | chapterDisplay:comic:'Chap ' }}</span>
             </a>
             <div class="comic-info text-left">
               <h3 class="comic-title">

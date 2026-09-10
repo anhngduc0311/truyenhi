@@ -1,10 +1,10 @@
 services:
-  # 1. Database - PostgreSQL
+  # 1. Database - PostgreSQL (Host: 5433 -> Container: 5432)
   postgres:
     image: postgres:16-alpine
     container_name: nekohentai-postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       - POSTGRES_DB=NekoHentaiDb
       - POSTGRES_USER=postgres
@@ -14,22 +14,22 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database:/docker-entrypoint-initdb.d:ro
 
-  # 2. Cache - Redis
+  # 2. Cache - Redis (Host: 6380 -> Container: 6379)
   redis:
     image: redis:7-alpine
     container_name: nekohentai-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     restart: always
     volumes:
       - redis_data:/data
 
-  # 3. Search Engine - Meilisearch
+  # 3. Search Engine - Meilisearch (Host: 7701 -> Container: 7700)
   meilisearch:
     image: getmeili/meilisearch:v1.10
     container_name: nekohentai-meilisearch
     ports:
-      - "7700:7700"
+      - "7701:7700"
     environment:
       - MEILI_MASTER_KEY=NekoHentaiMeiliMasterKey2026!
       - MEILI_ENV=production
@@ -38,7 +38,7 @@ services:
     volumes:
       - meili_data:/meili_data
 
-  # 4. Backend .NET Web API
+  # 4. Backend .NET Web API (Host: 5005 -> Container: 5000)
   api:
     build:
       context: ./backend/MangaFlux.API
@@ -46,7 +46,7 @@ services:
     container_name: nekohentai-api
     restart: always
     ports:
-      - "5000:5000"
+      - "5005:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - DB_CONNECTION_STRING=Host=postgres;Port=5432;Database=NekoHentaiDb;Username=postgres;Password=NekoHentaiDbPassword2026!;
@@ -70,7 +70,7 @@ services:
       - redis
       - meilisearch
 
-  # 5. Frontend Angular SPA
+  # 5. Frontend Angular SPA (Host: 4201 -> Container: 80)
   frontend:
     build:
       context: ./angular
@@ -78,15 +78,15 @@ services:
     container_name: nekohentai-frontend
     restart: always
     ports:
-      - "4200:80"
+      - "4201:80"
 
-  # 6. Gateway / Reverse Proxy - Nginx
+  # 6. Gateway / Reverse Proxy - Nginx (Host: 80 & 8088 -> Container: 80)
   nginx:
     image: nginx:alpine
     container_name: nekohentai-nginx
     ports:
       - "80:80"
-      - "8080:80"
+      - "8088:80"
     restart: always
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro

@@ -4,11 +4,12 @@ import { RouterModule } from '@angular/router';
 import { ComicService } from '../../services/comic.service';
 import { SeoService } from '../../services/seo.service';
 import { Comic, Category } from '../../models/comic.model';
+import { ChapterDisplayPipe } from '../../pipes/chapter-display.pipe';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ChapterDisplayPipe],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })

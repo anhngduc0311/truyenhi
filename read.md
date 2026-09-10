@@ -31,6 +31,10 @@ chmod +x deploy.sh
 chmod +x tai_mangadex_ubuntu.sh
 ./tai_mangadex_ubuntu.sh
 
+docker compose down -v
+
+docker-compose up -d postgres redis meilisearch
+
 # ================= SAO LƯU & AN TOÀN DỮ LIỆU =================
 # 1. Chạy sao lưu Database thủ công bất kỳ lúc nào:
 ./backup_db.sh

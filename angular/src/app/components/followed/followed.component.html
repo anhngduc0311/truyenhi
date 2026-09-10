@@ -45,26 +45,24 @@
               </div>
               <div class="chapters-preview" *ngIf="b.comic.recentChapters && b.comic.recentChapters.length > 0; else singleLatestFollowed">
                 <div class="chapter-row-clean" *ngFor="let ch of b.comic.recentChapters | slice:0:3">
-                  <a [routerLink]="['/comic', b.comic.slug, 'chapter', ch.id]" class="ch-name">Chapter {{ ch.chapterNumber }}</a>
+                  <a [routerLink]="['/comic', b.comic.slug, 'chapter', ch.id]" class="ch-name">{{ ch | chapterDisplay:b.comic:'Chapter ' }}</a>
                   <span class="ch-time">{{ formatTimeAgo(ch.createdAt || b.comic.updatedAt) }}</span>
                 </div>
               </div>
               <ng-template #singleLatestFollowed>
                 <div class="chapters-preview" *ngIf="b.comic.latestChapter; else noChaptersFollowed">
                   <div class="chapter-row-clean">
-                    <a [routerLink]="['/comic', b.comic.slug, 'chapter', b.comic.latestChapter.id]" class="ch-name">Chapter {{ b.comic.latestChapter.chapterNumber }}</a>
+                    <a [routerLink]="['/comic', b.comic.slug, 'chapter', b.comic.latestChapter.id]" class="ch-name">{{ b.comic.latestChapter | chapterDisplay:b.comic:'Chapter ' }}</a>
                     <span class="ch-time">{{ formatTimeAgo(b.comic.latestChapter.createdAt || b.comic.updatedAt) }}</span>
                   </div>
                 </div>
                 <ng-template #noChaptersFollowed>
-                  <div class="chapters-preview">
-                    <div class="chapter-row-clean no-chapter">
-                      <span class="ch-name ch-updating" *ngIf="b.comic.totalChapters && b.comic.totalChapters > 0; else comingSoonFollowed">Chapter {{ b.comic.totalChapters }}</span>
-                      <ng-template #comingSoonFollowed>
-                        <span class="ch-name ch-updating"><i class="fa fa-clock-o"></i> Đang cập nhật</span>
-                      </ng-template>
-                      <span class="ch-time">{{ formatTimeAgo(b.comic.updatedAt) }}</span>
-                    </div>
+                  <div class="chapter-row-clean no-chapter">
+                    <span class="ch-name ch-updating" *ngIf="b.comic.totalChapters && b.comic.totalChapters > 0; else comingSoonFollowed">{{ null | chapterDisplay:b.comic:'Chapter ' }}</span>
+                    <ng-template #comingSoonFollowed>
+                      <span class="ch-name ch-updating"><i class="fa fa-clock-o"></i> Đang cập nhật</span>
+                    </ng-template>
+                    <span class="ch-time">{{ formatTimeAgo(b.comic.updatedAt) }}</span>
                   </div>
                 </ng-template>
               </ng-template>

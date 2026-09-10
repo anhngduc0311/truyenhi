@@ -130,7 +130,7 @@
                 </div>
                 <div class="last_chapter" *ngIf="comic.latestChapter">
                   <a [routerLink]="['/comic', comic.slug, 'chapter', comic.latestChapter.id]">
-                    Chương {{ comic.latestChapter.chapterNumber }}
+                    {{ comic.latestChapter | chapterDisplay:comic:'Chương ' }}
                   </a>
                 </div>
               </div>
@@ -194,16 +194,14 @@
             <div class="chapters-preview"
               *ngIf="comic.recentChapters && comic.recentChapters.length > 0; else singleLatestGrid">
               <div class="chapter-row-clean" *ngFor="let ch of comic.recentChapters | slice:0:3">
-                <a [routerLink]="['/comic', comic.slug, 'chapter', ch.id]" class="ch-name">Chapter {{ ch.chapterNumber
-                  }}</a>
+                <a [routerLink]="['/comic', comic.slug, 'chapter', ch.id]" class="ch-name">{{ ch | chapterDisplay:comic:'Chapter ' }}</a>
                 <span class="ch-time">{{ formatTimeAgo(ch.createdAt || comic.updatedAt) }}</span>
               </div>
             </div>
             <ng-template #singleLatestGrid>
               <div class="chapters-preview" *ngIf="comic.latestChapter; else noChaptersGrid">
                 <div class="chapter-row-clean">
-                  <a [routerLink]="['/comic', comic.slug, 'chapter', comic.latestChapter.id]" class="ch-name">Chapter {{
-                    comic.latestChapter.chapterNumber }}</a>
+                  <a [routerLink]="['/comic', comic.slug, 'chapter', comic.latestChapter.id]" class="ch-name">{{ comic.latestChapter | chapterDisplay:comic:'Chapter ' }}</a>
                   <span class="ch-time">{{ formatTimeAgo(comic.latestChapter.createdAt || comic.updatedAt) }}</span>
                 </div>
               </div>
@@ -211,8 +209,7 @@
                 <div class="chapters-preview">
                   <div class="chapter-row-clean no-chapter">
                     <span class="ch-name ch-updating"
-                      *ngIf="comic.totalChapters && comic.totalChapters > 0; else comingSoonHome">Chapter {{
-                      comic.totalChapters }}</span>
+                      *ngIf="comic.totalChapters && comic.totalChapters > 0; else comingSoonHome">{{ null | chapterDisplay:comic:'Chapter ' }}</span>
                     <ng-template #comingSoonHome>
                       <span class="ch-name ch-updating"><i class="fa fa-clock-o"></i> Đang cập nhật</span>
                     </ng-template>
