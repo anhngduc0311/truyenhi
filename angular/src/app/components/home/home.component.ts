@@ -30,11 +30,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     { label: 'Tất Cả', key: 'all', icon: 'fa-globe' },
     { label: 'Mới Nhất', key: 'new', icon: 'fa-bolt' },
     { label: 'Hot Tuần', key: 'hot', icon: 'fa-fire' },
-    { label: 'Manhwa', key: 'manhwa', icon: 'fa-flag' },
-    { label: 'Manga', key: 'manga', icon: 'fa-star' },
-    { label: 'Chuyển Sinh', key: 'isekai', icon: 'fa-magic' },
-    { label: 'Hành Động', key: 'action', icon: 'fa-crosshairs' },
-    { label: 'Ngôn Tình', key: 'romance', icon: 'fa-heart' }
+    { label: 'Manhwa', key: 'manhwa', icon: 'fa-flag' }
   ];
 
   isLoading: boolean = true;
@@ -47,7 +43,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   constructor(
     private comicService: ComicService,
     private seoService: SeoService
-  ) {}
+  ) { }
 
   private suggestTimer?: any;
   private isSuggestHovered: boolean = false;
@@ -171,7 +167,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.selectedFilter === 'all') return this.latestComics;
     if (this.selectedFilter === 'hot') return this.hotComics;
     if (this.selectedFilter === 'new') return this.latestComics.slice(0, 12);
-    return this.latestComics.filter(c => 
+    return this.latestComics.filter(c =>
       c.categories?.some(cat => cat.slug.toLowerCase().includes(this.selectedFilter) || cat.name.toLowerCase().includes(this.selectedFilter))
     );
   }

@@ -19,7 +19,7 @@ import { RouterModule } from '@angular/router';
               </a>
             </div>
             <p class="footer-about">
-              <strong>NekoHentai</strong> là nền tảng đọc truyện tranh Manga, Manhwa, Manhua sắc nét chuẩn HD. Toàn bộ tài nguyên được đóng góp bởi cộng đồng và sưu tầm từ internet.
+              <strong>NekoHentai</strong> là nền tảng đọc truyện tranh Hentai, Doujinshi, Manhwa 18+, Manga 18+ sắc nét chuẩn Full HD. Toàn bộ tài nguyên được cập nhật liên tục mỗi ngày từ cộng đồng, tốc độ tải nhanh và hoàn toàn không có quảng cáo.
             </p>
             <div class="footer-social-links">
               <a href="https://t.me/nekohentai" target="_blank" rel="nofollow" class="social-icon-btn tg" title="Telegram">
@@ -49,16 +49,24 @@ import { RouterModule } from '@angular/router';
 
           <!-- Column 3: Top Categories -->
           <div class="footer-col-tags">
-            <h4 class="col-title">Thể Loại Nổi Bật</h4>
+            <h4 class="col-title">Tag / Thể Loại Hentai Hot</h4>
             <div class="tags-cloud">
-              <a [routerLink]="['/comics']" [queryParams]="{ country: 'Hàn Quốc' }" class="tag-chip">Manhwa</a>
-              <a [routerLink]="['/comics']" [queryParams]="{ country: 'Nhật Bản' }" class="tag-chip">Manga</a>
-              <a [routerLink]="['/comics']" [queryParams]="{ country: 'Trung Quốc' }" class="tag-chip">Manhua</a>
-              <a [routerLink]="['/comics']" [queryParams]="{ category: 'chuyen-sinh' }" class="tag-chip">Chuyển Sinh</a>
-              <a [routerLink]="['/comics']" [queryParams]="{ category: 'action' }" class="tag-chip">Hành Động</a>
-              <a [routerLink]="['/comics']" [queryParams]="{ category: 'ngon-tinh' }" class="tag-chip">Ngôn Tình</a>
-              <a [routerLink]="['/comics']" [queryParams]="{ category: 'romance' }" class="tag-chip">Romance</a>
-              <a [routerLink]="['/comics']" [queryParams]="{ category: 'fantasy' }" class="tag-chip">Fantasy</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'doujinshi' }" class="tag-chip">Doujinshi</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ country: 'Nhật Bản' }" class="tag-chip">Manga 18+</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ country: 'Hàn Quốc' }" class="tag-chip">Manhwa 18+</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'khong-che' }" class="tag-chip">Không Che</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'ntr' }" class="tag-chip">NTR</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'milf' }" class="tag-chip">MILF</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'ahegao' }" class="tag-chip">Ahegao</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'cosplay' }" class="tag-chip">Cosplay</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'schoolgirl' }" class="tag-chip">Nữ Sinh</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'big-boobs' }" class="tag-chip">Big Boobs</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'maid' }" class="tag-chip">Hầu Gái</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'vanilla' }" class="tag-chip">Thuần Ái (Vanilla)</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'mind-break' }" class="tag-chip">Mind Break</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'succubus' }" class="tag-chip">Succubus</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'yandere' }" class="tag-chip">Yandere</a>
+              <a [routerLink]="['/comics']" [queryParams]="{ category: 'futanari' }" class="tag-chip">Futanari</a>
             </div>
           </div>
         </div>

@@ -15,7 +15,7 @@ import { RouterLink } from '@angular/router';
         </div>
         <h1 class="hero-title">Trải Nghiệm Đọc Truyện Tranh <span class="text-gradient">Đỉnh Cao</span> & <span class="text-gradient">Miễn Phí</span></h1>
         <p class="hero-desc">
-          NekoHentai được xây dựng với mục tiêu mang đến cho cộng đồng yêu thích Manga, Manhwa, Manhua nền tảng đọc truyện mượt mà nhất, không bị quấy rầy bởi quảng cáo độc hại và tốc độ tải trang tức thì.
+          NekoHentai được xây dựng với mục tiêu mang đến cho cộng đồng đam mê Hentai, Doujinshi, Manhwa 18+ nền tảng đọc truyện mượt mà nhất, hình ảnh sắc nét Full HD, không bị quấy rầy bởi quảng cáo độc hại và tốc độ tải trang tức thì.
         </p>
 
         <div class="hero-stats">

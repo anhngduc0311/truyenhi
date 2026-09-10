@@ -8,8 +8,9 @@ import { ComicDetail } from '../models/comic.model';
 })
 export class SeoService {
   private defaultSiteName = 'NekoHentai';
-  private defaultImage = 'https://nekohentai.lol/assets/logo.jpg';
-  private defaultDescription = 'NekoHentai - Web đọc truyện tranh Manhwa, Manhua, Manga online hay và cập nhật mới và liên tục tại NekoHentai chính thức, hình ảnh sắc nét chuẩn HD, không quảng cáo!!!';
+  private defaultImage = 'https://nekohentai.lol/assets/logo.svg';
+  private defaultDescription = 'NekoHentai - Web đọc truyện tranh Hentai, Manhwa 18+, Doujinshi Vietsub, Manga 18+ online cực nét chuẩn Full HD, không che, cập nhật liên tục nhanh nhất mỗi ngày. Tốc độ cao, hoàn toàn miễn phí không quảng cáo!';
+  private defaultKeywords = 'nekohentai, neko hentai, doc truyen hentai, truyen hentai, hentai vietsub, hentai tieng viet, doujinshi vietsub, manhwa 18, manga 18, hentai khong che, truyen 18+, doc truyen 18, hentaivn, nhentai, hentai mau, doc truyen tranh nguoi lon, truyen hentai hay nhat';
 
   constructor(
     private titleService: Title,
@@ -19,13 +20,13 @@ export class SeoService {
 
   /**
    * Home Page SEO (Trang Chủ)
-   * Matches top Google SERP format: Brand | Key Value Proposition
+   * High-traffic search intent for Hentai / Doujinshi / Manhwa 18+
    */
   setHomeSeo(): void {
-    const title = 'NekoHentai | Đọc Truyện Tranh Manhwa, Manga Không Quảng Cáo';
-    const desc = 'NekoHentai - Web đọc truyện tranh Manhwa, Manhua, Manga online hay và cập nhật mới và liên tục tại NekoHentai chính thức, hình ảnh sắc nét chuẩn HD, không quảng cáo!!!';
+    const title = 'NekoHentai | Đọc Truyện Hentai, Manhwa 18+, Doujinshi Vietsub Chuẩn Full HD';
+    const desc = 'NekoHentai - Web đọc truyện tranh Hentai, Doujinshi, Manhwa 18+, Manga 18+ online vietsub cực nét chuẩn Full HD, không che, cập nhật nhanh nhất mỗi ngày. Đọc mượt mà, không quảng cáo!';
     this.titleService.setTitle(title);
-    this.updateBasicMeta(desc, 'NekoHentai, nekohentai, doc truyen tranh, truyen tranh online, truyen manhwa, truyen manga, truyen manhua, doc truyen khong quang cao, truyen moi, truyen hot');
+    this.updateBasicMeta(desc, this.defaultKeywords);
     this.updateOpenGraph(title, desc, this.defaultImage, '/', 'website');
     this.updateTwitterCard(title, desc, this.defaultImage);
     this.setCanonicalUrl('/');
@@ -33,24 +34,25 @@ export class SeoService {
 
   /**
    * Comic Detail SEO (Trang Chi Tiết Truyện)
-   * Matches Google format: [Tên Truyện] [Tới Chap X] - NekoHentai
+   * Format: Đọc Truyện [Tên Truyện] [Tới Chap X] Vietsub Full HD - NekoHentai
    */
   setComicDetailSeo(comic: ComicDetail): void {
     const latestChap = comic.latestChapter?.chapterNumber ?? 'Mới Nhất';
-    const fullTitle = `${comic.title} [Tới Chap ${latestChap}] - NekoHentai`;
+    const fullTitle = `Đọc Truyện ${comic.title} [Tới Chap ${latestChap}] Vietsub Full HD - NekoHentai`;
     
     // Clean raw HTML or multiline text in comic description
     const rawDesc = comic.description 
       ? comic.description.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
       : '';
-    const cleanDesc = `Đọc truyện tranh ${comic.title} [Tới Chap ${latestChap}] tiếng Việt mới nhất với hình ảnh cực nét, cập nhật liên tục tại NekoHentai. ${rawDesc ? rawDesc.substring(0, 160) + '...' : 'Đọc truyện miễn phí không quảng cáo.'}`;
+    const cleanDesc = `Đọc truyện tranh hentai ${comic.title} [Tới Chap ${latestChap}] bản dịch tiếng Việt (Vietsub) sắc nét chuẩn Full HD tại NekoHentai. ${rawDesc ? rawDesc.substring(0, 160) + '...' : 'Đọc truyện 18+ miễn phí, load nhanh không quảng cáo.'}`;
     const cover = comic.coverImage || this.defaultImage;
     const path = `/comic/${comic.slug}`;
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nekohentai.lol';
 
     this.titleService.setTitle(fullTitle);
 
-    this.updateBasicMeta(cleanDesc, `${comic.title}, ${comic.title} toi chap ${latestChap}, doc truyen ${comic.title}, ${comic.author || ''}, manhwa, manga, manhua, nekohentai`);
+    const keywords = `${comic.title}, ${comic.title} vietsub, doc truyen ${comic.title}, ${comic.title} toi chap ${latestChap}, ${comic.title} hentai, ${comic.title} manhwa 18, truyen hentai ${comic.title}, doc hentai ${comic.title}, ${comic.author || ''}, doujinshi ${comic.title}, nekohentai`;
+    this.updateBasicMeta(cleanDesc, keywords);
     this.updateOpenGraph(fullTitle, cleanDesc, cover, path, 'book');
     this.updateTwitterCard(fullTitle, cleanDesc, cover);
     this.setCanonicalUrl(path);
@@ -68,7 +70,7 @@ export class SeoService {
             '@type': 'Person',
             'name': comic.author || 'Đang cập nhật'
           },
-          'genre': comic.categories ? comic.categories.map(c => c.name) : [],
+          'genre': comic.categories ? comic.categories.map(c => c.name) : ['Hentai', 'Doujinshi', '18+'],
           'image': cover,
           'description': cleanDesc,
           'url': `${origin}${path}`,
@@ -87,7 +89,7 @@ export class SeoService {
             {
               '@type': 'ListItem',
               'position': 2,
-              'name': comic.categories?.[0]?.name || 'Truyện Tranh',
+              'name': comic.categories?.[0]?.name || 'Hentai',
               'item': `${origin}/comics?category=${comic.categories?.[0]?.slug || ''}`
             },
             {
@@ -105,23 +107,27 @@ export class SeoService {
 
   /**
    * Chapter Read SEO (Trang Đọc Chương)
-   * Matches Google format: Đọc Truyện [Tên Truyện] Chap X Tiếng Việt - NekoHentai
+   * Format: Đọc Truyện [Tên Truyện] [Chap X / Oneshot] Vietsub Full HD - NekoHentai
    */
   setChapterReadSeo(comicTitle: string, comicSlug: string, chapterTitle: string, chapterNumber: number, coverImage?: string): void {
     const isChapOneshot = (chapterTitle && /oneshot|one-shot|1shot/i.test(chapterTitle)) || (comicTitle && /oneshot|one-shot/i.test(comicTitle)) || (comicSlug && /oneshot|one-shot/i.test(comicSlug));
     const chapText = isChapOneshot ? 'Oneshot' : `Chap ${chapterNumber}`;
     const fullTitle = isChapOneshot 
-      ? `Đọc Truyện ${comicTitle} Oneshot Tiếng Việt - NekoHentai` 
-      : `Đọc Truyện ${comicTitle} Chap ${chapterNumber} Tiếng Việt - NekoHentai`;
+      ? `Đọc Truyện Hentai ${comicTitle} Oneshot Vietsub Full HD - NekoHentai` 
+      : `Đọc Truyện Hentai ${comicTitle} Chap ${chapterNumber} Vietsub Full HD - NekoHentai`;
     const cleanDesc = isChapOneshot
-      ? `Đọc truyện tranh ${comicTitle} Oneshot bản dịch tiếng Việt chuẩn nét full HD tại NekoHentai. Tốc độ tải cực nhanh, không giật lag, đọc mượt mà không quảng cáo.`
-      : `Đọc truyện tranh ${comicTitle} Chap ${chapterNumber} bản dịch tiếng Việt chuẩn nét full HD tại NekoHentai. Tốc độ tải cực nhanh, không giật lag, đọc mượt mà không quảng cáo.`;
+      ? `Đọc truyện tranh hentai ${comicTitle} Oneshot bản dịch tiếng Việt (Vietsub) cực nét Full HD tại NekoHentai. Tốc độ tải cực nhanh, không giật lag, đọc mượt mà không quảng cáo.`
+      : `Đọc truyện tranh hentai ${comicTitle} Chap ${chapterNumber} bản dịch tiếng Việt (Vietsub) cực nét Full HD tại NekoHentai. Tốc độ tải cực nhanh, không giật lag, đọc mượt mà không quảng cáo.`;
     const path = `/read/${comicSlug}/chuong-${chapterNumber}`;
     const cover = coverImage || this.defaultImage;
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nekohentai.lol';
 
     this.titleService.setTitle(fullTitle);
-    this.updateBasicMeta(cleanDesc, isChapOneshot ? `${comicTitle} oneshot, doc ${comicTitle} oneshot, doc truyen tranh ${comicTitle}` : `${comicTitle} chap ${chapterNumber}, doc ${comicTitle} chuong ${chapterNumber}, doc truyen tranh ${comicTitle}`);
+    const keywords = isChapOneshot 
+      ? `${comicTitle} oneshot, doc ${comicTitle} oneshot, doc truyen hentai ${comicTitle}, ${comicTitle} vietsub, truyen hentai ${comicTitle}, doc hentai online` 
+      : `${comicTitle} chap ${chapterNumber}, doc ${comicTitle} chuong ${chapterNumber}, doc truyen hentai ${comicTitle}, ${comicTitle} vietsub, truyen hentai ${comicTitle}, doc hentai online`;
+    
+    this.updateBasicMeta(cleanDesc, keywords);
     this.updateOpenGraph(fullTitle, cleanDesc, cover, path, 'article');
     this.updateTwitterCard(fullTitle, cleanDesc, cover);
     this.setCanonicalUrl(path);
@@ -157,19 +163,22 @@ export class SeoService {
    * Category / Filter / Search List SEO
    */
   setCategorySeo(categoryName?: string, query?: string): void {
-    let title = 'Kho Truyện Tranh Manhwa, Manga Hay Chọn Lọc - NekoHentai';
-    let desc = 'Khám phá kho truyện tranh Manhwa, Manga, Manhua hay nhất, chọn lọc những bộ truyện đỉnh cao, cập nhật chương mới nhất liên tục tại NekoHentai.';
-    
+    let title = 'Kho Truyện Hentai, Doujinshi, Manhwa 18+ Vietsub Hay Chọn Lọc - NekoHentai';
+    let desc = 'Khám phá kho truyện tranh Hentai, Doujinshi, Manhwa 18+, Manga 18+ hay nhất chọn lọc, cập nhật chương mới nhất liên tục, hình ảnh sắc nét Full HD tại NekoHentai.';
+    let keywords = 'truyen hentai online, doujinshi vietsub, manhwa 18+, manga 18+, truyen hentai hay, doc hentai khong quang cao, nekohentai';
+
     if (categoryName) {
-      title = `Truyện Tranh Thể Loại ${categoryName} Hay Nhất - NekoHentai`;
-      desc = `Đọc truyện tranh thể loại ${categoryName} online mới nhất, hình ảnh nét căng chuẩn HD, đọc mượt mà không quảng cáo tại NekoHentai.`;
+      title = `Truyện Hentai Thể Loại ${categoryName} Vietsub Chọn Lọc Hay Nhất - NekoHentai`;
+      desc = `Tuyển chọn danh sách truyện Hentai, Doujinshi, Manhwa 18+ thể loại ${categoryName} vietsub hay nhất, hình ảnh nét căng Full HD, cập nhật liên tục tại NekoHentai.`;
+      keywords = `hentai ${categoryName}, truyen hentai ${categoryName}, doc hentai ${categoryName}, doujinshi ${categoryName}, manhwa 18 ${categoryName}, truyen 18+`;
     } else if (query) {
-      title = `Tìm Kiếm Truyện Tranh: "${query}" - NekoHentai`;
-      desc = `Kết quả tìm kiếm truyện tranh cho từ khóa "${query}". Đọc truyện tranh online miễn phí cập nhật mới nhất tại NekoHentai.`;
+      title = `Tìm Kiếm Truyện Hentai: "${query}" Vietsub Chuẩn HD - NekoHentai`;
+      desc = `Kết quả tìm kiếm truyện hentai, doujinshi cho từ khóa "${query}". Đọc truyện 18+ online miễn phí cập nhật mới nhất tại NekoHentai.`;
+      keywords = `tim kiem hentai ${query}, truyen hentai ${query}, doc ${query} vietsub, nekohentai`;
     }
 
     this.titleService.setTitle(title);
-    this.updateBasicMeta(desc, 'truyen tranh online, truyen manhwa, truyen manga, truyen hay, nekohentai');
+    this.updateBasicMeta(desc, keywords);
     this.updateOpenGraph(title, desc, this.defaultImage, '/comics', 'website');
     this.updateTwitterCard(title, desc, this.defaultImage);
     this.setCanonicalUrl('/comics');
@@ -182,7 +191,7 @@ export class SeoService {
     const currentPath = path || '';
 
     this.titleService.setTitle(fullTitle);
-    this.updateBasicMeta(desc, 'nekohentai, doc truyen tranh, truyen tranh online, manhwa, manhua, manga');
+    this.updateBasicMeta(desc, this.defaultKeywords);
     this.updateOpenGraph(fullTitle, desc, cover, currentPath, 'website');
     this.updateTwitterCard(fullTitle, desc, cover);
     if (path) this.setCanonicalUrl(path);

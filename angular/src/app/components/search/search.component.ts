@@ -100,10 +100,10 @@ export class SearchComponent implements OnInit {
     this.isLoading = true;
 
     // Set SEO
-    const searchLabel = this.query ? `Tìm kiếm: "${this.query}"` : 'Bộ Lọc & Tìm Kiếm Truyện Tranh Nâng Cao';
+    const searchLabel = this.query ? `Tìm kiếm: "${this.query}"` : 'Bộ Lọc & Tìm Kiếm Truyện Hentai Nâng Cao';
     this.seoService.setGeneralSeo(
       `${searchLabel} - NekoHentai`,
-      'Tìm kiếm và lọc truyện tranh tiếng Việt theo nhiều thể loại, tác giả, quốc gia, số chương và xếp hạng tại NekoHentai.',
+      'Tìm kiếm và lọc truyện Hentai, Doujinshi, Manhwa 18+ Vietsub theo thể loại, tác giả, quốc gia, số chương và đánh giá tại NekoHentai.',
       undefined,
       '/search'
     );

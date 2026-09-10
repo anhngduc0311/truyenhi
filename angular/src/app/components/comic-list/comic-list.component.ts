@@ -63,8 +63,16 @@ export class ComicListComponent implements OnInit {
 
   private updateSeo(): void {
     const catObj = this.categories.find(c => c.slug === this.selectedCategory);
-    const catName = catObj ? catObj.name : (this.selectedCountry !== 'All' ? this.selectedCountry : undefined);
-    this.seoService.setCategorySeo(catName);
+    let label = catObj ? catObj.name : undefined;
+    if (!label) {
+      if (this.selectedCountry === 'Nhật Bản') label = 'Manga 18+ (Nhật Bản)';
+      else if (this.selectedCountry === 'Hàn Quốc') label = 'Manhwa 18+ (Hàn Quốc)';
+      else if (this.selectedCountry === 'Trung Quốc') label = 'Manhua 18+ (Trung Quốc)';
+      else if (this.selectedSort === 'hot' || this.selectedSort === 'views') label = 'Hot Nhất / Xem Nhiều';
+      else if (this.selectedSort === 'full') label = 'Đã Hoàn Thành Full';
+      else if (this.selectedSort === 'new' || this.selectedSort === 'latest') label = 'Mới Cập Nhật';
+    }
+    this.seoService.setCategorySeo(label);
   }
 
   fetchComics(): void {
