@@ -19,8 +19,8 @@
             <span class="stack-badge">+1.2K</span>
           </div>
           <div class="card-social-links">
-            <a href="https://www.facebook.com/profile.php?id=61594125156375" target="_blank" rel="noopener noreferrer"
-              class="social-round-btn fb-btn" aria-label="Facebook">
+            <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" class="social-round-btn fb-btn"
+              aria-label="Facebook">
               <i class="fa fa-facebook"></i>
             </a>
             <a href="https://t.me/adsnekohentai" target="_blank" rel="noopener noreferrer"
@@ -194,14 +194,16 @@
             <div class="chapters-preview"
               *ngIf="comic.recentChapters && comic.recentChapters.length > 0; else singleLatestGrid">
               <div class="chapter-row-clean" *ngFor="let ch of comic.recentChapters | slice:0:3">
-                <a [routerLink]="['/comic', comic.slug, 'chapter', ch.id]" class="ch-name">{{ ch | chapterDisplay:comic:'Chapter ' }}</a>
+                <a [routerLink]="['/comic', comic.slug, 'chapter', ch.id]" class="ch-name">{{ ch |
+                  chapterDisplay:comic:'Chapter ' }}</a>
                 <span class="ch-time">{{ formatTimeAgo(ch.createdAt || comic.updatedAt) }}</span>
               </div>
             </div>
             <ng-template #singleLatestGrid>
               <div class="chapters-preview" *ngIf="comic.latestChapter; else noChaptersGrid">
                 <div class="chapter-row-clean">
-                  <a [routerLink]="['/comic', comic.slug, 'chapter', comic.latestChapter.id]" class="ch-name">{{ comic.latestChapter | chapterDisplay:comic:'Chapter ' }}</a>
+                  <a [routerLink]="['/comic', comic.slug, 'chapter', comic.latestChapter.id]" class="ch-name">{{
+                    comic.latestChapter | chapterDisplay:comic:'Chapter ' }}</a>
                   <span class="ch-time">{{ formatTimeAgo(comic.latestChapter.createdAt || comic.updatedAt) }}</span>
                 </div>
               </div>
@@ -209,7 +211,8 @@
                 <div class="chapters-preview">
                   <div class="chapter-row-clean no-chapter">
                     <span class="ch-name ch-updating"
-                      *ngIf="comic.totalChapters && comic.totalChapters > 0; else comingSoonHome">{{ null | chapterDisplay:comic:'Chapter ' }}</span>
+                      *ngIf="comic.totalChapters && comic.totalChapters > 0; else comingSoonHome">{{ null |
+                      chapterDisplay:comic:'Chapter ' }}</span>
                     <ng-template #comingSoonHome>
                       <span class="ch-name ch-updating"><i class="fa fa-clock-o"></i> Đang cập nhật</span>
                     </ng-template>

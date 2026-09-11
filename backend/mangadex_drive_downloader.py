@@ -2,20 +2,22 @@
 # -*- coding: utf-8 -*-
 """
 =============================================================================
-🚀 MangaDex to Cloud Storage & Web Synchronizer
+🚀 NekoHentai Manga Downloader Pro - High Performance Synchronizer (HentaiVNReal)
 =============================================================================
 Author: NekoHentai Team
-Target Cloud Storage Bucket: nekohentai (Google Cloud Storage / R2)
-Web API: https://nekohentai.lol/api
-
-Thiết lập chuẩn:
+Source:
+  - HentaiVNReal (https://hentaivnreal.com) - ~39.000+ truyện (Mới Nhất ➜ Cũ Nhất)
+Storage:
+  - Cloud Storage Bucket: nekohentai (GCS / Cloudflare R2 / AWS S3)
+  - Web API: https://nekohentai.lol/api
+Features:
   ☑️ Tự động tải lên Cloud Storage Bucket & Đồng bộ Web API: BẬT
-  ☑️ Bỏ qua chapter đã có trên máy / Cloud (Tránh tải trùng / Resume): BẬT
-  ⬜ MangaDex Data-Saver (Tải ảnh nén nhẹ tiết kiệm mạng): TẮT (Tải ẢNH GỐC)
-  ☑️ Ghép ảnh Manhwa 5-in-1 (Tự động khi chapter > 70 ảnh): BẬT
-  ⬜ Tự động xuất mỗi chapter thành file PDF: TẮT
-  ⚡ Luồng tải song song: 16 luồng
-  ⚡ ĐỒNG BỘ REALTIME TỪNG CHAPTER: Cứ xong chapter nào là đẩy ngay lên Cloud Bucket & Web
+  ☑️ Bỏ qua chapter đã có trên máy / Cloud / Web (Hỗ trợ Resume): BẬT
+  ☑️ Ghép ảnh Manhwa 5-in-1 khi chapter > 70 ảnh (hoặc tùy chọn): BẬT
+  ☑️ Nhận diện Oneshot chuẩn xác (chapterNumber = 1.0, title = "Oneshot"): BẬT
+  ☑️ Nén ảnh WebP đa luồng chất lượng cao (quality=90, method=6): BẬT
+  ☑️ Tự động dọn dẹp file tạm trên VPS chống tràn ổ cứng: BẬT
+  ⚡ ĐỒNG BỘ REALTIME TỪNG CHAPTER: Cứ xong chapter nào là đẩy ngay lên Bucket & Web
 =============================================================================
 """
 
@@ -39,34 +41,18 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+import cloudscraper
+from bs4 import BeautifulSoup
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
 
-def create_reusable_session(pool_size: int = 64) -> requests.Session:
-    """Tạo requests.Session dùng chung Connection Pool (HTTP Keep-Alive) để tăng tốc tải & upload tối đa"""
-    s = requests.Session()
-    adapter = HTTPAdapter(
-        pool_connections=pool_size,
-        pool_maxsize=pool_size,
-        max_retries=Retry(
-            total=3,
-            backoff_factor=0.3,
-            status_forcelist=[500, 502, 503, 504],
-            raise_on_status=False
-        )
-    )
-    s.mount("https://", adapter)
-    s.mount("http://", adapter)
-    return s
-
-# Fix console encoding for Windows/Linux
+# Console encoding fix
 if sys.platform == 'win32':
     try:
         sys.stdout.reconfigure(encoding='utf-8')
         sys.stderr.reconfigure(encoding='utf-8')
     except Exception:
         pass
-
-from PIL import Image
-Image.MAX_IMAGE_PIXELS = None
 
 try:
     from rich.console import Console
@@ -75,57 +61,6 @@ try:
 except ImportError:
     HAS_RICH = False
     console = None
-
-# =============================================================================
-# AUTO-LOAD .ENV CONFIGURATION
-# =============================================================================
-def load_env_file():
-    for p in [Path(__file__).resolve().parent.parent / ".env", Path.cwd() / ".env"]:
-        if p.exists():
-            try:
-                with open(p, "r", encoding="utf-8") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith("#") and "=" in line:
-                            k, v = line.split("=", 1)
-                            k = k.strip()
-                            v = v.strip().strip('"').strip("'")
-                            if k not in os.environ:
-                                os.environ[k] = v
-            except Exception:
-                pass
-            break
-
-load_env_file()
-
-# =============================================================================
-# CẤU HÌNH CLOUD BUCKET & WEB API
-# =============================================================================
-GCS_ENDPOINT = os.getenv("R2_ENDPOINT", "storage.googleapis.com")
-GCS_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "GOOGQHRXVRS7YCR24JBLB33S")
-GCS_SECRET_KEY = os.getenv("R2_SECRET_KEY", "3Iamo8whmuUeT2B+CMtRnfW6qdIsmwXVec47tF52")
-GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "nekohentai")
-CDN_BASE_URL = os.getenv("R2_CDN_BASE_URL", "https://img.nekohentai.lol").rstrip("/")
-DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "https://nekohentai.lol/api").rstrip("/")
-
-MANGADEX_API_BASE = "https://api.mangadex.org"
-MANGADEX_UPLOADS_BASE = "https://uploads.mangadex.org"
-DEFAULT_LANG = "vi"
-
-# ⚙️ CÁC THIẾT LẬP MẶC ĐỊNH KHỚP GIAO DIỆN:
-DEFAULT_UPLOAD_TO_WEB = True          # ☑️ Tự động tải lên Cloud Bucket & Đồng bộ Web API
-DEFAULT_SKIP_EXISTING = True          # ☑️ Bỏ qua chapter đã có trên máy / Cloud
-DEFAULT_DATA_SAVER = False            # ⬜ MangaDex Data-Saver: TẮT (Tải ẢNH GỐC)
-DEFAULT_MERGE_SLICES = True           # ☑️ Ghép ảnh Manhwa 5-in-1 khi > 70 ảnh
-AUTO_STITCH_THRESHOLD = 70            # Ngưỡng tự động ghép dải ảnh manhwa
-STITCH_GROUP_SIZE = 5                 # Ghép 5 lát cắt thành 1 ảnh dài WebP
-DEFAULT_MAKE_PDF = False              # ⬜ Tự động xuất PDF: TẮT
-DEFAULT_WORKERS = 32                  # ⚡ 32 luồng tải & upload song song (Turbo Speed)
-
-DEFAULT_TIMEOUT = 30
-MAX_RETRIES = 4
-STATE_FILE_NAME = "mangadex_sync_state.json"
-TEMP_DOWNLOAD_DIR = "mangadex_temp_cache"
 
 
 def log_info(msg: str):
@@ -156,36 +91,73 @@ def log_error(msg: str):
         print(f"❌ {msg}", flush=True)
 
 
-def slugify(text: str) -> str:
-    if not text:
-        return "manga"
-    text = text.replace('đ', 'd').replace('Đ', 'D')
-    text = unicodedata.normalize('NFKD', text)
-    text = re.sub(r'[\u0300-\u036f]', '', text)
-    text = re.sub(r'[^\w\s-]', '', text).strip().lower()
-    text = re.sub(r'[-\s]+', '-', text)
-    return text.strip("-") or "manga"
+def create_reusable_session(pool_size: int = 64) -> requests.Session:
+    """Tạo requests.Session dùng chung Connection Pool (HTTP Keep-Alive) để tăng tốc tải & upload tối đa"""
+    s = requests.Session()
+    adapter = HTTPAdapter(
+        pool_connections=pool_size,
+        pool_maxsize=pool_size,
+        max_retries=Retry(
+            total=3,
+            backoff_factor=0.3,
+            status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False
+        )
+    )
+    s.mount("https://", adapter)
+    s.mount("http://", adapter)
+    return s
 
 
-def parse_date_to_iso(date_val):
-    if not date_val:
-        return None
-    if isinstance(date_val, datetime):
-        return date_val.isoformat()
-    val_str = str(date_val).strip()
-    try:
-        clean_str = val_str.replace("Z", "+00:00")
-        return datetime.fromisoformat(clean_str).isoformat()
-    except Exception:
-        pass
-    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y %H:%M:%S"):
-        try:
-            return datetime.strptime(val_str, fmt).isoformat()
-        except Exception:
-            pass
-    return val_str
+# =============================================================================
+# AUTO-LOAD .ENV CONFIGURATION
+# =============================================================================
+def load_env_file():
+    for p in [Path(__file__).resolve().parent.parent / ".env", Path.cwd() / ".env", Path.cwd().parent / ".env"]:
+        if p.exists():
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            k, v = line.split("=", 1)
+                            k = k.strip()
+                            v = v.strip().strip('"').strip("'")
+                            if k not in os.environ:
+                                os.environ[k] = v
+            except Exception:
+                pass
+            break
+
+load_env_file()
+
+# =============================================================================
+# CẤU HÌNH CLOUD BUCKET & WEB API
+# =============================================================================
+GCS_ENDPOINT = os.getenv("R2_ENDPOINT", "storage.googleapis.com")
+GCS_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "GOOGQHRXVRS7YCR24JBLB33S")
+GCS_SECRET_KEY = os.getenv("R2_SECRET_KEY", "3Iamo8whmuUeT2B+CMtRnfW6qdIsmwXVec47tF52")
+GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "nekohentai")
+CDN_BASE_URL = os.getenv("R2_CDN_BASE_URL", "https://img.nekohentai.lol").rstrip("/")
+DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "https://nekohentai.lol/api").rstrip("/")
+
+# ⚙️ CÁC THIẾT LẬP MẶC ĐỊNH KHỚP GIAO DIỆN (ZET GUI):
+DEFAULT_UPLOAD_TO_WEB = True          # ☑️ Tự động tải lên Cloud Bucket & Đồng bộ Web API
+DEFAULT_SKIP_EXISTING = True          # ☑️ Bỏ qua chapter đã có trên máy / Cloud / Web
+DEFAULT_MERGE_SLICES = True           # ☑️ Ghép ảnh Manhwa 5-in-1 khi > 70 ảnh
+AUTO_STITCH_THRESHOLD = 70            # Ngưỡng tự động ghép dải ảnh manhwa
+STITCH_GROUP_SIZE = 5                 # Ghép 5 lát cắt thành 1 ảnh dài WebP
+DEFAULT_MAKE_PDF = False              # ⬜ Tự động xuất PDF: TẮT
+DEFAULT_WORKERS = 32                  # ⚡ 32 luồng tải & upload song song (Turbo Speed)
+
+DEFAULT_TIMEOUT = 30
+MAX_RETRIES = 4
+STATE_FILE_NAME = "crawler_sync_state.json"
+TEMP_DOWNLOAD_DIR = "mangadex_temp_cache"
 
 
+# =============================================================================
+# BOTO3 S3 CLIENT CHO CLOUD STORAGE
 # =============================================================================
 import boto3
 from botocore.config import Config
@@ -203,36 +175,99 @@ def get_s3_client():
             aws_access_key_id=GCS_ACCESS_KEY,
             aws_secret_access_key=GCS_SECRET_KEY,
             region_name="ap-southeast-1",
-            config=Config(signature_version="s3v4", max_pool_connections=50)
+            config=Config(signature_version="s3v4", max_pool_connections=64)
         )
     return _s3_client
 
 
-# =============================================================================
-# 1. TẢI ẢNH LÊN CLOUD STORAGE BUCKET (AWS S3 / R2 / GCS) & ĐỒNG BỘ WEB API
-# =============================================================================
-def upload_file_to_cloud(local_path: Path, object_name: str, content_type: str = "image/webp", session: requests.Session = None, max_retries: int = 3) -> str:
-    """Tải 1 file ảnh lên Cloud Storage Bucket (AWS S3 / R2 / GCS) qua boto3 SigV4 (Tự động thử lại 3 lần)"""
+def upload_file_to_cloud(local_path: Path, object_name: str, content_type: str = "image/webp", max_retries: int = 3, session: requests.Session = None) -> str:
+    """Tải 1 file ảnh lên Cloud Storage Bucket qua boto3 SigV4 (Fallback sang HMAC-SHA1 nếu lỗi)"""
     object_name = object_name.lstrip("/")
-    client = get_s3_client()
     last_err = None
 
-    for attempt in range(max_retries):
-        try:
-            with open(local_path, "rb") as f:
-                client.put_object(
-                    Bucket=GCS_BUCKET,
-                    Key=object_name,
-                    Body=f,
-                    ContentType=content_type
-                )
-            return f"{CDN_BASE_URL}/{object_name}"
-        except Exception as e:
-            last_err = str(e)
-            time.sleep(0.3 * (attempt + 1))
+    # Cách 1: Thử tải qua Boto3 SigV4
+    try:
+        client = get_s3_client()
+        for attempt in range(max_retries):
+            try:
+                with open(local_path, "rb") as f:
+                    client.put_object(
+                        Bucket=GCS_BUCKET,
+                        Key=object_name,
+                        Body=f,
+                        ContentType=content_type
+                    )
+                return f"{CDN_BASE_URL}/{object_name}"
+            except Exception as e:
+                last_err = str(e)
+                time.sleep(0.3 * (attempt + 1))
+    except Exception as e:
+        last_err = str(e)
+
+    # Cách 2: Fallback sang raw HTTP PUT với HMAC
+    try:
+        url = f'https://{GCS_ENDPOINT}/{GCS_BUCKET}/{object_name}'
+        with open(local_path, "rb") as f:
+            data = f.read()
+
+        http_client = session or requests
+        for attempt in range(max_retries):
+            try:
+                date_str = datetime.now(timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')
+                string_to_sign = f'PUT\n\n{content_type}\n{date_str}\n/{GCS_BUCKET}/{object_name}'
+                signature = hmac.new(GCS_SECRET_KEY.encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha1).digest()
+                sig_b64 = base64.b64encode(signature).decode('utf-8')
+                auth_header = f'AWS {GCS_ACCESS_KEY}:{sig_b64}'
+
+                headers = {
+                    'Date': date_str,
+                    'Content-Type': content_type,
+                    'Authorization': auth_header
+                }
+
+                res = http_client.put(url, data=data, headers=headers, timeout=25)
+                if res.status_code in (200, 201, 204):
+                    return f"{CDN_BASE_URL}/{object_name}"
+                else:
+                    last_err = f"HTTP {res.status_code}: {res.text[:100]}"
+                    time.sleep(0.3 * (attempt + 1))
+            except Exception as ex:
+                last_err = str(ex)
+                time.sleep(0.3 * (attempt + 1))
+    except Exception as ex:
+        last_err = str(ex)
 
     raise Exception(f"Upload bucket failed sau {max_retries} lần thử: {last_err}")
 
+
+def slugify(text: str) -> str:
+    if not text:
+        return "comic"
+    text = text.replace('đ', 'd').replace('Đ', 'D')
+    text = unicodedata.normalize('NFKD', text)
+    text = re.sub(r'[\u0300-\u036f]', '', text)
+    text = re.sub(r'[^\w\s-]', '', text).strip().lower()
+    text = re.sub(r'[-\s]+', '-', text)
+    return text.strip("-") or "comic"
+
+
+def parse_date_to_iso(date_val):
+    if not date_val:
+        return None
+    if isinstance(date_val, datetime):
+        return date_val.isoformat()
+    val_str = str(date_val).strip()
+    try:
+        clean_str = val_str.replace("Z", "+00:00")
+        return datetime.fromisoformat(clean_str).isoformat()
+    except Exception:
+        pass
+    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y %H:%M:%S", "%d/%m/%Y %H:%M"):
+        try:
+            return datetime.strptime(val_str, fmt).isoformat()
+        except Exception:
+            pass
+    return val_str
 
 
 def normalize_chapter_key(val) -> str:
@@ -250,7 +285,6 @@ def normalize_chapter_key(val) -> str:
 
 
 def check_chapter_exists_on_cloud(slug: str, chap_num_str: str, cdn_base_url: str = CDN_BASE_URL, session: requests.Session = None) -> bool:
-    """Kiểm tra xem chapter đã có sẵn trên Cloud Storage Bucket qua CDN hay chưa"""
     try:
         norm_key = normalize_chapter_key(chap_num_str)
         url = f"{cdn_base_url.rstrip('/')}/chapters/{slug}/chap{norm_key}/page_001.webp"
@@ -262,10 +296,7 @@ def check_chapter_exists_on_cloud(slug: str, chap_num_str: str, cdn_base_url: st
 
 
 def get_existing_chapters_from_web(api_base_url: str, slug: str, session: requests.Session = None) -> set:
-    """
-    Truy vấn Web API (NekoHentai) để lấy danh sách các số chapter đã tồn tại trong database.
-    Trả về set các chapter key đã chuẩn hóa (vd: {'1', '2', '2.5'}).
-    """
+    """Truy vấn Web API (NekoHentai) để lấy danh sách chapter đã có trong database"""
     if not api_base_url or not slug:
         return set()
     url = f"{api_base_url.rstrip('/')}/comics/{slug}"
@@ -301,6 +332,7 @@ def sync_chapter_to_web_api(
     views: int = 0,
     published_at: str = None,
     created_at: str = None,
+    comic_views: int = None,
     comic_created_at: str = None,
     comic_updated_at: str = None,
     categories: list = None,
@@ -320,12 +352,17 @@ def sync_chapter_to_web_api(
         params["otherNames"] = other_names
     if age_limit:
         params["ageLimit"] = age_limit
+    if comic_views is not None and comic_views > 0:
+        params["comicViews"] = str(comic_views)
     if categories:
-        params["categories"] = ",".join(str(c) for c in categories if c)
+        if isinstance(categories, (list, tuple, set)):
+            params["categories"] = ",".join(str(c) for c in categories if c)
+        else:
+            params["categories"] = str(categories)
     if comic_created_at:
-        params["comicCreatedAt"] = comic_created_at
+        params["comicCreatedAt"] = parse_date_to_iso(comic_created_at)
     if comic_updated_at:
-        params["comicUpdatedAt"] = comic_updated_at
+        params["comicUpdatedAt"] = parse_date_to_iso(comic_updated_at)
 
     query_str = urllib.parse.urlencode(params)
     url = f"{api_base_url.rstrip('/')}/comics/import-scraped?{query_str}"
@@ -340,29 +377,30 @@ def sync_chapter_to_web_api(
         "imageUrls": image_urls
     }
     headers = {
-        "User-Agent": "NekoHentai-Sync/2.0",
+        "User-Agent": "NekoHentai-Sync/2.0 (Ubuntu-All-In-One)",
         "Content-Type": "application/json"
     }
     http_client = session or requests
     try:
         res = http_client.post(url, json=payload, headers=headers, timeout=20)
         return res.status_code in (200, 201)
-    except Exception as e:
+    except Exception:
         return False
 
 
 # =============================================================================
-# 2. QUẢN LÝ TIẾN TRÌNH & CHECKPOINT (RESUME STATE)
+# QUẢN LÝ TIẾN TRÌNH & CHECKPOINT (RESUME STATE)
 # =============================================================================
 class SyncStateManager:
     def __init__(self, state_file_path: Path):
         self.state_file_path = state_file_path
         self.data = {
-            "version": 2,
+            "version": 3,
             "gcs_bucket": GCS_BUCKET,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "completed_manga": {},
+            "synced_chapters": {},
             "failed_manga": {},
             "stats": {"total_comics": 0, "total_chapters": 0, "total_pages": 0}
         }
@@ -370,6 +408,15 @@ class SyncStateManager:
 
     def load(self):
         if not self.state_file_path.exists():
+            # Kiểm tra file cũ
+            legacy = self.state_file_path.parent / "mangadex_sync_state.json"
+            if legacy.exists():
+                try:
+                    with open(legacy, "r", encoding="utf-8") as f:
+                        self.data = json.load(f)
+                    return
+                except Exception:
+                    pass
             self._try_restore_from_cloud()
 
         if self.state_file_path.exists():
@@ -380,20 +427,20 @@ class SyncStateManager:
                 log_warning(f"Lỗi đọc file tiến trình: {e}. Tạo mới.")
 
     def _try_restore_from_cloud(self):
-        """Tự động khôi phục checkpoint từ Cloud Bucket nếu đổi sang VPS mới"""
         try:
-            url = f"{CDN_BASE_URL}/metadata/{STATE_FILE_NAME}"
-            res = requests.get(url, timeout=5)
-            if res.status_code == 200 and len(res.content) > 10:
-                self.state_file_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(self.state_file_path, "wb") as f:
-                    f.write(res.content)
-                log_success(f"☁️ Đã tự động khôi phục lịch sử tải ({STATE_FILE_NAME}) từ Cloud Bucket!")
+            for fn in [STATE_FILE_NAME, "mangadex_sync_state.json"]:
+                url = f"{CDN_BASE_URL}/metadata/{fn}"
+                res = requests.get(url, timeout=5)
+                if res.status_code == 200 and len(res.content) > 10:
+                    self.state_file_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(self.state_file_path, "wb") as f:
+                        f.write(res.content)
+                    log_success(f"☁️ Đã tự động khôi phục lịch sử tải ({fn}) từ Cloud Bucket!")
+                    return
         except Exception:
             pass
 
     def backup_to_cloud(self, session: requests.Session = None):
-        """Tự động sao lưu file tiến trình lên Cloud Bucket để đồng bộ xuyên suốt các VPS"""
         try:
             if self.state_file_path.exists():
                 upload_file_to_cloud(
@@ -432,9 +479,10 @@ class SyncStateManager:
     def get_completed_info(self, manga_id: str) -> dict:
         return self.data.get("completed_manga", {}).get(manga_id)
 
-    def mark_completed(self, manga_id: str, title: str, slug: str, chapters_count: int, pages_count: int):
+    def mark_completed(self, manga_id: str, title: str, slug: str, chapters_count: int, pages_count: int, source: str = "HentaiVNReal"):
         self.data.setdefault("completed_manga", {})[manga_id] = {
             "title": title, "slug": slug, "chapters_count": chapters_count, "pages_count": pages_count,
+            "source": source,
             "synced_at": datetime.now(timezone.utc).isoformat()
         }
         if manga_id in self.data.get("failed_manga", {}):
@@ -455,7 +503,7 @@ class SyncStateManager:
 
 
 # =============================================================================
-# 3. GHÉP ẢNH MANHWA 5-IN-1 (IMAGE STITCHING) - ĐA LUỒNG TỐC ĐỘ CAO
+# GHÉP ẢNH MANHWA 5-IN-1 (IMAGE STITCHING) & NÉN WEBP
 # =============================================================================
 def merge_images_vertical(image_paths: list, output_dir: Path, group_size: int = STITCH_GROUP_SIZE) -> list:
     if not image_paths:
@@ -488,7 +536,7 @@ def merge_images_vertical(image_paths: list, output_dir: Path, group_size: int =
             for im in loaded_imgs:
                 if im.width != max_width:
                     new_h = max(1, int(im.height * (max_width / im.width)))
-                    im_resized = im.resize((max_width, new_h), Image.Resampling.BILINEAR)
+                    im_resized = im.resize((max_width, new_h), Image.Resampling.LANCZOS)
                     resized_imgs.append(im_resized)
                     total_height += new_h
                 else:
@@ -502,7 +550,7 @@ def merge_images_vertical(image_paths: list, output_dir: Path, group_size: int =
                 curr_y += im.height
 
             chunk_file = output_dir / f"page_{group_idx:03d}.webp"
-            combined.save(chunk_file, 'WEBP', quality=88, method=4)
+            combined.save(chunk_file, 'WEBP', quality=90, method=6)
             return group_idx, chunk_file
         except Exception as e:
             log_warning(f"Lỗi ghép nhóm ảnh {group_idx}: {e}")
@@ -527,297 +575,342 @@ def merge_images_vertical(image_paths: list, output_dir: Path, group_size: int =
     return [results[k] for k in sorted(results.keys())]
 
 
-# =============================================================================
-# 4. MANGADEX API CLIENT
-# =============================================================================
-class MangaDexClient:
-    def __init__(self, lang: str = DEFAULT_LANG):
-        self.lang = lang
-        self.session = create_reusable_session(pool_size=32)
-        self.session.headers.update({"User-Agent": "NekoHentai-Ubuntu-Sync/2.0 (https://nekohentai.lol)"})
-        self._last_request_time = 0.0
-        self._min_interval = 0.22
+def convert_to_webp(src_file: Path, dest_webp_file: Path, quality: int = 90) -> bool:
+    try:
+        with Image.open(src_file) as im:
+            im.load()
+            im = im.convert('RGB') if im.mode != 'RGB' else im
+            im.save(dest_webp_file, 'WEBP', quality=quality, method=6)
+        if src_file != dest_webp_file and src_file.exists():
+            src_file.unlink(missing_ok=True)
+        return True
+    except Exception:
+        return False
 
-    def _rate_limited_get(self, url: str, params: dict = None, timeout: int = DEFAULT_TIMEOUT) -> requests.Response:
+
+# =============================================================================
+# 1. HENTAIVNREAL CRAWLER ENGINE (Chuẩn Zet GUI)
+# =============================================================================
+class HentaiVNRealDownloader:
+    BASE_URL = "https://hentaivnreal.com"
+
+    def __init__(self, comic_url: str):
+        self.comic_url = comic_url.strip()
+        self.scraper = cloudscraper.create_scraper(
+            browser={
+                'browser': 'chrome',
+                'platform': 'windows',
+                'desktop': True
+            }
+        )
+        self.slug = self._extract_slug(self.comic_url)
+
+    def _extract_slug(self, url: str) -> str:
+        clean = url.split("?")[0].rstrip("/")
+        parts = clean.split("/")
+        return parts[-1] if parts else "comic"
+
+    def get_comic_info(self) -> dict:
+        res = None
         for attempt in range(MAX_RETRIES):
-            now = time.time()
-            elapsed = now - self._last_request_time
-            if elapsed < self._min_interval:
-                time.sleep(self._min_interval - elapsed)
-
-            self._last_request_time = time.time()
             try:
-                res = self.session.get(url, params=params, timeout=timeout)
+                res = self.scraper.get(self.comic_url, timeout=DEFAULT_TIMEOUT)
                 if res.status_code == 200:
-                    return res
-                elif res.status_code == 429:
-                    wait_sec = (attempt + 1) * 2.5
-                    log_warning(f"MangaDex Rate Limit (HTTP 429). Đợi {wait_sec}s...")
-                    time.sleep(wait_sec)
-                else:
-                    time.sleep(1)
+                    break
             except Exception:
-                time.sleep(1)
-        return None
+                time.sleep(1.5 * (attempt + 1))
 
-    def extract_manga_id(self, input_val: str) -> str:
-        input_val = input_val.strip()
-        uuid_pattern = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
-        
-        if "/chapter/" in input_val:
-            m = re.search(rf'/chapter/({uuid_pattern})', input_val)
-            if m:
-                res = self._rate_limited_get(f"{MANGADEX_API_BASE}/chapter/{m.group(1)}?includes[]=manga")
-                if res and res.status_code == 200:
-                    for rel in res.json().get("data", {}).get("relationships", []):
-                        if rel.get("type") == "manga":
-                            return rel.get("id")
-
-        m_title = re.search(rf'/title/({uuid_pattern})', input_val)
-        if m_title:
-            return m_title.group(1)
-
-        m_uuid = re.search(uuid_pattern, input_val)
-        if m_uuid:
-            return m_uuid.group(0)
-
-        return input_val
-
-    def get_total_vietnamese_manga_count(self) -> int:
-        url = f"{MANGADEX_API_BASE}/manga"
-        params = {"limit": 1, "availableTranslatedLanguage[]": [self.lang], "hasAvailableChapters": "true"}
-        res = self._rate_limited_get(url, params=params)
-        return res.json().get("total", 0) if res else 0
-
-    def iterate_all_vietnamese_manga(self, order_by: str = "oldest", start_offset: int = 0, limit: int = None):
-        offset = start_offset
-        batch_limit = 100
-        fetched = 0
-
-        while True:
-            params = {
-                "limit": batch_limit, "offset": offset,
-                "availableTranslatedLanguage[]": [self.lang], "hasAvailableChapters": "true",
-                "includes[]": ["cover_art", "author", "tag"],
-                "contentRating[]": ["safe", "suggestive", "erotica", "pornographic"]
-            }
-            order_norm = (order_by or "oldest").lower()
-            if order_norm in ("oldest", "asc"):
-                params["order[createdAt]"] = "asc"
-            elif order_norm in ("newest_created", "created_desc"):
-                params["order[createdAt]"] = "desc"
-            else:
-                # "latest", "newest", "latest_uploaded", "chapter_desc", "updated"
-                # Mặc định khi tải mới nhất: Ưu tiên truyện có chapter mới vừa upload
-                params["order[latestUploadedChapter]"] = "desc"
-
-            res = self._rate_limited_get(f"{MANGADEX_API_BASE}/manga", params=params)
-            if not res or res.status_code != 200:
-                break
-
-            data = res.json()
-            items = data.get("data", [])
-            total = data.get("total", 0)
-            if not items:
-                break
-
-            for m in items:
-                m_id = m.get("id")
-                attr = m.get("attributes", {})
-                title_dict = attr.get("title", {})
-
-                vi_title = None
-                for alt in attr.get("altTitles", []):
-                    if self.lang in alt:
-                        vi_title = alt[self.lang]
-                        break
-
-                orig_title = list(title_dict.values())[0] if title_dict else "Unknown"
-                title = vi_title or title_dict.get("en") or orig_title
-
-                authors = []
-                cover_filename = None
-                for rel in m.get("relationships", []):
-                    if rel.get("type") in ("author", "artist"):
-                        a_name = rel.get("attributes", {}).get("name")
-                        if a_name and a_name not in authors:
-                            authors.append(a_name)
-                    elif rel.get("type") == "cover_art":
-                        cover_filename = rel.get("attributes", {}).get("fileName")
-
-                cover_url = f"{MANGADEX_UPLOADS_BASE}/covers/{m_id}/{cover_filename}" if cover_filename else None
-                tags = [t.get("attributes", {}).get("name", {}).get("en") for t in attr.get("tags", []) if t.get("attributes", {}).get("name")]
-
-                item = {
-                    "id": m_id, "title": title, "slug": slugify(title),
-                    "author": ", ".join(authors) if authors else "Đang cập nhật",
-                    "cover_url": cover_url, "tags": tags, "total_available": total,
-                    "last_chapter": attr.get("lastChapter"),
-                    "created_at": attr.get("createdAt"),
-                    "updated_at": attr.get("updatedAt")
-                }
-                yield item
-                fetched += 1
-                if limit and fetched >= limit:
-                    return
-
-            offset += len(items)
-            if offset >= total:
-                break
-
-    def get_manga_details_and_chapters(self, manga_id: str) -> dict:
-        url = f"{MANGADEX_API_BASE}/manga/{manga_id}?includes[]=cover_art&includes[]=author&includes[]=tag"
-        res = self._rate_limited_get(url)
         if not res or res.status_code != 200:
-            raise Exception(f"Không thể lấy thông tin truyện MangaDex ID {manga_id}")
+            raise Exception(f"Không thể kết nối đến trang truyện HentaiVNReal: {self.comic_url}")
+        res.encoding = 'utf-8'
+        soup = BeautifulSoup(res.text, "html.parser")
 
-        data = res.json().get("data", {})
-        attr = data.get("attributes", {})
-        title_dict = attr.get("title", {})
+        # 1. Tên truyện
+        h1 = soup.find("h1")
+        title = h1.get_text(strip=True) if h1 else self.slug.replace("-", " ").title()
+        title = re.sub(r'\s*\|\s*Hentaivn.*', '', title, flags=re.IGNORECASE).strip()
 
-        vi_title = None
-        alt_names = []
-        for alt in attr.get("altTitles", []):
-            for k, v in alt.items():
-                if v and v not in alt_names: alt_names.append(v)
-                if k == self.lang and not vi_title: vi_title = v
-
-        orig_title = list(title_dict.values())[0] if title_dict else "Unknown"
-        title = vi_title or title_dict.get("en") or orig_title
-        slug = slugify(title)
-
-        authors = []
-        cover_filename = None
-        for rel in data.get("relationships", []):
-            if rel.get("type") in ("author", "artist"):
-                name = rel.get("attributes", {}).get("name")
-                if name and name not in authors: authors.append(name)
-            elif rel.get("type") == "cover_art":
-                cover_filename = rel.get("attributes", {}).get("fileName")
-
-        author = ", ".join(authors) if authors else "Đang cập nhật"
-        cover_url = f"{MANGADEX_UPLOADS_BASE}/covers/{manga_id}/{cover_filename}" if cover_filename else None
-        genres = [t.get("attributes", {}).get("name", {}).get("en") for t in attr.get("tags", []) if t.get("attributes", {}).get("name")]
-
-        chapters_raw = []
-        offset = 0
-        while True:
-            feed_url = f"{MANGADEX_API_BASE}/manga/{manga_id}/feed"
-            feed_params = {
-                "translatedLanguage[]": [self.lang], "order[chapter]": "asc",
-                "limit": 500, "offset": offset, "includes[]": ["scanlation_group"]
-            }
-            f_res = self._rate_limited_get(feed_url, params=feed_params)
-            if not f_res or f_res.status_code != 200:
+        # 2. Ảnh bìa
+        cover_url = None
+        for img in soup.find_all("img"):
+            src = img.get("src") or img.get("data-src") or ""
+            if "story-images" in src and "-w575-" in src:
+                cover_url = src
                 break
-            f_data = f_res.json()
-            ch_list = f_data.get("data", [])
-            chapters_raw.extend(ch_list)
-            offset += 500
-            if offset >= f_data.get("total", 0) or not ch_list:
-                break
+        if not cover_url:
+            for img in soup.find_all("img"):
+                src = img.get("src") or img.get("data-src") or ""
+                if "story-images" in src:
+                    cover_url = src
+                    break
+        if not cover_url:
+            ava = soup.select_one(".page-ava img, .box-cover img")
+            if ava:
+                cover_url = ava.get("src") or ava.get("data-src")
 
-        grouped = {}
-        for c in chapters_raw:
-            c_attr = c.get("attributes", {})
-            chap_str = c_attr.get("chapter")
-            try: chap_num = float(chap_str) if chap_str else 0.0
-            except ValueError: chap_num = 0.0
+        # 3. Metadata
+        author = "Đang cập nhật"
+        translator_group = "Đang cập nhật"
+        other_names = "Đang cập nhật"
+        status = "Đang tiến hành"
+        views = 0
+        desc = ""
+        genres = []
 
-            chap_id = c.get("id")
-            chap_title = c_attr.get("title") or f"Chương {int(chap_num) if chap_num.is_integer() else chap_num}"
-            pages = int(c_attr.get("pages") or 0)
+        for p in soup.find_all("p"):
+            t = p.get_text(" ", strip=True)
+            if t.startswith("Tác giả:"):
+                author = t.replace("Tác giả:", "").strip()
+            elif t.startswith("Nhóm dịch:"):
+                translator_group = t.replace("Nhóm dịch:", "").strip()
+            elif t.startswith("Tên Khác:"):
+                other_names = t.replace("Tên Khác:", "").strip()
+            elif "Tình Trạng:" in t:
+                m = re.search(r'Tình Trạng\s*:\s*([^\sL]+)', t)
+                if m: status = m.group(1).strip()
+            elif "Lượt xem:" in t:
+                m = re.search(r'Lượt xem\s*:\s*([\d,.]+)', t)
+                if m:
+                    try: views = int(m.group(1).replace(",", "").replace(".", ""))
+                    except Exception: pass
+            elif t.startswith("Nội dung:"):
+                next_p = p.find_next_sibling("p")
+                if next_p:
+                    desc = next_p.get_text(strip=True)
 
-            groups = []
-            for rel in c.get("relationships", []):
-                if rel.get("type") == "scanlation_group":
-                    g_name = rel.get("attributes", {}).get("name")
-                    if g_name: groups.append(g_name)
-            group_name = ", ".join(groups) if groups else "MangaDex Community"
+        for a in soup.find_all("a"):
+            href = a.get("href", "")
+            if "/the-loai/" in href:
+                gt = a.get_text(strip=True)
+                if gt and gt not in genres and gt.lower() not in ["thể loại", "danh sách", "kết hợp", "full màu", "không che"]:
+                    genres.append(gt)
 
-            obj = {
-                "id": chap_id, "number": chap_num, "title": chap_title,
-                "pages": pages, "group": group_name, "published_at": c_attr.get("publishAt")
-            }
+        # 4. Danh sách chapter
+        chapters = []
+        chuong = soup.find(id="chuong")
+        if chuong:
+            for tr in chuong.find_all("tr"):
+                a = tr.find("a", href=True)
+                if a and a["href"] != "#" and not a["href"].startswith("javascript"):
+                    c_url = urllib.parse.urljoin(self.BASE_URL, a["href"])
+                    c_title = a.get_text(strip=True)
+                    m = re.search(r'(?:chap|chương|tập|hoi|hồi|lần)\s*([0-9]+(?:\.[0-9]+)?)', c_title, re.I)
+                    if m:
+                        c_num = float(m.group(1))
+                    elif "oneshot" in c_title.lower() or "1shot" in c_title.lower():
+                        c_num = 1.0
+                        c_title = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', c_title, flags=re.I).strip() or "Oneshot"
+                    else:
+                        c_num = float(len(chapters) + 1)
+                    date_td = tr.find_all("td")
+                    c_date = date_td[1].get_text(strip=True) if len(date_td) > 1 else ""
+                    chapters.append({
+                        "number": c_num,
+                        "title": c_title,
+                        "url": c_url,
+                        "date": c_date,
+                        "updated_at": parse_date_to_iso(c_date)
+                    })
 
-            if chap_num not in grouped or pages > grouped[chap_num].get("pages", 0):
-                grouped[chap_num] = obj
+        chapters.reverse()
+        if len(chapters) == 1 and ("oneshot" in title.lower() or "one-shot" in title.lower() or any("oneshot" in g.lower() for g in genres)):
+            chapters[0]["title"] = "Oneshot"
 
-        chapters = list(grouped.values())
-        chapters.sort(key=lambda x: x["number"])
+        seen_numbers = set()
+        for idx, chap in enumerate(chapters, 1):
+            if chap["number"] in seen_numbers:
+                chap["number"] = float(idx)
+            seen_numbers.add(chap["number"])
 
         return {
-            "id": manga_id, "title": title, "slug": slug, "author": author,
-            "other_names": alt_names[:5], "cover_url": cover_url, "genres": genres,
-            "created_at": attr.get("createdAt"),
-            "updated_at": attr.get("updatedAt"),
+            "title": title,
+            "slug": self.slug,
+            "cover_url": cover_url,
+            "author": author,
+            "translator_group": translator_group,
+            "other_names": other_names,
+            "status": status,
+            "views": views,
+            "description": desc,
+            "genres": genres,
+            "categories": genres,
             "chapters": chapters
         }
 
-    def get_chapter_image_urls(self, chapter_id: str, data_saver: bool = DEFAULT_DATA_SAVER) -> list:
-        server_url = f"{MANGADEX_API_BASE}/at-home/server/{chapter_id}"
-        res = self._rate_limited_get(server_url)
+    def get_chapter_images(self, chap_url: str) -> list:
+        res = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                res = self.scraper.get(chap_url, headers={"Referer": self.comic_url}, timeout=DEFAULT_TIMEOUT)
+                if res.status_code == 200:
+                    break
+            except Exception:
+                time.sleep(1.5 * (attempt + 1))
+
         if not res or res.status_code != 200:
             return []
+        res.encoding = 'utf-8'
+        soup = BeautifulSoup(res.text, "html.parser")
 
-        json_data = res.json()
-        base_url = json_data.get("baseUrl")
-        ch = json_data.get("chapter", {})
-        ch_hash = ch.get("hash")
+        images = []
+        for img in soup.find_all("img"):
+            src = img.get("src") or img.get("data-src") or ""
+            if "manga-images" in src and src not in images:
+                images.append(src)
 
-        if data_saver:
-            files = ch.get("dataSaver", [])
-            return [f"{base_url}/data-saver/{ch_hash}/{fn}" for fn in files]
-        else:
-            files = ch.get("data", [])
-            return [f"{base_url}/data/{ch_hash}/{fn}" for fn in files]
+        return images
+
+    @staticmethod
+    def fetch_all_hentaivn_comics_iter(start_page: int = 1, end_page: int = None, max_comics: int = None):
+        """Iterator cào toàn bộ danh sách ~39.000+ truyện từ https://hentaivnreal.com/danh-sach (Mới Nhất ➜ Cũ Nhất)"""
+        scraper = cloudscraper.create_scraper(
+            browser={
+                'browser': 'chrome',
+                'platform': 'windows',
+                'desktop': True
+            }
+        )
+        current_page = max(1, start_page)
+        yielded_count = 0
+        total_pages = 982
+
+        while True:
+            if end_page and current_page > end_page:
+                break
+            if current_page > total_pages:
+                break
+            if max_comics and yielded_count >= max_comics:
+                break
+
+            url = f"https://hentaivnreal.com/danh-sach?page={current_page}"
+            try:
+                res = scraper.get(url, timeout=20)
+                if res.status_code != 200:
+                    time.sleep(2)
+                    continue
+                res.encoding = 'utf-8'
+                soup = BeautifulSoup(res.text, "html.parser")
+
+                pag = soup.find(class_=lambda c: c and 'pagination' in c)
+                if pag:
+                    for a in pag.find_all('a'):
+                        href = a.get('href', '')
+                        if 'page=' in href:
+                            try:
+                                p_num = int(href.split('page=')[-1].split('&')[0])
+                                total_pages = max(total_pages, p_num)
+                            except Exception:
+                                pass
+                        t = a.get_text(strip=True)
+                        if t.isdigit():
+                            total_pages = max(total_pages, int(t))
+
+                items = soup.select("li.item")
+                if not items:
+                    break
+
+                for it in items:
+                    desc_elem = it.select_one(".box-description")
+                    a_tag = desc_elem.find("a", href=True) if desc_elem else it.find("a", href=True)
+                    if not a_tag or "/truyen/" not in a_tag.get("href", ""):
+                        continue
+
+                    comic_rel_url = a_tag["href"]
+                    comic_full_url = urllib.parse.urljoin("https://hentaivnreal.com", comic_rel_url)
+                    comic_title = a_tag.get_text(strip=True)
+                    slug = comic_rel_url.split("?")[0].rstrip("/").split("/")[-1]
+
+                    img_elem = it.find("img")
+                    thumb_url = img_elem.get("src") or img_elem.get("data-src") or "" if img_elem else ""
+
+                    other_names = ""
+                    for p in it.find_all("p"):
+                        if "Tên Khác:" in p.get_text():
+                            other_names = p.get_text().replace("Tên Khác:", "").strip()
+                            break
+
+                    tags = [t.get_text(strip=True) for t in it.find_all("a", class_="tag") if t.get_text(strip=True)]
+
+                    views = 0
+                    for p in it.find_all("p"):
+                        if "Lượt xem:" in p.get_text():
+                            m_v = re.search(r'Lượt xem\s*:\s*([\d,.]+)', p.get_text())
+                            if m_v:
+                                try: views = int(m_v.group(1).replace(",", "").replace(".", ""))
+                                except Exception: pass
+                            break
+
+                    yielded_count += 1
+                    yield {
+                        "id": slug,
+                        "slug": slug,
+                        "title": comic_title,
+                        "url": comic_full_url,
+                        "cover_thumb": thumb_url,
+                        "other_names": other_names,
+                        "tags": tags,
+                        "views": views,
+                        "author": "Đang cập nhật",
+                        "page": current_page,
+                        "total_pages": total_pages,
+                        "total_available": total_pages * 40
+                    }
+
+                    if max_comics and yielded_count >= max_comics:
+                        return
+
+                current_page += 1
+                time.sleep(0.3)
+
+            except Exception as e:
+                time.sleep(2)
+                continue
 
 
 # =============================================================================
-# 5. ENGINE ĐỒNG BỘ REALTIME TỪNG CHAPTER LÊN CLOUD BUCKET & WEB
+# 2. ENGINE ĐỒNG BỘ TỔNG HỢP (SYNCHRONIZER PRO)
 # =============================================================================
-class MangaDexSynchronizer:
+class NekoSynchronizerPro:
     def __init__(
         self,
         temp_dir: str = TEMP_DOWNLOAD_DIR,
         workers: int = DEFAULT_WORKERS,
         upload_to_web: bool = DEFAULT_UPLOAD_TO_WEB,
         skip_existing: bool = DEFAULT_SKIP_EXISTING,
-        data_saver: bool = DEFAULT_DATA_SAVER,
         merge_slices: bool = DEFAULT_MERGE_SLICES,
         make_pdf: bool = DEFAULT_MAKE_PDF,
         delete_local: bool = True,
-        lang: str = DEFAULT_LANG,
         api_base_url: str = DEFAULT_API_BASE_URL,
         **kwargs
     ):
-        self.client = MangaDexClient(lang=lang)
         self.temp_root = Path(temp_dir).resolve()
         self.temp_root.mkdir(parents=True, exist_ok=True)
         self.state = SyncStateManager(self.temp_root / STATE_FILE_NAME)
         self.workers = workers
         self.upload_to_web = upload_to_web
         self.skip_existing = skip_existing
-        self.data_saver = data_saver
         self.merge_slices = merge_slices
         self.make_pdf = make_pdf
         self.delete_local = delete_local
         self.api_base_url = api_base_url
-        # Connection Pool siêu tốc dùng chung (Keep-Alive) cho download & upload
+
+        # Connection Pool siêu tốc
         self.download_session = create_reusable_session(pool_size=max(64, self.workers * 2))
         self.download_session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Referer": "https://mangadex.org/"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         })
-        self.upload_session = create_reusable_session(pool_size=max(64, self.workers * 2))
         self.api_session = create_reusable_session(pool_size=32)
 
-    def _download_single_image(self, url: str, target_path: Path) -> bool:
+    def _download_single_image(self, url: str, target_path: Path, referer: str = None) -> bool:
         target_path.parent.mkdir(parents=True, exist_ok=True)
+        headers = {}
+        if referer:
+            headers["Referer"] = referer
+
         for attempt in range(MAX_RETRIES):
             try:
-                res = self.download_session.get(url, timeout=DEFAULT_TIMEOUT)
-                if res.status_code == 200 and len(res.content) > 500:
+                res = self.download_session.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
+                if res.status_code == 200 and len(res.content) > 300:
                     with open(target_path, "wb") as f:
                         f.write(res.content)
                     return True
@@ -827,111 +920,97 @@ class MangaDexSynchronizer:
                 time.sleep(0.5)
         return False
 
-    def _convert_to_webp(self, src_file: Path, dest_webp_file: Path, quality: int = 88) -> bool:
-        try:
-            with Image.open(src_file) as im:
-                im.load()
-                im = im.convert('RGB') if im.mode != 'RGB' else im
-                im.save(dest_webp_file, 'WEBP', quality=quality, method=4)
-            if src_file != dest_webp_file and src_file.exists():
-                src_file.unlink(missing_ok=True)
-            return True
-        except Exception:
-            return False
+    # =========================================================================
+    # A. TẢI TOÀN BỘ HENTAIVNREAL (MỚI NHẤT ➜ CŨ NHẤT)
+    # =========================================================================
+    def sync_all_hentaivn_comics(self, start_page: int = 1, end_page: int = None, max_comics: int = None):
+        log_info(f"🚀 BẮT ĐẦU ĐỒNG BỘ TOÀN BỘ HENTAIVNREAL (MỚI NHẤT ➜ CŨ NHẤT)")
+        log_info(f"• Nguồn: https://hentaivnreal.com/danh-sach (Bắt đầu từ Trang #{start_page})")
+        log_info(f"• Cloud Storage Bucket: {GCS_BUCKET} ({GCS_ENDPOINT})")
+        log_info(f"• Web API: {self.api_base_url}")
+        log_info(f"• Số luồng tải: {self.workers} luồng | Ghép Manhwa 5-in-1: {'BẬT' if self.merge_slices else 'TẮT'}\n")
 
-    def _check_chapter_already_exists(
-        self,
-        manga_id: str,
-        slug: str,
-        chap_num,
-        web_existing_chapters: set = None,
-        local_chap_dir: Path = None,
-        check_cloud_cdn: bool = False
-    ) -> tuple:
-        """
-        Kiểm tra đa tầng xem chapter đã được tải / đồng bộ hay chưa:
-        1. Web API (Website NekoHentai)
-        2. Checkpoint tiến trình (mangadex_sync_state.json)
-        3. Ổ cứng máy chủ (Local Temp Files)
-        4. Cloud Storage Bucket (CDN)
-        """
-        norm_key = normalize_chapter_key(chap_num)
+        comic_iter = HentaiVNRealDownloader.fetch_all_hentaivn_comics_iter(
+            start_page=start_page,
+            end_page=end_page,
+            max_comics=max_comics
+        )
 
-        # 1. Kiểm tra trên Web API (Chính xác 100% với dữ liệu website)
-        if web_existing_chapters and norm_key in web_existing_chapters:
-            return True, "Web API NekoHentai"
+        count = 0
+        for item in comic_iter:
+            count += 1
+            slug = item["slug"]
+            title = item["title"]
+            c_url = item["url"]
+            c_page = item.get("page", 1)
+            tot_pages = item.get("total_pages", "?")
 
-        # 2. Kiểm tra Checkpoint file tiến trình
-        if self.state.is_chapter_synced(manga_id, norm_key):
-            return True, "Checkpoint tiến trình"
+            if self.state.is_completed(slug) and self.skip_existing:
+                comp_info = self.state.get_completed_info(slug) or {}
+                prev_count = comp_info.get("chapters_count", 0)
+                log_info(f"[#{count} | Trang {c_page}/{tot_pages}] ⏭️ Đã hoàn tất ({prev_count} chaps): {title} (Bỏ qua)")
+                continue
 
-        # 3. Kiểm tra ổ cứng máy chủ (nếu còn file tạm WebP hợp lệ)
-        if local_chap_dir and local_chap_dir.exists():
-            existing_webp = [p for p in local_chap_dir.glob("*.webp") if p.stat().st_size > 0]
-            if existing_webp:
-                return True, "Ổ đĩa máy chủ (Local)"
+            log_info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            log_info(f"▶ [#{count} | Trang {c_page}/{tot_pages}] 📖 {title}")
+            log_info(f"   🔗 Link: {c_url} | Slug: {slug}")
 
-        # 4. Kiểm tra trực tiếp trên Cloud Storage Bucket qua CDN (nếu bật)
-        if check_cloud_cdn:
-            if check_chapter_exists_on_cloud(slug, norm_key, session=self.upload_session):
-                return True, "Cloud Bucket (CDN)"
+            try:
+                self.sync_single_hentai(c_url)
+            except Exception as e:
+                log_error(f"Lỗi khi xử lý bộ truyện '{title}': {e}")
+                self.state.mark_failed(slug, title, str(e))
 
-        return False, ""
+            time.sleep(0.3)
 
-    def sync_single_manga(self, manga_id_or_url: str) -> bool:
-        manga_id = self.client.extract_manga_id(manga_id_or_url)
-        info = self.client.get_manga_details_and_chapters(manga_id)
+        log_success("🎉 ĐÃ HOÀN TẤT TIẾN TRÌNH ĐỒNG BỘ HENTAIVNREAL LÊN BUCKET & WEB!")
+
+    def sync_single_hentai(self, comic_url_or_slug: str) -> bool:
+        if not comic_url_or_slug.startswith("http"):
+            url = f"https://hentaivnreal.com/truyen/{comic_url_or_slug}"
+        else:
+            url = comic_url_or_slug
+
+        downloader = HentaiVNRealDownloader(url)
+        info = downloader.get_comic_info()
         title = info["title"]
         slug = info["slug"]
         chapters = info["chapters"]
 
         if not chapters:
-            log_warning(f"⚠️ Bộ truyện '{title}' không có chapter Tiếng Việt nào!")
+            log_warning(f"  ⚠️ Bộ truyện '{title}' chưa có chapter hợp lệ!")
             return False
-
-        log_info(f"▶ Đang xử lý: [bold]{title}[/bold] (Slug: {slug}) | Tổng {len(chapters)} chapters")
 
         local_comic_dir = self.temp_root / "chapters" / slug
         local_covers_dir = self.temp_root / "covers"
         local_comic_dir.mkdir(parents=True, exist_ok=True)
         local_covers_dir.mkdir(parents=True, exist_ok=True)
 
-        # 1. TẢI VÀ ĐẨY ẢNH BÌA NGAY LẬP TỨC
+        # 1. Ảnh bìa
         cover_cdn_url = None
-        cover_path = None
         if info.get("cover_url"):
             raw_cover = local_covers_dir / f"{slug}_raw.jpg"
             target_cover = local_covers_dir / f"{slug}.webp"
             if not target_cover.exists():
-                if self._download_single_image(info["cover_url"], raw_cover):
-                    if self._convert_to_webp(raw_cover, target_cover):
-                        cover_path = target_cover
-                    else:
-                        cover_path = raw_cover
-            else:
-                cover_path = target_cover
+                if self._download_single_image(info["cover_url"], raw_cover, referer=url):
+                    convert_to_webp(raw_cover, target_cover, quality=90)
 
-            # Đẩy ảnh bìa lên Cloud Bucket ngay!
-            if cover_path and cover_path.exists():
-                if self.upload_to_web:
-                    try:
-                        cover_cdn_url = upload_file_to_cloud(cover_path, f"covers/{slug}.webp", "image/webp", session=self.upload_session)
-                        log_success(f"  📸 Đã đưa Ảnh bìa lên Bucket Cloud: {cover_cdn_url}")
-                    except Exception as err:
-                        log_warning(f"  ⚠️ Lỗi upload bìa lên Bucket: {err}")
+            if target_cover.exists() and self.upload_to_web:
+                try:
+                    cover_cdn_url = upload_file_to_cloud(target_cover, f"covers/{slug}.webp", "image/webp")
+                    log_success(f"  📸 Đã đưa Ảnh bìa lên Bucket: {cover_cdn_url}")
+                except Exception as err:
+                    log_warning(f"  ⚠️ Lỗi upload bìa lên Bucket: {err}")
 
-        # 2. KIỂM TRA ĐA TẦNG CÁC CHAPTER ĐÃ CÓ TRƯỚC ĐÓ (WEB API / CLOUD / LOCAL / CHECKPOINT)
+        # 2. Kiểm tra các chapter đã có
         web_existing = set()
         if self.upload_to_web:
             web_existing = get_existing_chapters_from_web(self.api_base_url, slug, session=self.api_session)
-            if web_existing:
-                log_info(f"  🌐 Đã kết nối Web API: Tìm thấy {len(web_existing)} chapters đã lưu trên Website.")
-                for wk in web_existing:
-                    self.state.mark_chapter_synced(manga_id, wk)
+            for wk in web_existing:
+                self.state.mark_chapter_synced(slug, wk)
 
-        # Phân loại chapter: đã có vs cần tải mới
-        already_synced = []
         pending_download = []
+        already_synced = []
 
         for chap in chapters:
             num = chap["number"]
@@ -939,63 +1018,51 @@ class MangaDexSynchronizer:
             chap_dir = local_comic_dir / f"chap{num_str}"
 
             if self.skip_existing:
-                exists, where = self._check_chapter_already_exists(
-                    manga_id=manga_id,
-                    slug=slug,
-                    chap_num=num,
-                    web_existing_chapters=web_existing,
-                    local_chap_dir=chap_dir,
-                    check_cloud_cdn=False
-                )
-                if exists:
-                    already_synced.append((chap, where))
-                    self.state.mark_chapter_synced(manga_id, num_str)
-                    continue
+                if norm_key := num_str:
+                    if norm_key in web_existing or self.state.is_chapter_synced(slug, norm_key):
+                        already_synced.append(chap)
+                        continue
+                    if chap_dir.exists() and any(chap_dir.glob("*.webp")):
+                        already_synced.append(chap)
+                        self.state.mark_chapter_synced(slug, norm_key)
+                        continue
 
             pending_download.append(chap)
 
         total_chaps = len(chapters)
-        synced_count = len(already_synced)
-        pending_count = len(pending_download)
-
-        # Hiển thị thông tin kiểm tra chapter
-        if synced_count > 0:
-            log_info(f"  📊 Trạng thái kiểm tra: Đã có {synced_count}/{total_chaps} chapters | Cần tải mới: {pending_count} chapters")
-
-        # NẾU TẤT CẢ CHAPTER ĐÃ TẢI XONG -> BỎ QUA TOÀN BỘ TRUYỆN NGAY LẬP TỨC
-        if pending_count == 0 and self.skip_existing:
-            log_success(f"  ✨ Toàn bộ {total_chaps}/{total_chaps} chapters của '{title}' đã tải/đồng bộ xong trước đó. Bỏ qua không tải lại!\n")
-            self.state.mark_completed(
-                manga_id=manga_id, title=title, slug=slug,
-                chapters_count=total_chaps, pages_count=0
-            )
+        if not pending_download and self.skip_existing:
+            log_success(f"  ✨ Toàn bộ {total_chaps}/{total_chaps} chapters của '{title}' đã tải/đồng bộ xong trước đó. Bỏ qua!\n")
+            self.state.mark_completed(slug, title, slug, total_chaps, 0, source="HentaiVNReal")
             return True
 
-        # Hiển thị danh sách các chapter được bỏ qua
         if already_synced:
-            if synced_count <= 6:
-                for c, where in already_synced:
-                    c_num_str = normalize_chapter_key(c["number"])
-                    c_name = c.get("title") or f"Chương {c_num_str}"
-                    log_info(f"  ⏭️ Bỏ qua {c_name} (Đã có trên {where})")
-            else:
-                first_k = normalize_chapter_key(already_synced[0][0]["number"])
-                last_k = normalize_chapter_key(already_synced[-1][0]["number"])
-                log_info(f"  ⏭️ Đã tự động bỏ qua {synced_count} chapters cũ (Chương {first_k} ➔ Chương {last_k})")
+            log_info(f"  ⏭️ Đã bỏ qua {len(already_synced)} chapters đã có sẵn trên hệ thống.")
 
-        # 3. CHỈ TẢI CÁC CHAPTER CẦN THIẾT (PENDING DOWNLOAD)
+        # 3. Tải các chapter cần thiết
         total_pages_downloaded = 0
         for idx, chap in enumerate(pending_download, 1):
             num = chap["number"]
             num_str = normalize_chapter_key(num)
-            chap_title = chap.get("title") or f"Chương {num_str}"
+            raw_t = (chap.get("title") or "").strip()
+
+            # Oneshot check
+            is_oneshot = bool(re.search(r'oneshot|one-shot|1shot', raw_t, re.I) or re.search(r'oneshot|one-shot', str(title or ''), re.I))
+            if is_oneshot:
+                clean_t = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', raw_t, flags=re.I).strip()
+                chap_title = clean_t or "Oneshot"
+                api_chap_title = "Oneshot"
+            else:
+                chap_title = f"Chương {num_str}"
+                if raw_t and raw_t != chap_title:
+                    chap_title += f" - {raw_t}"
+                api_chap_title = raw_t or f"Chương {num_str}"
+
             chap_dir = local_comic_dir / f"chap{num_str}"
             chap_dir.mkdir(parents=True, exist_ok=True)
 
-            log_info(f"  📥 [{idx}/{pending_count}] Đang tải {chap_title}...")
+            log_info(f"  📥 [{idx}/{len(pending_download)}] Đang tải {chap_title}...")
 
-            # Lấy link ảnh từ MangaDex (data_saver=False -> ẢNH GỐC)
-            img_urls = self.client.get_chapter_image_urls(chap["id"], data_saver=self.data_saver)
+            img_urls = downloader.get_chapter_images(chap["url"])
             if not img_urls:
                 log_warning(f"    ⚠️ Không lấy được link ảnh cho {chap_title}")
                 continue
@@ -1009,28 +1076,29 @@ class MangaDexSynchronizer:
             with ThreadPoolExecutor(max_workers=self.workers) as pool:
                 futures = {}
                 for p_idx, u in enumerate(img_urls, 1):
-                    p_file = download_dir / f"raw_{p_idx:04d}.jpg"
+                    ext = u.split(".")[-1].split("?")[0].lower()
+                    if ext not in ("jpg", "jpeg", "png", "webp"): ext = "jpg"
+                    p_file = download_dir / f"raw_{p_idx:04d}.{ext}"
                     raw_paths.append(p_file)
-                    futures[pool.submit(self._download_single_image, u, p_file)] = p_file
+                    futures[pool.submit(self._download_single_image, u, p_file, chap["url"])] = p_file
                 for f in as_completed(futures):
                     pass
 
             downloaded_raw = sorted([p for p in raw_paths if p.exists()])
 
-            # Chuyển đổi WebP hoặc ghép ảnh Manhwa 5-in-1
+            # Ghép Manhwa 5-in-1 hoặc nén WebP
             final_paths = []
             if should_stitch:
                 final_paths = merge_images_vertical(downloaded_raw, chap_dir, group_size=STITCH_GROUP_SIZE)
                 total_pages_downloaded += len(final_paths)
                 shutil.rmtree(download_dir, ignore_errors=True)
             else:
-                # Chuyển đổi WebP ĐA LUỒNG TỐC ĐỘ CAO (method=4)
                 final_paths_dict = {}
                 with ThreadPoolExecutor(max_workers=min(self.workers, 16)) as conv_pool:
                     conv_futures = {}
                     for p_idx, p_file in enumerate(downloaded_raw, 1):
                         final_webp = chap_dir / f"page_{p_idx:03d}.webp"
-                        conv_futures[conv_pool.submit(self._convert_to_webp, p_file, final_webp, 88)] = (p_idx, final_webp)
+                        conv_futures[conv_pool.submit(convert_to_webp, p_file, final_webp, 90)] = (p_idx, final_webp)
                     for f in as_completed(conv_futures):
                         p_idx, final_webp = conv_futures[f]
                         if f.result() and final_webp.exists():
@@ -1039,188 +1107,113 @@ class MangaDexSynchronizer:
                 final_paths = [final_paths_dict[k] for k in sorted(final_paths_dict.keys())]
                 total_pages_downloaded += len(final_paths)
 
-            # =========================================================================
-            # ⚡ ĐẨY NGAY LẬP TỨC LÊN CLOUD BUCKET & ĐỒNG BỘ WEB API SAU MỖI CHAPTER
-            # =========================================================================
+            # Đẩy lên Cloud Storage Bucket & Đồng bộ Web API
             if self.upload_to_web and final_paths:
-                # 1. Đẩy từng ảnh lên Cloud Storage Bucket qua persistent Keep-Alive session
                 uploaded_cdn_urls = [None] * len(final_paths)
                 with ThreadPoolExecutor(max_workers=self.workers) as pool:
                     f_to_i = {}
                     for p_i, p_path in enumerate(final_paths):
                         obj_name = f"chapters/{slug}/chap{num_str}/page_{p_i+1:03d}.webp"
-                        f = pool.submit(upload_file_to_cloud, p_path, obj_name, "image/webp", self.upload_session)
+                        f = pool.submit(upload_file_to_cloud, p_path, obj_name, "image/webp")
                         f_to_i[f] = p_i
                     for f in as_completed(f_to_i):
                         p_i = f_to_i[f]
-                        try:
-                            uploaded_cdn_urls[p_i] = f.result()
+                        try: uploaded_cdn_urls[p_i] = f.result()
                         except Exception as e:
                             log_warning(f"    Lỗi upload ảnh {p_i+1} lên bucket: {e}")
 
                 valid_cdn_urls = [u for u in uploaded_cdn_urls if u]
                 if valid_cdn_urls:
-                    log_success(f"    ☁️ Đã lưu {len(valid_cdn_urls)} ảnh vào Bucket Cloud: {GCS_BUCKET}")
-                    # 2. Đồng bộ lên Web API qua persistent session
-                    manga_created_at = info.get("created_at")
-                    manga_updated_at = info.get("updated_at")
-                    if not manga_created_at and chapters:
-                        valid_pub = [c.get("published_at") for c in chapters if c.get("published_at")]
-                        if valid_pub:
-                            manga_created_at = min(valid_pub)
-
+                    log_success(f"    ☁️ Đã lưu {len(valid_cdn_urls)} ảnh vào Bucket: {GCS_BUCKET}")
                     synced = sync_chapter_to_web_api(
                         api_base_url=self.api_base_url,
                         comic_title=title,
                         comic_slug=slug,
                         cover_cdn_url=cover_cdn_url or valid_cdn_urls[0],
                         chapter_num=num,
-                        chapter_title=chap_title,
+                        chapter_title=api_chap_title,
                         image_urls=valid_cdn_urls,
                         author=info["author"],
-                        translator_group=chap.get("group"),
-                        published_at=chap.get("published_at"),
-                        created_at=chap.get("published_at"),
-                        comic_created_at=manga_created_at,
-                        comic_updated_at=manga_updated_at,
+                        translator_group=info["translator_group"],
+                        other_names=info["other_names"],
+                        views=chap.get("views", 0),
+                        published_at=chap.get("updated_at"),
+                        created_at=chap.get("updated_at"),
+                        comic_views=info.get("views", 0),
                         categories=info.get("genres", []),
                         session=self.api_session
                     )
                     if synced:
                         log_success(f"    🌐 Đã đồng bộ {chap_title} lên Website NekoHentai thành công!")
 
-            # Ghi nhận hoàn thành chapter vào checkpoint
-            self.state.mark_chapter_synced(manga_id, num_str)
+            self.state.mark_chapter_synced(slug, num_str)
 
-            # 3. Dọn dẹp file tạm trên máy chủ để chống tràn ổ cứng
+            # Dọn dẹp bộ nhớ đệm
             if self.delete_local:
                 shutil.rmtree(chap_dir, ignore_errors=True)
 
         self.state.mark_completed(
-            manga_id=manga_id, title=title, slug=slug,
-            chapters_count=len(chapters), pages_count=total_pages_downloaded
+            manga_id=slug, title=title, slug=slug,
+            chapters_count=len(chapters), pages_count=total_pages_downloaded,
+            source="HentaiVNReal"
         )
         log_success(f"🎉 Hoàn thành cập nhật trọn bộ '{title}'!\n")
         return True
 
-    def sync_all_vietnamese_manga(self, order_by: str = "oldest", start_offset: int = 0, limit: int = None):
-        total_available = self.client.get_total_vietnamese_manga_count()
-        order_norm = (order_by or "oldest").lower()
-        if order_norm in ("oldest", "asc"):
-            order_label = "CŨ NHẤT ➔ MỚI NHẤT (Oldest first)"
-        elif order_norm in ("newest_created", "created_desc"):
-            order_label = "TRUYỆN MỚI TẠO ➔ CŨ NHẤT (Newest created manga)"
-        else:
-            order_label = "CHAPTER MỚI NHẤT ➔ CŨ NHẤT (Latest uploaded chapters)"
-
-        log_info(f"🚀 BẮT ĐẦU ĐỒNG BỘ TOÀN BỘ MANGADEX TIẾNG VIỆT")
-        log_info(f"• Thứ tự duyệt truyện: {order_label}")
-        log_info(f"• Cloud Storage Bucket: {GCS_BUCKET} ({GCS_ENDPOINT})")
-        log_info(f"• Web API: {self.api_base_url}")
-        log_info(f"• Cơ chế lưu: REAL-TIME TỪNG CHAPTER (Tải xong chương nào đẩy ngay lên Bucket & Web API)")
-        log_info(f"• MangaDex Data-Saver: {'BẬT' if self.data_saver else 'TẮT (Tải ẢNH GỐC)'}")
-        log_info(f"• Số luồng tải: {self.workers} luồng\n")
-
-        manga_generator = self.client.iterate_all_vietnamese_manga(
-            order_by=order_by,
-            start_offset=start_offset,
-            limit=limit
-        )
-
-        count = 0
-        for item in manga_generator:
-            count += 1
-            m_id = item["id"]
-            title = item["title"]
-
-            if self.state.is_completed(m_id) and self.skip_existing:
-                last_chap_str = item.get("last_chapter")
-                comp_info = self.state.get_completed_info(m_id) or {}
-                prev_count = comp_info.get("chapters_count", 0)
-                synced_at = comp_info.get("synced_at")
-                manga_updated_at = item.get("updated_at")
-
-                has_new = False
-                if last_chap_str:
-                    try:
-                        if float(last_chap_str) > prev_count:
-                            has_new = True
-                    except Exception:
-                        pass
-
-                if not has_new and manga_updated_at and synced_at:
-                    try:
-                        if manga_updated_at > synced_at:
-                            has_new = True
-                    except Exception:
-                        pass
-
-                if not has_new:
-                    log_info(f"[{count}] ⏭️ Đã hoàn tất ({prev_count} chaps): {title} (Bỏ qua)")
-                    continue
-                else:
-                    new_hint = f"{prev_count} ➔ {last_chap_str}" if last_chap_str else f"Đã lưu: {prev_count} chaps"
-                    log_info(f"[{count}] 🔄 Phát hiện cập nhật mới cho: {title} ({new_hint}). Đang kiểm tra chapter mới...")
-
-            log_info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            log_info(f"▶ [{count}] Đang tải: {title} (ID: {m_id})")
-            log_info(f"✍️ Tác giả: {item['author']}")
-
-            try:
-                self.sync_single_manga(m_id)
-            except Exception as e:
-                log_error(f"Lỗi khi xử lý truyện '{title}': {e}")
-                self.state.mark_failed(m_id, title, str(e))
-
-            time.sleep(0.5)
-
-        log_success("🎉 ĐÃ HOÀN TẤT TIẾN TRÌNH ĐỒNG BỘ MANGADEX LÊN BUCKET & WEB!")
+    # =========================================================================
+    # B. TẢI 1 BỘ TRUYỆN THEO LINK HOẶC SLUG (HENTAIVNREAL)
+    # =========================================================================
+    def sync_single_comic(self, input_val: str) -> bool:
+        val = input_val.strip()
+        log_info(f"🏷️ Xử lý truyện HentaiVNReal: {val}")
+        return self.sync_single_hentai(val)
 
 
-# Backward compatibility alias
-MangaDexDriveSynchronizer = MangaDexSynchronizer
+# Backward compatibility aliases
+MangaDexSynchronizer = NekoSynchronizerPro
+MangaDexDriveSynchronizer = NekoSynchronizerPro
+HentaiVNSynchronizer = NekoSynchronizerPro
 
 
 # =============================================================================
-# HÀM MAIN
+# MAIN CLI
 # =============================================================================
 def main():
     parser = argparse.ArgumentParser(
-        description="🚀 Tải truyện MangaDex (Tiếng Việt) và lưu trữ trực tiếp vào Cloud Bucket & Web API"
+        description="🚀 NekoHentai Crawler Pro (HentaiVNReal) cho Ubuntu / Linux VPS"
     )
-    parser.add_argument("--all", action="store_true", help="Tải toàn bộ truyện Tiếng Việt trên MangaDex")
-    parser.add_argument("--url", "--manga", default=None, help="URL hoặc MangaDex UUID của bộ truyện muốn tải")
-    parser.add_argument("--folder-id", default=None, help="[Bỏ qua] Google Drive Folder ID")
-    parser.add_argument("--remote", default=None, help="[Bỏ qua] Tên remote trong Rclone")
-    parser.add_argument("--drive-path", default=None, help="[Bỏ qua] Đường dẫn thư mục Google Drive")
-    parser.add_argument("--service-account", default=None, help="[Bỏ qua] Đường dẫn file service_account.json")
-    parser.add_argument("--offset", type=int, default=0, help="Vị trí bắt đầu tải (Mặc định: 0)")
-    parser.add_argument("--limit", type=int, default=None, help="Số lượng truyện tối đa muốn tải (Mặc định: Tất cả)")
-    parser.add_argument("--order", choices=["oldest", "latest", "newest", "newest_created", "latest_uploaded"], default="oldest", help="Thứ tự duyệt truyện: latest/newest (ưu tiên chapter mới nhất), oldest (cũ nhất -> mới nhất), newest_created (truyện mới tạo)")
-    parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS, help=f"Số luồng tải ảnh song song (Mặc định: {DEFAULT_WORKERS})")
-    parser.add_argument("--data-saver", action="store_true", default=DEFAULT_DATA_SAVER, help="Bật Data-Saver (Mặc định: TẮT - Tải ảnh gốc)")
+    # HentaiVNReal
+    parser.add_argument("--all-hentai", "--hentai", action="store_true", help="Tải toàn bộ truyện từ HentaiVNReal (Mới Nhất ➜ Cũ Nhất, Trang 1 ➜ 982+)")
+    parser.add_argument("--start-page", "--page", type=int, default=1, help="Trang bắt đầu cào HentaiVNReal (Mặc định: 1)")
+    parser.add_argument("--end-page", type=int, default=None, help="Trang kết thúc cào HentaiVNReal (Mặc định: hết)")
+    parser.add_argument("--max-manga", type=int, default=None, help="Số lượng truyện tối đa muốn cào (Mặc định: tất cả)")
+
+    # Single comic
+    parser.add_argument("--url", "--manga", default=None, help="URL hoặc slug truyện HentaiVNReal")
+
+    # General settings
+    parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS, help=f"Số luồng tải song song (Mặc định: {DEFAULT_WORKERS})")
     parser.add_argument("--no-merge", action="store_true", help="Tắt tự động ghép ảnh Manhwa 5-in-1")
-    parser.add_argument("--no-skip", action="store_true", help="Tắt bỏ qua chapter đã có trên máy")
-    parser.add_argument("--no-upload", action="store_true", help="Chỉ tải lưu cục bộ, không đẩy lên Cloud")
-    parser.add_argument("--keep-local", action="store_true", help="Không xóa file tạm cục bộ sau khi đẩy lên Cloud")
+    parser.add_argument("--no-skip", action="store_true", help="Tắt bỏ qua chapter đã có trên máy / cloud / web")
+    parser.add_argument("--no-upload", action="store_true", help="Chỉ tải lưu cục bộ, không đẩy lên Cloud Bucket")
+    parser.add_argument("--keep-local", action="store_true", help="Không xóa file tạm sau khi đẩy lên Cloud")
     parser.add_argument("--api", default=DEFAULT_API_BASE_URL, help=f"URL Backend API (Mặc định: {DEFAULT_API_BASE_URL})")
 
     args = parser.parse_args()
 
-    sync_engine = MangaDexSynchronizer(
+    engine = NekoSynchronizerPro(
         workers=args.workers,
         upload_to_web=not args.no_upload,
         skip_existing=not args.no_skip,
-        data_saver=args.data_saver,
         merge_slices=not args.no_merge,
         delete_local=not args.keep_local,
         api_base_url=args.api
     )
 
     if args.url:
-        sync_engine.sync_single_manga(args.url)
-    elif args.all:
-        sync_engine.sync_all_vietnamese_manga(order_by=args.order, start_offset=args.offset, limit=args.limit)
+        engine.sync_single_comic(args.url)
+    elif args.all_hentai:
+        engine.sync_all_hentaivn_comics(start_page=args.start_page, end_page=args.end_page, max_comics=args.max_manga)
     else:
         parser.print_help()
 
