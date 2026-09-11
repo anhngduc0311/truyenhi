@@ -6,11 +6,11 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using TruyenKomi.API.Data;
-using TruyenKomi.API.DTOs;
-using TruyenKomi.API.Models;
+using NekoHentai.API.Data;
+using NekoHentai.API.DTOs;
+using NekoHentai.API.Models;
 
-namespace TruyenKomi.API.Services
+namespace NekoHentai.API.Services
 {
     public interface ISearchEngineService
     {

@@ -11,12 +11,12 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using TruyenKomi.API.Data;
-using TruyenKomi.API.Middleware;
-using TruyenKomi.API.Models;
-using TruyenKomi.API.Services;
-using TruyenKomi.API.Services.HealthChecks;
-using TruyenKomi.API.Validators;
+using NekoHentai.API.Data;
+using NekoHentai.API.Middleware;
+using NekoHentai.API.Models;
+using NekoHentai.API.Services;
+using NekoHentai.API.Services.HealthChecks;
+using NekoHentai.API.Validators;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Prometheus;
@@ -341,7 +341,7 @@ using (var scope = app.Services.CreateScope())
 
         try
         {
-            var adminUser = db.Users.FirstOrDefault(u => u.Username == "admin" || u.Email == "admin@nekohentai.lol" || u.Email == "admin@truyenkomi.com");
+            var adminUser = db.Users.FirstOrDefault(u => u.Username == "admin" || u.Email == "admin@nekohentai.lol" || u.Email == "admin@nekohentai.com");
             if (adminUser == null)
             {
                 db.Users.Add(new User

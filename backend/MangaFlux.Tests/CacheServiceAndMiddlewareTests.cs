@@ -6,12 +6,12 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using TruyenKomi.API.Middleware;
-using TruyenKomi.API.Services;
+using NekoHentai.API.Middleware;
+using NekoHentai.API.Services;
 using Moq;
 using Xunit;
 
-namespace TruyenKomi.Tests
+namespace NekoHentai.Tests
 {
     public class CacheServiceAndMiddlewareTests
     {

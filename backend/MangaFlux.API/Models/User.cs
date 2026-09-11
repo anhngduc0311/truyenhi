@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace TruyenKomi.API.Models
+namespace NekoHentai.API.Models
 {
     public class User
     {

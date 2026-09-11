@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace TruyenKomi.API.DTOs
+namespace NekoHentai.API.DTOs
 {
     public class CategoryDto
     {

@@ -1,11 +1,11 @@
 using System;
 using System.Linq;
-using TruyenKomi.API.DTOs;
-using TruyenKomi.API.Services;
-using TruyenKomi.API.Validators;
+using NekoHentai.API.DTOs;
+using NekoHentai.API.Services;
+using NekoHentai.API.Validators;
 using Xunit;
 
-namespace TruyenKomi.Tests
+namespace NekoHentai.Tests
 {
     public class ValidationAndSecurityTests
     {

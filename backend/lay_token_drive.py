@@ -56,7 +56,7 @@ def find_rclone_exe() -> str:
 def main():
     print("=" * 66)
     print("🚀 TRÌNH TỰ ĐỘNG LẤY TOKEN GOOGLE DRIVE (CHO MÁY CHỦ UBUNTU)")
-    print(f"   Thư mục Drive: luutruyenkomi (Folder ID: {DEFAULT_FOLDER_ID})")
+    print(f"   Thư mục Drive: luunekohentai (Folder ID: {DEFAULT_FOLDER_ID})")
     print("=" * 66)
 
     rclone_bin = find_rclone_exe()

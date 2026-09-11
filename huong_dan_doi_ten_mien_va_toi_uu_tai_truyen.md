@@ -1,6 +1,6 @@
 # 📚 Hướng Dẫn: Đổi Tên Miền Hệ Thống & Tối Ưu Tốc Độ Tải Truyện Hàng Loạt
 
-Tài liệu này tổng hợp giải pháp chi tiết cho 2 vấn đề quan trọng trong quá trình vận hành hệ thống truyện **TruyenKomi**:
+Tài liệu này tổng hợp giải pháp chi tiết cho 2 vấn đề quan trọng trong quá trình vận hành hệ thống truyện **NekoHentai**:
 1. **Quy trình đổi tên miền linh hoạt & siêu tốc** mà không lo mất mát dữ liệu truyện đã tải.
 2. **Các mẹo tối ưu tăng tốc độ tải truyện hàng loạt** từ MangaDex / ZetTruyen nhanh gấp 3 - 5 lần.
 
@@ -9,7 +9,7 @@ Tài liệu này tổng hợp giải pháp chi tiết cho 2 vấn đề quan tr�
 ## 🌐 PHẦN 1: HƯỚNG DẪN ĐỔI TÊN MIỀN SAU KHI TẢI HẾT TRUYỆN
 
 ### 1. Vì sao không bao giờ lo mất dữ liệu ảnh?
-* **Ảnh trên ổ cứng (`G:\My Drive\luutruyenkomi`)**: Lưu dạng file vật lý `.webp` cục bộ trên máy tính của bạn, độc lập 100% với tên miền.
+* **Ảnh trên ổ cứng (`G:\My Drive\luunekohentai`)**: Lưu dạng file vật lý `.webp` cục bộ trên máy tính của bạn, độc lập 100% với tên miền.
 * **Ảnh trên Cloud Storage (Cloudflare R2 / Google Cloud Storage)**: Dữ liệu nằm trong Bucket theo cấu trúc khóa:
   - Ảnh bìa: `covers/{slug}.webp`
   - Trang đọc: `chapters/{slug}/chap{x}/page_xxx.webp`
@@ -22,12 +22,12 @@ Tài liệu này tổng hợp giải pháp chi tiết cho 2 vấn đề quan tr�
 #### ⚡ Cách 1: Trỏ song song 2 tên miền vào cùng 1 Bucket (Nhanh nhất - 30 giây)
 - **Cơ chế**: Thêm tên miền mới (`img.nekohentai.lol`) làm Custom Domain thứ 2 vào cùng Bucket R2 / GCS lưu ảnh.
 - **Ưu điểm**:
-  - Link ảnh cũ (`img.truyenkomi.site/...` hoặc `img.truyenkomi.com/...`) và link ảnh mới (`img.nekohentai.lol/...`) đều load được bình thường.
+  - Link ảnh cũ (`img.nekohentai.site/...` hoặc `img.nekohentai.com/...`) và link ảnh mới (`img.nekohentai.lol/...`) đều load được bình thường.
   - **Không cần sửa 1 dòng code hay 1 câu lệnh SQL nào trong Database**.
 
 #### ⚡ Cách 2: Tạo Redirect Rule trên Cloudflare (1 phút)
 - Trên Dashboard Cloudflare của domain cũ, vào **Rules** ➡️ **Redirect Rules** tạo quy tắc:
-  - **Match**: `Hostname equals img.truyenkomi.site` hoặc `Hostname equals img.truyenkomi.com`
+  - **Match**: `Hostname equals img.nekohentai.site` hoặc `Hostname equals img.nekohentai.com`
   - **Action**: Dynamic Redirect sang `concat("https://img.nekohentai.lol", http.request.uri.path)` (Status 301).
 - Mọi truy cập ảnh từ link cũ sẽ được CDN chuyển tiếp tức thì sang link mới.
 
@@ -36,14 +36,14 @@ Nếu bạn muốn Database hoàn toàn sạch sẽ và chuyển hẳn sang tên
 ```sql
 -- 1. Cập nhật ảnh bìa truyện
 UPDATE "Comics" 
-SET "CoverImage" = REPLACE(REPLACE("CoverImage", 'img.truyenkomi.site', 'img.nekohentai.lol'), 'img.truyenkomi.com', 'img.nekohentai.lol'),
-    "BannerImage" = REPLACE(REPLACE("BannerImage", 'img.truyenkomi.site', 'img.nekohentai.lol'), 'img.truyenkomi.com', 'img.nekohentai.lol')
-WHERE "CoverImage" LIKE '%img.truyenkomi.%' OR "BannerImage" LIKE '%img.truyenkomi.%';
+SET "CoverImage" = REPLACE(REPLACE("CoverImage", 'img.nekohentai.site', 'img.nekohentai.lol'), 'img.nekohentai.com', 'img.nekohentai.lol'),
+    "BannerImage" = REPLACE(REPLACE("BannerImage", 'img.nekohentai.site', 'img.nekohentai.lol'), 'img.nekohentai.com', 'img.nekohentai.lol')
+WHERE "CoverImage" LIKE '%img.nekohentai.%' OR "BannerImage" LIKE '%img.nekohentai.%';
 
 -- 2. Cập nhật ảnh tất cả các trang chương truyện
 UPDATE "ChapterPages" 
-SET "ImageUrl" = REPLACE(REPLACE("ImageUrl", 'img.truyenkomi.site', 'img.nekohentai.lol'), 'img.truyenkomi.com', 'img.nekohentai.lol')
-WHERE "ImageUrl" LIKE '%img.truyenkomi.%';
+SET "ImageUrl" = REPLACE(REPLACE("ImageUrl", 'img.nekohentai.site', 'img.nekohentai.lol'), 'img.nekohentai.com', 'img.nekohentai.lol')
+WHERE "ImageUrl" LIKE '%img.nekohentai.%';
 ```
 *Thời gian thực thi: Chỉ 2 - 5 giây cho hàng triệu trang ảnh.*
 
@@ -81,10 +81,10 @@ Khi tải hàng ngàn bộ truyện (6.800+ truyện từ MangaDex), áp dụng 
 ### 3. Quy trình tải tách biệt: Tải Local trước ➡️ Đồng bộ Cloud sau 🚀
 - **Vấn đề**: Vừa tải từ MangaDex vừa đẩy từng ảnh lên Cloud sẽ gây nghẽn mạng do phải đợi handshake HTTP PUT từng file.
 - **Cách làm tối ưu**:
-  1. Tắt nút "Đồng bộ Web & Cloud" khi cắm máy tải hàng loạt về ổ cứng (`G:\My Drive\luutruyenkomi`).
+  1. Tắt nút "Đồng bộ Web & Cloud" khi cắm máy tải hàng loạt về ổ cứng (`G:\My Drive\luunekohentai`).
   2. Khi tải xong một đợt lớn, dùng công cụ đồng bộ chuyên dụng như **Rclone**:
      ```bash
-     rclone copy "G:\My Drive\luutruyenkomi" remote_r2:truyenkomi --transfers=64 --checkers=32 -P
+     rclone copy "G:\My Drive\luunekohentai" remote_r2:nekohentai --transfers=64 --checkers=32 -P
      ```
   3. Tốc độ upload của Rclone sẽ đạt tối đa băng thông đường truyền nhà bạn (nhanh gấp 5 - 10 lần tải lẻ).
 

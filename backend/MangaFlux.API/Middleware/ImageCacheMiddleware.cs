@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-namespace TruyenKomi.API.Middleware
+namespace NekoHentai.API.Middleware
 {
     public class ImageCacheMiddleware
     {

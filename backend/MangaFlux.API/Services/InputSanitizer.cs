@@ -2,7 +2,7 @@ using System;
 using System.Net;
 using System.Text.RegularExpressions;
 
-namespace TruyenKomi.API.Services
+namespace NekoHentai.API.Services
 {
     public static class InputSanitizer
     {

@@ -7,6 +7,7 @@ import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { SeoService } from '../../services/seo.service';
 import { ComicDetail, Chapter, ComicRatingSummary, ComicReview } from '../../models/comic.model';
+import { formatChapterDisplay } from '../../pipes/chapter-display.pipe';
 
 @Component({
   selector: 'app-comic-detail',
@@ -200,15 +201,7 @@ export class ComicDetailComponent implements OnInit {
 
   getChapterDisplayName(chap: { title?: string; chapterNumber?: number }): string {
     if (!chap) return '';
-    if (this.isOneshot(chap)) {
-      let t = (chap.title || '').trim();
-      t = t.replace(/^(?:chapter|chương|chap|tập)\s*[\d\.]*\s*[-:]*\s*/i, '').trim();
-      return t || 'Oneshot';
-    }
-    if (chap.title && chap.title !== `Chapter ${chap.chapterNumber}` && chap.title !== `Chương ${chap.chapterNumber}`) {
-      return `Chapter ${chap.chapterNumber} - ${chap.title}`;
-    }
-    return `Chapter ${chap.chapterNumber}`;
+    return formatChapterDisplay(chap, this.comic, 'Chapter ', true);
   }
 
   get firstChapterNumber(): number | null {

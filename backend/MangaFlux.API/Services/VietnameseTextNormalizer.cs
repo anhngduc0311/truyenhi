@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace TruyenKomi.API.Services
+namespace NekoHentai.API.Services
 {
     public static class VietnameseTextNormalizer
     {

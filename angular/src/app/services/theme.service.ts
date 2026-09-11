@@ -35,7 +35,7 @@ export class ThemeService {
   private applyTheme(theme: 'dark'): void {
     this.themeSubject.next('dark');
     localStorage.setItem('nekohentai_theme', 'dark');
-    localStorage.setItem('truyenkomi_theme', 'dark');
+    localStorage.setItem('nekohentai_theme', 'dark');
 
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', 'dark');

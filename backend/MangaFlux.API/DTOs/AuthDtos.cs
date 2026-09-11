@@ -1,4 +1,4 @@
-namespace TruyenKomi.API.DTOs
+namespace NekoHentai.API.DTOs
 {
     public class RegisterDto
     {

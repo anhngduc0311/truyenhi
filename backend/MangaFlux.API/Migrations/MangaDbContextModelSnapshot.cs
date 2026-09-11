@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using TruyenKomi.API.Data;
+using NekoHentai.API.Data;
 
 #nullable disable
 
@@ -22,7 +22,7 @@ namespace MangaFlux.API.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Bookmark", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Bookmark", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -49,7 +49,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("Bookmarks");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Category", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -79,7 +79,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Chapter", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Chapter", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -118,7 +118,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("Chapters");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.ChapterPage", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.ChapterPage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -143,7 +143,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("ChapterPages");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Comic", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Comic", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -227,7 +227,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("Comics");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.ComicCategory", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.ComicCategory", b =>
                 {
                     b.Property<int>("ComicId")
                         .HasColumnType("integer");
@@ -242,7 +242,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("ComicCategories");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.ComicRating", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.ComicRating", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -278,7 +278,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("ComicRatings");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Comment", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Comment", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -327,7 +327,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("Comments");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.CommentLike", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.CommentLike", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -354,7 +354,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("CommentLikes");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Notification", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Notification", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -393,7 +393,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("Notifications");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.ReadingHistory", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.ReadingHistory", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -426,7 +426,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("ReadingHistories");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Report", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Report", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -478,7 +478,7 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("Reports");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.User", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -555,15 +555,15 @@ namespace MangaFlux.API.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Bookmark", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Bookmark", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.Comic", "Comic")
+                    b.HasOne("NekoHentai.API.Models.Comic", "Comic")
                         .WithMany("Bookmarks")
                         .HasForeignKey("ComicId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TruyenKomi.API.Models.User", "User")
+                    b.HasOne("NekoHentai.API.Models.User", "User")
                         .WithMany("Bookmarks")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -574,9 +574,9 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Chapter", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Chapter", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.Comic", "Comic")
+                    b.HasOne("NekoHentai.API.Models.Comic", "Comic")
                         .WithMany("Chapters")
                         .HasForeignKey("ComicId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -585,9 +585,9 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("Comic");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.ChapterPage", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.ChapterPage", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.Chapter", "Chapter")
+                    b.HasOne("NekoHentai.API.Models.Chapter", "Chapter")
                         .WithMany("Pages")
                         .HasForeignKey("ChapterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -596,15 +596,15 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("Chapter");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.ComicCategory", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.ComicCategory", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.Category", "Category")
+                    b.HasOne("NekoHentai.API.Models.Category", "Category")
                         .WithMany("ComicCategories")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TruyenKomi.API.Models.Comic", "Comic")
+                    b.HasOne("NekoHentai.API.Models.Comic", "Comic")
                         .WithMany("ComicCategories")
                         .HasForeignKey("ComicId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -615,15 +615,15 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("Comic");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.ComicRating", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.ComicRating", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.Comic", "Comic")
+                    b.HasOne("NekoHentai.API.Models.Comic", "Comic")
                         .WithMany("Ratings")
                         .HasForeignKey("ComicId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TruyenKomi.API.Models.User", "User")
+                    b.HasOne("NekoHentai.API.Models.User", "User")
                         .WithMany("Ratings")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -634,25 +634,25 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Comment", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Comment", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.Chapter", "Chapter")
+                    b.HasOne("NekoHentai.API.Models.Chapter", "Chapter")
                         .WithMany()
                         .HasForeignKey("ChapterId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("TruyenKomi.API.Models.Comic", "Comic")
+                    b.HasOne("NekoHentai.API.Models.Comic", "Comic")
                         .WithMany("Comments")
                         .HasForeignKey("ComicId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TruyenKomi.API.Models.Comment", "ParentComment")
+                    b.HasOne("NekoHentai.API.Models.Comment", "ParentComment")
                         .WithMany()
                         .HasForeignKey("ParentCommentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("TruyenKomi.API.Models.User", "User")
+                    b.HasOne("NekoHentai.API.Models.User", "User")
                         .WithMany("Comments")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -667,15 +667,15 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.CommentLike", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.CommentLike", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.Comment", "Comment")
+                    b.HasOne("NekoHentai.API.Models.Comment", "Comment")
                         .WithMany("Likes")
                         .HasForeignKey("CommentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TruyenKomi.API.Models.User", "User")
+                    b.HasOne("NekoHentai.API.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -686,9 +686,9 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Notification", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Notification", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.User", "User")
+                    b.HasOne("NekoHentai.API.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -697,21 +697,21 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.ReadingHistory", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.ReadingHistory", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.Chapter", "Chapter")
+                    b.HasOne("NekoHentai.API.Models.Chapter", "Chapter")
                         .WithMany()
                         .HasForeignKey("ChapterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TruyenKomi.API.Models.Comic", "Comic")
+                    b.HasOne("NekoHentai.API.Models.Comic", "Comic")
                         .WithMany("ReadingHistories")
                         .HasForeignKey("ComicId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TruyenKomi.API.Models.User", "User")
+                    b.HasOne("NekoHentai.API.Models.User", "User")
                         .WithMany("ReadingHistories")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -724,20 +724,20 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Report", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Report", b =>
                 {
-                    b.HasOne("TruyenKomi.API.Models.Chapter", "Chapter")
+                    b.HasOne("NekoHentai.API.Models.Chapter", "Chapter")
                         .WithMany()
                         .HasForeignKey("ChapterId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("TruyenKomi.API.Models.Comic", "Comic")
+                    b.HasOne("NekoHentai.API.Models.Comic", "Comic")
                         .WithMany()
                         .HasForeignKey("ComicId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TruyenKomi.API.Models.User", "User")
+                    b.HasOne("NekoHentai.API.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -749,17 +749,17 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Category", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Category", b =>
                 {
                     b.Navigation("ComicCategories");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Chapter", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Chapter", b =>
                 {
                     b.Navigation("Pages");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Comic", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Comic", b =>
                 {
                     b.Navigation("Bookmarks");
 
@@ -774,12 +774,12 @@ namespace MangaFlux.API.Migrations
                     b.Navigation("ReadingHistories");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.Comment", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.Comment", b =>
                 {
                     b.Navigation("Likes");
                 });
 
-            modelBuilder.Entity("TruyenKomi.API.Models.User", b =>
+            modelBuilder.Entity("NekoHentai.API.Models.User", b =>
                 {
                     b.Navigation("Bookmarks");
 

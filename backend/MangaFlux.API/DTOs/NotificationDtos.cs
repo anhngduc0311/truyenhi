@@ -1,6 +1,6 @@
 using System;
 
-namespace TruyenKomi.API.DTOs
+namespace NekoHentai.API.DTOs
 {
     public class NotificationDto
     {

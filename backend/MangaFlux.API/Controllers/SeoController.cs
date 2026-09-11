@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TruyenKomi.API.Data;
+using NekoHentai.API.Data;
 
-namespace TruyenKomi.API.Controllers
+namespace NekoHentai.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

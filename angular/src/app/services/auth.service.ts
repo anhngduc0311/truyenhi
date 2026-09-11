@@ -15,13 +15,13 @@ export class AuthService {
   }
 
   private loadUserFromStorage(): void {
-    const userJson = localStorage.getItem('nekohentai_user') || localStorage.getItem('truyenkomi_user');
+    const userJson = localStorage.getItem('nekohentai_user') || localStorage.getItem('nekohentai_user');
     if (userJson) {
       try {
         this.currentUserSubject.next(JSON.parse(userJson));
       } catch (e) {
         localStorage.removeItem('nekohentai_user');
-        localStorage.removeItem('truyenkomi_user');
+        localStorage.removeItem('nekohentai_user');
       }
     }
   }
@@ -42,8 +42,8 @@ export class AuthService {
     if (user && user.token) {
       localStorage.setItem('nekohentai_token', user.token);
       localStorage.setItem('nekohentai_user', JSON.stringify(user));
-      localStorage.setItem('truyenkomi_token', user.token);
-      localStorage.setItem('truyenkomi_user', JSON.stringify(user));
+      localStorage.setItem('nekohentai_token', user.token);
+      localStorage.setItem('nekohentai_user', JSON.stringify(user));
       this.currentUserSubject.next(user);
     }
   }
@@ -71,7 +71,7 @@ export class AuthService {
     if (current) {
       const updatedUser = { ...current, ...updatedUserPartial };
       localStorage.setItem('nekohentai_user', JSON.stringify(updatedUser));
-      localStorage.setItem('truyenkomi_user', JSON.stringify(updatedUser));
+      localStorage.setItem('nekohentai_user', JSON.stringify(updatedUser));
       this.currentUserSubject.next(updatedUser);
     }
   }
@@ -89,8 +89,8 @@ export class AuthService {
     });
     localStorage.removeItem('nekohentai_token');
     localStorage.removeItem('nekohentai_user');
-    localStorage.removeItem('truyenkomi_token');
-    localStorage.removeItem('truyenkomi_user');
+    localStorage.removeItem('nekohentai_token');
+    localStorage.removeItem('nekohentai_user');
     this.currentUserSubject.next(null);
   }
 }

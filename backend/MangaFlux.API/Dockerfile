@@ -1,5 +1,5 @@
 # =======================================================
-# 🚀 Multi-stage Dockerfile for TruyenKomi .NET Web API
+# 🚀 Multi-stage Dockerfile for NekoHentai .NET Web API
 # =======================================================
 
 # Stage 1: Build stage

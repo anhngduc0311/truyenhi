@@ -1,6 +1,6 @@
-# 📋 Kế Hoạch & Lộ Trình Cải Thiện Toàn Diện Hệ Thống TruyenKomi
+# 📋 Kế Hoạch & Lộ Trình Cải Thiện Toàn Diện Hệ Thống NekoHentai
 
-Tài liệu chi tiết phân loại các tác vụ cải thiện hiệu năng, tính năng người dùng, trải nghiệm đọc truyện, bảo mật, thời gian thực và vận hành tự động cho hệ thống **TruyenKomi** (Angular 18/19 + .NET 10 + MS SQL Server + Redis + MinIO / Cloudflare R2).
+Tài liệu chi tiết phân loại các tác vụ cải thiện hiệu năng, tính năng người dùng, trải nghiệm đọc truyện, bảo mật, thời gian thực và vận hành tự động cho hệ thống **NekoHentai** (Angular 18/19 + .NET 10 + MS SQL Server + Redis + MinIO / Cloudflare R2).
 
 ---
 
@@ -42,7 +42,7 @@ Tài liệu chi tiết phân loại các tác vụ cải thiện hiệu năng, t
 ### 2.1 PWA & Đọc Truyện Offline (Service Worker & IndexedDB)
 - [ ] **Cấu hình Angular PWA (`@angular/pwa`):**
   - Cài đặt Service Worker, tạo `manifest.webmanifest` với đầy đủ icons, splash screen và theme color.
-  - Cho phép người dùng cài đặt ứng dụng TruyenKomi trực tiếp lên màn hình chính Android, iOS và Desktop.
+  - Cho phép người dùng cài đặt ứng dụng NekoHentai trực tiếp lên màn hình chính Android, iOS và Desktop.
 - [ ] **Lưu Trữ Ảnh & Dữ Liệu Offline Với IndexedDB:**
   - Xây dựng `OfflineStorageService` (sử dụng `idb` hoặc `dexie.js`) quản lý IndexedDB tại trình duyệt.
   - Thêm nút **"Tải chương này"** hoặc **"Tải toàn bộ truyện"** để lưu trữ Blob ảnh cục bộ.
@@ -162,4 +162,4 @@ Tài liệu chi tiết phân loại các tác vụ cải thiện hiệu năng, t
 | **Giai Đoạn 6** | Gamification (Cấp bậc tu tiên), Đánh giá & Reviews 5 sao | ⭐⭐⭐ (P3) | Vừa phải | Thúc đẩy tính cộng đồng và thời gian on-site của độc giả |
 
 ---
-*Kế hoạch cải thiện hệ thống TruyenKomi - Cập nhật 2026.*
+*Kế hoạch cải thiện hệ thống NekoHentai - Cập nhật 2026.*

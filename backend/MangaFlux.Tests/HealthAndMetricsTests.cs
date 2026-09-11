@@ -3,11 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using TruyenKomi.API.Services;
-using TruyenKomi.API.Services.HealthChecks;
+using NekoHentai.API.Services;
+using NekoHentai.API.Services.HealthChecks;
 using Xunit;
 
-namespace TruyenKomi.Tests
+namespace NekoHentai.Tests
 {
     public class HealthAndMetricsTests
     {
@@ -15,18 +15,18 @@ namespace TruyenKomi.Tests
         public void MangaMetrics_StaticDefinitions_AreInitialized()
         {
             // Assert custom metrics counters & gauges are created
-            Assert.NotNull(TruyenKomi.API.Services.MangaMetrics.CacheHitsTotal);
-            Assert.NotNull(TruyenKomi.API.Services.MangaMetrics.CacheMissesTotal);
-            Assert.NotNull(TruyenKomi.API.Services.MangaMetrics.ChapterViewsIncrementedTotal);
-            Assert.NotNull(TruyenKomi.API.Services.MangaMetrics.ChapterViewsSyncedTotal);
-            Assert.NotNull(TruyenKomi.API.Services.MangaMetrics.DbSyncDurationSeconds);
-            Assert.NotNull(TruyenKomi.API.Services.MangaMetrics.RedisConnectedGauge);
+            Assert.NotNull(NekoHentai.API.Services.MangaMetrics.CacheHitsTotal);
+            Assert.NotNull(NekoHentai.API.Services.MangaMetrics.CacheMissesTotal);
+            Assert.NotNull(NekoHentai.API.Services.MangaMetrics.ChapterViewsIncrementedTotal);
+            Assert.NotNull(NekoHentai.API.Services.MangaMetrics.ChapterViewsSyncedTotal);
+            Assert.NotNull(NekoHentai.API.Services.MangaMetrics.DbSyncDurationSeconds);
+            Assert.NotNull(NekoHentai.API.Services.MangaMetrics.RedisConnectedGauge);
 
             // Test counter operations
-            TruyenKomi.API.Services.MangaMetrics.CacheHitsTotal.WithLabels("test_chapter").Inc();
-            TruyenKomi.API.Services.MangaMetrics.CacheMissesTotal.WithLabels("test_chapter").Inc();
-            TruyenKomi.API.Services.MangaMetrics.ChapterViewsIncrementedTotal.WithLabels("comic").Inc(5);
-            TruyenKomi.API.Services.MangaMetrics.RedisConnectedGauge.Set(1);
+            NekoHentai.API.Services.MangaMetrics.CacheHitsTotal.WithLabels("test_chapter").Inc();
+            NekoHentai.API.Services.MangaMetrics.CacheMissesTotal.WithLabels("test_chapter").Inc();
+            NekoHentai.API.Services.MangaMetrics.ChapterViewsIncrementedTotal.WithLabels("comic").Inc(5);
+            NekoHentai.API.Services.MangaMetrics.RedisConnectedGauge.Set(1);
 
             Assert.True(true);
         }
@@ -58,10 +58,10 @@ namespace TruyenKomi.Tests
         [Fact]
         public async Task PostgreSqlHealthCheck_WithInMemoryDb_CanExecute()
         {
-            var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<TruyenKomi.API.Data.MangaDbContext>()
+            var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<NekoHentai.API.Data.MangaDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            using var dbContext = new TruyenKomi.API.Data.MangaDbContext(options);
+            using var dbContext = new NekoHentai.API.Data.MangaDbContext(options);
             var healthCheck = new PostgreSqlHealthCheck(dbContext);
             var context = new HealthCheckContext();
 

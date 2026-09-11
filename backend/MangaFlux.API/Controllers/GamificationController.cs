@@ -3,10 +3,10 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TruyenKomi.API.DTOs;
-using TruyenKomi.API.Services;
+using NekoHentai.API.DTOs;
+using NekoHentai.API.Services;
 
-namespace TruyenKomi.API.Controllers
+namespace NekoHentai.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

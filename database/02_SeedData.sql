@@ -1,5 +1,5 @@
 -- ============================================================================
--- TRUYENKOMI SEED DATA SCRIPT (POSTGRESQL)
+-- NEKOHENTAI SEED DATA SCRIPT (POSTGRESQL)
 -- ============================================================================
 
 -- 1. Insert Categories
@@ -86,7 +86,7 @@ ON CONFLICT DO NOTHING;
 
 -- 11. Insert Notifications
 INSERT INTO "Notifications" ("UserId", "Type", "Title", "Message", "Link", "IsRead") VALUES
-(2, 'AdminSystem', 'Chào mừng bạn đến với TruyenKomi', 'Chúc bạn có những giây phút đọc truyện vui vẻ!', '/comics', FALSE),
+(2, 'AdminSystem', 'Chào mừng bạn đến với NekoHentai', 'Chúc bạn có những giây phút đọc truyện vui vẻ!', '/comics', FALSE),
 (3, 'CommentReply', 'Có phản hồi mới về bình luận của bạn', 'Người dùng otaku_master đã trả lời bình luận của bạn.', '/comics/solo-leveling', FALSE)
 ON CONFLICT DO NOTHING;
 

@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Google.Apis.Auth;
-using TruyenKomi.API.Data;
-using TruyenKomi.API.DTOs;
-using TruyenKomi.API.Models;
+using NekoHentai.API.Data;
+using NekoHentai.API.DTOs;
+using NekoHentai.API.Models;
 
-namespace TruyenKomi.API.Services
+namespace NekoHentai.API.Services
 {
     public class AuthResult
     {
@@ -339,8 +339,8 @@ namespace TruyenKomi.API.Services
             {
                 Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddMinutes(30),
-                Issuer = jwtSettings["Issuer"] ?? "TruyenKomiAPI",
-                Audience = jwtSettings["Audience"] ?? "TruyenKomiClient",
+                Issuer = jwtSettings["Issuer"] ?? "NekoHentaiAPI",
+                Audience = jwtSettings["Audience"] ?? "NekoHentaiClient",
                 SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature)
             };
 

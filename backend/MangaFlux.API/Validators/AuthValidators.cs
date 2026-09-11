@@ -1,7 +1,7 @@
 using FluentValidation;
-using TruyenKomi.API.DTOs;
+using NekoHentai.API.DTOs;
 
-namespace TruyenKomi.API.Validators
+namespace NekoHentai.API.Validators
 {
     public class RegisterDtoValidator : AbstractValidator<RegisterDto>
     {

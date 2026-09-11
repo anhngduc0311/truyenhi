@@ -1197,10 +1197,16 @@ class MangaDownloaderGUI(ctk.CTk):
                 chap_title = clean_t or "Oneshot"
                 api_chap_title = "Oneshot"
             else:
+                clean_t = re.sub(r'^(?:chương|chap|chapter|tập|ep|episode)\s*[\d\.]*\s*[-:–—.]*\s*', '', raw_t, flags=re.I).strip()
+                clean_t = re.sub(rf'^0*{re.escape(num_str)}\s*[-:–—.]+\s*', '', clean_t, flags=re.I).strip()
+                if clean_t == num_str or clean_t == f"0{num_str}":
+                    clean_t = ""
+                clean_t = clean_t.lstrip('-:–—. ').rstrip('-:–—. ')
+
                 chap_title = f"Chương {num_str}"
-                if raw_t and raw_t != chap_title:
-                    chap_title += f" - {raw_t}"
-                api_chap_title = raw_t or f"Chương {num_str}"
+                if clean_t:
+                    chap_title += f" - {clean_t}"
+                api_chap_title = clean_t if clean_t else f"Chapter {num_str}"
 
             chap_dir = chapters_root_dir / f"chap{num_str}"
             chap_dir.mkdir(parents=True, exist_ok=True)
@@ -1519,10 +1525,16 @@ class MangaDownloaderGUI(ctk.CTk):
                         chap_title = clean_t or "Oneshot"
                         api_chap_title = "Oneshot"
                     else:
+                        clean_t = re.sub(r'^(?:chương|chap|chapter|tập|ep|episode)\s*[\d\.]*\s*[-:–—.]*\s*', '', raw_t, flags=re.I).strip()
+                        clean_t = re.sub(rf'^0*{re.escape(num_str)}\s*[-:–—.]+\s*', '', clean_t, flags=re.I).strip()
+                        if clean_t == num_str or clean_t == f"0{num_str}":
+                            clean_t = ""
+                        clean_t = clean_t.lstrip('-:–—. ').rstrip('-:–—. ')
+
                         chap_title = f"Chương {num_str}"
-                        if raw_t and raw_t != chap_title:
-                            chap_title += f" - {raw_t}"
-                        api_chap_title = raw_t or f"Chương {num_str}"
+                        if clean_t:
+                            chap_title += f" - {clean_t}"
+                        api_chap_title = clean_t if clean_t else f"Chapter {num_str}"
 
                     chap_dir = chapters_root_dir / f"chap{num_str}"
 

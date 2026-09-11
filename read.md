@@ -40,13 +40,13 @@ docker-compose up -d postgres redis meilisearch
 ./backup_db.sh
 
 # 2. Xem danh sách backup đã lưu trên Cloudflare R2:
-# rclone ls r2:truyenkomi/backups/
+# rclone ls r2:nekohentai/backups/
 
 # 3. Tải file backup từ Cloudflare R2 về VPS khi cần:
-# rclone copy r2:truyenkomi/backups/<ten_file>.sql.gz ~/db_backups/
+# rclone copy r2:nekohentai/backups/<ten_file>.sql.gz ~/db_backups/
 
 # 4. Khôi phục dữ liệu Database từ bản backup khi cần:
-# gunzip -c ~/db_backups/<ten_file>.sql.gz | docker exec -i truyenkomi-postgres psql -U postgres -d TruyenKomiDb
+# gunzip -c ~/db_backups/<ten_file>.sql.gz | docker exec -i nekohentai-postgres psql -U postgres -d NekoHentaiDb
 # docker compose restart api
 
 # 5. Khởi động lại hoặc cập nhật (KHÔNG MẤT DỮ LIỆU):

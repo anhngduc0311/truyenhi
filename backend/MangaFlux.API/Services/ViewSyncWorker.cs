@@ -7,10 +7,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using TruyenKomi.API.Data;
+using NekoHentai.API.Data;
 using Prometheus;
 
-namespace TruyenKomi.API.Services
+namespace NekoHentai.API.Services
 {
     public class ViewSyncWorker : BackgroundService
     {

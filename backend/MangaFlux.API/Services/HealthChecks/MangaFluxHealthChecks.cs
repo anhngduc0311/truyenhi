@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using StackExchange.Redis;
-using TruyenKomi.API.Data;
+using NekoHentai.API.Data;
 
-namespace TruyenKomi.API.Services.HealthChecks
+namespace NekoHentai.API.Services.HealthChecks
 {
     public class PostgreSqlHealthCheck : IHealthCheck
     {

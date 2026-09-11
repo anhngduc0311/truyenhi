@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using TruyenKomi.API.Data;
-using TruyenKomi.API.DTOs;
-using TruyenKomi.API.Services;
+using NekoHentai.API.Data;
+using NekoHentai.API.DTOs;
+using NekoHentai.API.Services;
 using Xunit;
 
-namespace TruyenKomi.Tests
+namespace NekoHentai.Tests
 {
     public class AuthServiceTests
     {
@@ -24,9 +24,9 @@ namespace TruyenKomi.Tests
         {
             var inMemorySettings = new Dictionary<string, string?>
             {
-                {"JwtSettings:Secret", "SuperSecretKeyForTruyenKomiUnitTesting2026!"},
-                {"JwtSettings:Issuer", "TruyenKomiTest"},
-                {"JwtSettings:Audience", "TruyenKomiClientTest"}
+                {"JwtSettings:Secret", "SuperSecretKeyForNekoHentaiUnitTesting2026!"},
+                {"JwtSettings:Issuer", "NekoHentaiTest"},
+                {"JwtSettings:Audience", "NekoHentaiClientTest"}
             };
 
             return new ConfigurationBuilder()

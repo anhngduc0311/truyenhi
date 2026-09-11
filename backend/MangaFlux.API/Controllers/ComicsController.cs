@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using TruyenKomi.API.DTOs;
-using TruyenKomi.API.Services;
+using NekoHentai.API.DTOs;
+using NekoHentai.API.Services;
 
-namespace TruyenKomi.API.Controllers
+namespace NekoHentai.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -122,7 +122,7 @@ namespace TruyenKomi.API.Controllers
         {
             if (!string.IsNullOrWhiteSpace(author) && (author.Trim().Equals("ZETTRUYEN", StringComparison.OrdinalIgnoreCase) || author.Trim().Equals("ZET TRUYEN", StringComparison.OrdinalIgnoreCase)))
             {
-                author = "TRUYENKOMI";
+                author = "NEKOHENTAI";
             }
 
             var existingComic = await _comicService.GetComicBySlugAsync(comicSlug);

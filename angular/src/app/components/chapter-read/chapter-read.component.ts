@@ -9,6 +9,7 @@ import { ReportService } from '../../services/report.service';
 import { SeoService } from '../../services/seo.service';
 import { Chapter, ChapterDetail } from '../../models/comic.model';
 import { ERROR_TYPE_OPTIONS } from '../../models/report.model';
+import { formatChapterDisplay } from '../../pipes/chapter-display.pipe';
 
 export interface PageLoadingState {
   loaded: boolean;
@@ -154,7 +155,7 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
 
 
   loadSavedPinState(): void {
-    const savedPin = localStorage.getItem('nekohentai_reader_pinned') || localStorage.getItem('truyenkomi_reader_pinned');
+    const savedPin = localStorage.getItem('nekohentai_reader_pinned') || localStorage.getItem('nekohentai_reader_pinned');
     this.isPinned = savedPin === 'true';
   }
 
@@ -164,7 +165,7 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
       this.isHeaderHidden = false;
     }
     localStorage.setItem('nekohentai_reader_pinned', this.isPinned.toString());
-    localStorage.setItem('truyenkomi_reader_pinned', this.isPinned.toString());
+    localStorage.setItem('nekohentai_reader_pinned', this.isPinned.toString());
   }
 
   toggleFullscreen(): void {
@@ -190,7 +191,7 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
   }
 
   checkHintVisibility(): void {
-    const hasSeenHint = localStorage.getItem('nekohentai_seen_zen_hint') || localStorage.getItem('truyenkomi_seen_zen_hint');
+    const hasSeenHint = localStorage.getItem('nekohentai_seen_zen_hint') || localStorage.getItem('nekohentai_seen_zen_hint');
     if (!hasSeenHint) {
       this.showHint = true;
       setTimeout(() => {
@@ -205,11 +206,11 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
     }
     this.showHint = false;
     localStorage.setItem('nekohentai_seen_zen_hint', 'true');
-    localStorage.setItem('truyenkomi_seen_zen_hint', 'true');
+    localStorage.setItem('nekohentai_seen_zen_hint', 'true');
   }
 
   loadSavedAutoScrollSpeed(): void {
-    const savedSpeed = localStorage.getItem('nekohentai_autoscroll_speed') || localStorage.getItem('truyenkomi_autoscroll_speed');
+    const savedSpeed = localStorage.getItem('nekohentai_autoscroll_speed') || localStorage.getItem('nekohentai_autoscroll_speed');
     if (savedSpeed !== null) {
       const parsed = parseInt(savedSpeed, 10);
       if (!isNaN(parsed) && parsed >= 1 && parsed <= 4) {
@@ -322,7 +323,7 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
   setAutoScrollSpeed(speed: number): void {
     this.autoScrollSpeed = speed;
     localStorage.setItem('nekohentai_autoscroll_speed', speed.toString());
-    localStorage.setItem('truyenkomi_autoscroll_speed', speed.toString());
+    localStorage.setItem('nekohentai_autoscroll_speed', speed.toString());
   }
 
   toggleSpeedMenu(): void {
@@ -335,7 +336,7 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
   }
 
   loadSavedZoom(): void {
-    const savedZoom = localStorage.getItem('nekohentai_reader_zoom') || localStorage.getItem('truyenkomi_reader_zoom');
+    const savedZoom = localStorage.getItem('nekohentai_reader_zoom') || localStorage.getItem('nekohentai_reader_zoom');
     if (savedZoom !== null) {
       const parsed = parseInt(savedZoom, 10);
       if (!isNaN(parsed) && [500, 700, 900, 1150, 1400, 1800, 0].includes(parsed)) {
@@ -347,7 +348,7 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
   setZoomWidth(width: number): void {
     this.zoomWidth = width;
     localStorage.setItem('nekohentai_reader_zoom', width.toString());
-    localStorage.setItem('truyenkomi_reader_zoom', width.toString());
+    localStorage.setItem('nekohentai_reader_zoom', width.toString());
   }
 
   toggleZoomMenu(): void {
@@ -439,7 +440,7 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
       this.saveScrollTimeout = setTimeout(() => {
         if (this.chapter) {
           localStorage.setItem(`nekohentai_scroll_${this.chapter.id}`, currentScrollY.toString());
-          localStorage.setItem(`truyenkomi_scroll_${this.chapter.id}`, currentScrollY.toString());
+          localStorage.setItem(`nekohentai_scroll_${this.chapter.id}`, currentScrollY.toString());
         }
       }, 300);
     }
@@ -582,7 +583,7 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
   }
 
   restoreReadingPosition(chapterId: number): void {
-    const savedScroll = localStorage.getItem(`nekohentai_scroll_${chapterId}`) || localStorage.getItem(`truyenkomi_scroll_${chapterId}`);
+    const savedScroll = localStorage.getItem(`nekohentai_scroll_${chapterId}`) || localStorage.getItem(`nekohentai_scroll_${chapterId}`);
     if (savedScroll && +savedScroll > 150) {
       setTimeout(() => {
         window.scrollTo({ top: +savedScroll, behavior: 'instant' });
@@ -700,15 +701,12 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
 
   getChapterLabel(ch: Chapter | ChapterDetail | null | undefined): string {
     if (!ch) return '';
-    if (this.isOneshot(ch)) {
-      let t = (ch.title || '').trim();
-      t = t.replace(/^(?:chapter|chương|chap|tập)\s*[\d\.]*\s*[-:]*\s*/i, '').trim();
-      return t || 'Oneshot';
-    }
-    if (ch.title && ch.title !== `Chapter ${ch.chapterNumber}` && ch.title !== `Chương ${ch.chapterNumber}`) {
-      return `Chapter ${ch.chapterNumber} - ${ch.title}`;
-    }
-    return `Chapter ${ch.chapterNumber}`;
+    const comicInfo = {
+      title: this.chapter?.comicTitle,
+      slug: this.chapter?.comicSlug,
+      totalChapters: this.chapter?.allChapters?.length
+    };
+    return formatChapterDisplay(ch, comicInfo, 'Chapter ', true);
   }
 
   onSelectChapter(): void {

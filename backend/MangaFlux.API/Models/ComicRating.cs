@@ -1,6 +1,6 @@
 using System;
 
-namespace TruyenKomi.API.Models
+namespace NekoHentai.API.Models
 {
     public class ComicRating
     {

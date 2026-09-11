@@ -4,11 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using TruyenKomi.API.Data;
-using TruyenKomi.API.DTOs;
-using TruyenKomi.API.Models;
+using NekoHentai.API.Data;
+using NekoHentai.API.DTOs;
+using NekoHentai.API.Models;
 
-namespace TruyenKomi.API.Services
+namespace NekoHentai.API.Services
 {
     public interface IComicService
     {
@@ -715,7 +715,7 @@ namespace TruyenKomi.API.Services
             var author = dto.Author;
             if (!string.IsNullOrWhiteSpace(author) && (author.Trim().Equals("ZETTRUYEN", StringComparison.OrdinalIgnoreCase) || author.Trim().Equals("ZET TRUYEN", StringComparison.OrdinalIgnoreCase)))
             {
-                author = "TRUYENKOMI";
+                author = "NEKOHENTAI";
             }
 
             var comic = new Comic
@@ -775,7 +775,7 @@ namespace TruyenKomi.API.Services
             var author = dto.Author;
             if (!string.IsNullOrWhiteSpace(author) && (author.Trim().Equals("ZETTRUYEN", StringComparison.OrdinalIgnoreCase) || author.Trim().Equals("ZET TRUYEN", StringComparison.OrdinalIgnoreCase)))
             {
-                author = "TRUYENKOMI";
+                author = "NEKOHENTAI";
             }
             comic.Author = author;
             comic.OtherNames = dto.OtherNames;
@@ -809,13 +809,13 @@ namespace TruyenKomi.API.Services
 
             if (!string.IsNullOrWhiteSpace(author) && (author.Trim().Equals("ZETTRUYEN", StringComparison.OrdinalIgnoreCase) || author.Trim().Equals("ZET TRUYEN", StringComparison.OrdinalIgnoreCase)))
             {
-                author = "TRUYENKOMI";
+                author = "NEKOHENTAI";
             }
 
             bool changed = false;
             if (comic.Author != null && (comic.Author.Trim().Equals("ZETTRUYEN", StringComparison.OrdinalIgnoreCase) || comic.Author.Trim().Equals("ZET TRUYEN", StringComparison.OrdinalIgnoreCase)))
             {
-                comic.Author = "TRUYENKOMI";
+                comic.Author = "NEKOHENTAI";
                 changed = true;
             }
             if (!string.IsNullOrWhiteSpace(author) && author != "Đang cập nhật" && (comic.Author == "Đang cập nhật" || string.IsNullOrWhiteSpace(comic.Author) || comic.Author != author))
@@ -907,7 +907,7 @@ namespace TruyenKomi.API.Services
                     {
                         Name = name,
                         Slug = string.IsNullOrWhiteSpace(cleanSlug) ? "genre-" + Guid.NewGuid().ToString("N")[..6] : cleanSlug,
-                        Description = $"Thể loại {name} trên TruyenKomi"
+                        Description = $"Thể loại {name} trên NekoHentai"
                     };
                     _context.Categories.Add(category);
                     await _context.SaveChangesAsync();

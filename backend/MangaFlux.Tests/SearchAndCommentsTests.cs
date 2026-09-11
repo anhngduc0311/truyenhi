@@ -6,14 +6,14 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using TruyenKomi.API.Data;
-using TruyenKomi.API.DTOs;
-using TruyenKomi.API.Models;
-using TruyenKomi.API.Services;
+using NekoHentai.API.Data;
+using NekoHentai.API.DTOs;
+using NekoHentai.API.Models;
+using NekoHentai.API.Services;
 using Moq;
 using Xunit;
 
-namespace TruyenKomi.Tests
+namespace NekoHentai.Tests
 {
     public class SearchAndCommentsTests
     {

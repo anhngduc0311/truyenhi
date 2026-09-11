@@ -3,9 +3,9 @@ import { check, sleep, group } from 'k6';
 import { Counter, Rate, Trend } from 'k6/metrics';
 
 // Custom Metrics
-const ChapterReadsCounter = new Counter('truyenkomi_chapter_reads');
-const CacheHitRate = new Rate('truyenkomi_cache_hit_rate');
-const ChapterPageDuration = new Trend('truyenkomi_chapter_page_duration');
+const ChapterReadsCounter = new Counter('nekohentai_chapter_reads');
+const CacheHitRate = new Rate('nekohentai_cache_hit_rate');
+const ChapterPageDuration = new Trend('nekohentai_chapter_page_duration');
 
 // Test Configuration (Simulating up to 5,000 - 10,000 VUs)
 export const options = {
@@ -22,7 +22,7 @@ export const options = {
     'http_req_duration': ['p(95)<100', 'p(99)<250'],
     // Error rate must be less than 0.5%
     'http_req_failed': ['rate<0.005'],
-    'truyenkomi_chapter_page_duration': ['p(95)<80'],
+    'nekohentai_chapter_page_duration': ['p(95)<80'],
   },
 };
 

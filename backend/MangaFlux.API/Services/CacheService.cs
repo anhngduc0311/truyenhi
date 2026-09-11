@@ -7,7 +7,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace TruyenKomi.API.Services
+namespace NekoHentai.API.Services
 {
     public interface ICacheService
     {

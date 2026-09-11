@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using TruyenKomi.API.DTOs;
-using TruyenKomi.API.Services;
+using NekoHentai.API.DTOs;
+using NekoHentai.API.Services;
 
-namespace TruyenKomi.API.Controllers
+namespace NekoHentai.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -68,7 +68,7 @@ namespace TruyenKomi.API.Controllers
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken()
         {
-            var refreshToken = Request.Cookies["truyenkomi_refresh_token"];
+            var refreshToken = Request.Cookies["nekohentai_refresh_token"];
             if (string.IsNullOrEmpty(refreshToken))
             {
                 return Unauthorized(new { message = "Không tìm thấy Refresh Token." });
@@ -88,7 +88,7 @@ namespace TruyenKomi.API.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            var refreshToken = Request.Cookies["truyenkomi_refresh_token"];
+            var refreshToken = Request.Cookies["nekohentai_refresh_token"];
             if (!string.IsNullOrEmpty(refreshToken))
             {
                 await _authService.RevokeRefreshTokenAsync(refreshToken);
@@ -108,12 +108,12 @@ namespace TruyenKomi.API.Controllers
                 Secure = Request.IsHttps,
                 Path = "/api/auth"
             };
-            Response.Cookies.Append("truyenkomi_refresh_token", refreshToken, cookieOptions);
+            Response.Cookies.Append("nekohentai_refresh_token", refreshToken, cookieOptions);
         }
 
         private void ClearRefreshTokenCookie()
         {
-            Response.Cookies.Delete("truyenkomi_refresh_token", new CookieOptions
+            Response.Cookies.Delete("nekohentai_refresh_token", new CookieOptions
             {
                 HttpOnly = true,
                 SameSite = SameSiteMode.Lax,

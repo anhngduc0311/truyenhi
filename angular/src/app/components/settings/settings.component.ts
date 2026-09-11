@@ -129,7 +129,7 @@ export class SettingsComponent implements OnInit {
 
   // Notification Preferences Handling
   initNotificationPrefs(): void {
-    const saved = localStorage.getItem('nekohentai_notif_prefs') || localStorage.getItem('truyenkomi_notif_prefs');
+    const saved = localStorage.getItem('nekohentai_notif_prefs') || localStorage.getItem('nekohentai_notif_prefs');
     if (saved) {
       try {
         this.notificationPrefs = JSON.parse(saved);
@@ -139,7 +139,7 @@ export class SettingsComponent implements OnInit {
 
   saveNotificationPrefs(): void {
     localStorage.setItem('nekohentai_notif_prefs', JSON.stringify(this.notificationPrefs));
-    localStorage.setItem('truyenkomi_notif_prefs', JSON.stringify(this.notificationPrefs));
+    localStorage.setItem('nekohentai_notif_prefs', JSON.stringify(this.notificationPrefs));
     this.showMessage('Cài đặt thông báo đã được lưu!');
   }
 

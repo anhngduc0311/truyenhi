@@ -2,10 +2,10 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
-using TruyenKomi.API.Middleware;
+using NekoHentai.API.Middleware;
 using Xunit;
 
-namespace TruyenKomi.Tests
+namespace NekoHentai.Tests
 {
     public class SecurityAndAuthTests
     {

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace TruyenKomi.API.Middleware
+namespace NekoHentai.API.Middleware
 {
     public class GlobalExceptionHandler : IExceptionHandler
     {
