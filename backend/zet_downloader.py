@@ -84,11 +84,11 @@ MANGADEX_UPLOADS_BASE = "https://uploads.mangadex.org"
 DEFAULT_LANG = "vi"  # Tiếng Việt
 
 # Cloud Storage & Web API Settings
-DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:5000/api")
-GCS_ENDPOINT = os.getenv("R2_ENDPOINT", "storage.googleapis.com")
-GCS_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "GOOGQHRXVRS7YCR24JBLB33S")
-GCS_SECRET_KEY = os.getenv("R2_SECRET_KEY", "3Iamo8whmuUeT2B+CMtRnfW6qdIsmwXVec47tF52")
-GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "nekohentai")
+DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "https://nekohentai.lol/api")
+GCS_ENDPOINT = os.getenv("R2_ENDPOINT", "s3.ap-southeast-1.amazonaws.com")
+GCS_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "AKIA2S27ZAESFGZBBYFN")
+GCS_SECRET_KEY = os.getenv("R2_SECRET_KEY", "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")
+GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "nekohentai-storage")
 CDN_BASE_URL = os.getenv("R2_CDN_BASE_URL", "https://img.nekohentai.lol").rstrip("/")
 
 

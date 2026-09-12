@@ -28,7 +28,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   selectedFilter: string = 'all';
   filterChips = [
     { label: 'Tất Cả', key: 'all', icon: 'fa-globe' },
-    { label: 'Mới Nhất', key: 'new', icon: 'fa-bolt' },
+    // { label: 'Mới Nhất', key: 'new', icon: 'fa-bolt' },
     { label: 'Hot Tuần', key: 'hot', icon: 'fa-fire' },
     { label: 'Manhwa', key: 'manhwa', icon: 'fa-flag' }
   ];

@@ -216,10 +216,10 @@ load_env_file()
 # =============================================================================
 # CẤU HÌNH CLOUD BUCKET & WEB API
 # =============================================================================
-GCS_ENDPOINT = os.getenv("R2_ENDPOINT", "storage.googleapis.com")
-GCS_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "GOOGQHRXVRS7YCR24JBLB33S")
-GCS_SECRET_KEY = os.getenv("R2_SECRET_KEY", "3Iamo8whmuUeT2B+CMtRnfW6qdIsmwXVec47tF52")
-GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "nekohentai")
+GCS_ENDPOINT = os.getenv("R2_ENDPOINT", "s3.ap-southeast-1.amazonaws.com")
+GCS_ACCESS_KEY = os.getenv("R2_ACCESS_KEY", "AKIA2S27ZAESFGZBBYFN")
+GCS_SECRET_KEY = os.getenv("R2_SECRET_KEY", "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")
+GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "nekohentai-storage")
 CDN_BASE_URL = os.getenv("R2_CDN_BASE_URL", "https://img.nekohentai.lol").rstrip("/")
 DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "https://nekohentai.lol/api").rstrip("/")
 
@@ -383,8 +383,11 @@ def get_existing_chapters_from_web(api_base_url: str, slug: str, session: reques
         return set()
     url = f"{api_base_url.rstrip('/')}/comics/{slug}"
     http_client = session or requests
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    }
     try:
-        res = http_client.get(url, timeout=6)
+        res = http_client.get(url, headers=headers, timeout=8)
         if res.status_code == 200:
             data = res.json()
             chaps = data.get("chapters", [])
@@ -459,14 +462,19 @@ def sync_chapter_to_web_api(
         "imageUrls": image_urls
     }
     headers = {
-        "User-Agent": "NekoHentai-Sync/2.0 (Ubuntu-All-In-One)",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Content-Type": "application/json"
     }
     http_client = session or requests
     try:
-        res = http_client.post(url, json=payload, headers=headers, timeout=20)
-        return res.status_code in (200, 201)
-    except Exception:
+        res = http_client.post(url, json=payload, headers=headers, timeout=25)
+        if res.status_code in (200, 201):
+            return True
+        else:
+            log_error(f"    ❌ Lỗi Web API (HTTP {res.status_code}): {res.text[:200]}")
+            return False
+    except Exception as e:
+        log_error(f"    ❌ Ngoại lệ khi gọi Web API: {e}")
         return False
 
 
@@ -982,6 +990,9 @@ class NekoSynchronizerPro:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
         })
         self.api_session = create_reusable_session(pool_size=32)
+        self.api_session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        })
 
     def _download_single_image(self, url: str, target_path: Path, referer: str = None) -> bool:
         target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1122,6 +1133,7 @@ class NekoSynchronizerPro:
 
         # 3. Tải các chapter cần thiết
         total_pages_downloaded = 0
+        has_chapter_failure = False
         for idx, chap in enumerate(pending_download, 1):
             num = chap["number"]
             num_str = normalize_chapter_key(num)
@@ -1147,6 +1159,7 @@ class NekoSynchronizerPro:
             img_urls = downloader.get_chapter_images(chap["url"])
             if not img_urls:
                 log_warning(f"    ⚠️ Không lấy được link ảnh cho {chap_title}")
+                has_chapter_failure = True
                 continue
 
             num_raw = len(img_urls)
@@ -1190,23 +1203,29 @@ class NekoSynchronizerPro:
                 total_pages_downloaded += len(final_paths)
 
             # Đẩy lên Cloud Storage Bucket & Đồng bộ Web API
+            chapter_synced = False
             if self.upload_to_web and final_paths:
                 uploaded_cdn_urls = [None] * len(final_paths)
+                upload_errors = []
                 with ThreadPoolExecutor(max_workers=self.workers) as pool:
                     f_to_i = {}
                     for p_i, p_path in enumerate(final_paths):
                         obj_name = f"chapters/{slug}/chap{num_str}/page_{p_i+1:03d}.webp"
                         f = pool.submit(upload_file_to_cloud, p_path, obj_name, "image/webp")
-                        f_to_i[f] = p_i
+                        f_to_i[f] = (p_i, p_path.name)
                     for f in as_completed(f_to_i):
-                        p_i = f_to_i[f]
-                        try: uploaded_cdn_urls[p_i] = f.result()
+                        p_i, f_name = f_to_i[f]
+                        try:
+                            uploaded_cdn_urls[p_i] = f.result()
                         except Exception as e:
-                            log_warning(f"    Lỗi upload ảnh {p_i+1} lên bucket: {e}")
+                            upload_errors.append(f"{f_name}: {e}")
 
                 valid_cdn_urls = [u for u in uploaded_cdn_urls if u]
-                if valid_cdn_urls:
-                    log_success(f"    ☁️ Đã lưu {len(valid_cdn_urls)} ảnh vào Bucket: {GCS_BUCKET}")
+                if upload_errors:
+                    log_warning(f"    ⚠️ Có {len(upload_errors)}/{len(final_paths)} ảnh upload thất bại: {upload_errors[0]}")
+
+                if valid_cdn_urls and len(valid_cdn_urls) == len(final_paths):
+                    log_success(f"    ☁️ Đã lưu toàn bộ {len(valid_cdn_urls)} ảnh vào Bucket: {GCS_BUCKET}")
                     synced = sync_chapter_to_web_api(
                         api_base_url=self.api_base_url,
                         comic_title=title,
@@ -1227,20 +1246,35 @@ class NekoSynchronizerPro:
                     )
                     if synced:
                         log_success(f"    🌐 Đã đồng bộ {chap_title} lên Website NekoHentai thành công!")
+                        chapter_synced = True
+                    else:
+                        log_error(f"    ❌ Đồng bộ {chap_title} lên Website THẤT BẠI! Sẽ không đánh dấu xong để thử lại sau.")
+                elif valid_cdn_urls:
+                    log_error(f"    ❌ Chỉ upload được {len(valid_cdn_urls)}/{len(final_paths)} ảnh lên Bucket! Bỏ qua đồng bộ để tránh thiếu trang.")
+                else:
+                    log_error(f"    ❌ Không upload được ảnh nào lên Cloud Storage Bucket ({GCS_BUCKET})! Bỏ qua đồng bộ Web API.")
+            elif not self.upload_to_web:
+                chapter_synced = True
 
-            self.state.mark_chapter_synced(slug, num_str)
+            if chapter_synced:
+                self.state.mark_chapter_synced(slug, num_str)
+                # Dọn dẹp bộ nhớ đệm
+                if self.delete_local:
+                    shutil.rmtree(chap_dir, ignore_errors=True)
+            else:
+                has_chapter_failure = True
 
-            # Dọn dẹp bộ nhớ đệm
-            if self.delete_local:
-                shutil.rmtree(chap_dir, ignore_errors=True)
-
-        self.state.mark_completed(
-            manga_id=slug, title=title, slug=slug,
-            chapters_count=len(chapters), pages_count=total_pages_downloaded,
-            source="HentaiVNReal"
-        )
-        log_success(f"🎉 Hoàn thành cập nhật trọn bộ '{title}'!\n")
-        return True
+        if not has_chapter_failure:
+            self.state.mark_completed(
+                manga_id=slug, title=title, slug=slug,
+                chapters_count=len(chapters), pages_count=total_pages_downloaded,
+                source="HentaiVNReal"
+            )
+            log_success(f"🎉 Hoàn thành cập nhật trọn bộ '{title}'!\n")
+            return True
+        else:
+            log_warning(f"⚠️ Bộ truyện '{title}' có chapter chưa đồng bộ hoàn tất lên Web. Sẽ không đánh dấu hoàn tất để lần sau tự động tải lại.\n")
+            return False
 
     # =========================================================================
     # B. TẢI 1 BỘ TRUYỆN THEO LINK HOẶC SLUG (HENTAIVNREAL)
@@ -1334,11 +1368,11 @@ setup_env_file() {
 # 🚀 NekoHentai Environment Configuration (.env)
 # ==================================================
 
-# 1. Primary Cloud Storage (Google Cloud Storage / Cloudflare R2 / AWS S3)
-R2_ENDPOINT="storage.googleapis.com"
-R2_ACCESS_KEY="GOOGQHRXVRS7YCR24JBLB33S"
-R2_SECRET_KEY="3Iamo8whmuUeT2B+CMtRnfW6qdIsmwXVec47tF52"
-R2_BUCKET_NAME="nekohentai"
+# 1. Primary Cloud Storage (AWS S3 Storage)
+R2_ENDPOINT="s3.ap-southeast-1.amazonaws.com"
+R2_ACCESS_KEY="AKIA2S27ZAESFGZBBYFN"
+R2_SECRET_KEY="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"
+R2_BUCKET_NAME="nekohentai-storage"
 R2_SECURE=true
 R2_CDN_BASE_URL="https://img.nekohentai.lol"
 
@@ -1351,7 +1385,7 @@ EOF
 
     if [ -f ".env" ]; then
         echo -e "• File cấu hình: ${CYAN}$(pwd)/.env${NC}"
-        echo -e "• Cloud Bucket:  ${GREEN}$(grep '^R2_BUCKET_NAME=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '\"' || echo 'nekohentai')${NC}"
+        echo -e "• Cloud Bucket:  ${GREEN}$(grep '^R2_BUCKET_NAME=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '\"' || echo 'nekohentai-storage')${NC}"
         echo -e "• Web API:       ${CYAN}$(grep '^API_BASE_URL=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '\"' || echo 'https://nekohentai.lol/api')${NC}\n"
     fi
 }
@@ -1738,7 +1772,7 @@ while true; do
     echo -e "${CYAN}================================================================${NC}"
     echo -e "${BOLD}${MAGENTA}🚀 NEKOHENTAI MANGA DOWNLOADER PRO (UBUNTU CRAWLER)${NC}"
     echo -e "   File cấu hình: $ENV_BADGE (Đọc từ .env / .env.example)"
-    echo -e "   Cloud Bucket:  ${GREEN}nekohentai${NC} (Google Cloud Storage / R2 / S3)"
+    echo -e "   Cloud Bucket:  ${GREEN}nekohentai-storage${NC} (AWS S3 Storage)"
     echo -e "   Web API:       ${CYAN}https://nekohentai.lol/api${NC}"
     echo -e "   Bộ nhớ ảo:     $SWAP_BADGE (Chống tràn RAM/OOM khi chạy 32 luồng)"
     echo -e "${CYAN}----------------------------------------------------------------${NC}"
