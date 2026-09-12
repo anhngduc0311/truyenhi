@@ -324,9 +324,24 @@ class BaseMangaDownloader:
                     combined.paste(im, (0, curr_y))
                     curr_y += im.height
 
-                chunk_file = output_dir / f"page_{group_idx:03d}.webp"
-                combined.save(chunk_file, 'WEBP', quality=90, method=6)
-                merged_files.append(chunk_file)
+                # Nếu chiều cao vượt quá giới hạn WebP (16.383px), cắt lát thành các phần <= 10000px
+                created = []
+                if combined.height <= 16000:
+                    chunk_file = output_dir / f"slice_grp_{group_idx:04d}_00.webp"
+                    combined.save(chunk_file, 'WEBP', quality=90, method=6)
+                    created.append(chunk_file)
+                else:
+                    max_slice_h = 10000
+                    num_slices = (combined.height + max_slice_h - 1) // max_slice_h
+                    for s_i in range(num_slices):
+                        top = s_i * max_slice_h
+                        bottom = min(combined.height, (s_i + 1) * max_slice_h)
+                        part = combined.crop((0, top, max_width, bottom))
+                        chunk_file = output_dir / f"slice_grp_{group_idx:04d}_{s_i:02d}.webp"
+                        part.save(chunk_file, 'WEBP', quality=90, method=6)
+                        part.close()
+                        created.append(chunk_file)
+                merged_files.extend(created)
 
             except Exception as e:
                 if HAS_RICH and console:
@@ -347,7 +362,14 @@ class BaseMangaDownloader:
                     except Exception:
                         pass
 
-        return merged_files
+        merged_files.sort(key=lambda p: p.name)
+        final_results = []
+        for p_i, s_file in enumerate(merged_files, 1):
+            final_p = output_dir / f"page_{p_i:03d}.webp"
+            if s_file != final_p:
+                s_file.rename(final_p)
+            final_results.append(final_p)
+        return final_results
 
     def _export_pdf(self, image_paths: list, pdf_path: Path):
         """Xuất chapter thành file PDF"""
@@ -456,9 +478,8 @@ class BaseMangaDownloader:
             else:
                 print(f"  ✓ Đã xuất {len(final_paths)} trang ảnh WebP hoàn chỉnh vào chapters/{self.slug}/chap{chap_num_str}/")
         else:
-            final_paths = []
+            all_slices = []
             for idx, p in enumerate(downloaded_paths, 1):
-                webp_path = chap_dir / f"page_{idx:03d}.webp"
                 try:
                     with Image.open(p) as raw_im:
                         raw_im.load()
@@ -466,12 +487,41 @@ class BaseMangaDownloader:
                             im = raw_im.convert('RGB')
                         else:
                             im = raw_im
-                        im.save(webp_path, 'WEBP', quality=90, method=6)
-                    final_paths.append(webp_path)
-                    if p != webp_path and p.exists():
+                        w, h = im.size
+                        if w > 16000:
+                            new_h = max(1, int(h * (16000 / w)))
+                            im = im.resize((16000, new_h), Image.Resampling.LANCZOS)
+                            w, h = im.size
+                        if h <= 16000:
+                            s_file = chap_dir / f"slice_{idx:04d}_00.webp"
+                            im.save(s_file, "WEBP", quality=90, method=6)
+                            all_slices.append(s_file)
+                        else:
+                            max_slice_h = 10000
+                            num_slices = (h + max_slice_h - 1) // max_slice_h
+                            for s_i in range(num_slices):
+                                top = s_i * max_slice_h
+                                bottom = min(h, (s_i + 1) * max_slice_h)
+                                part = im.crop((0, top, w, bottom))
+                                s_file = chap_dir / f"slice_{idx:04d}_{s_i:02d}.webp"
+                                part.save(s_file, "WEBP", quality=90, method=6)
+                                part.close()
+                                all_slices.append(s_file)
+                    if p.exists():
                         p.unlink(missing_ok=True)
-                except Exception:
-                    final_paths.append(p)
+                except Exception as e:
+                    if HAS_RICH and console:
+                        console.print(f"[yellow]  ⚠️ Lỗi khi nén ảnh {p.name}: {e}[/yellow]")
+                    else:
+                        print(f"  ⚠️ Lỗi khi nén ảnh {p.name}: {e}")
+
+            all_slices.sort(key=lambda p: p.name)
+            final_paths = []
+            for p_i, s_file in enumerate(all_slices, 1):
+                final_p = chap_dir / f"page_{p_i:03d}.webp"
+                if s_file != final_p:
+                    s_file.rename(final_p)
+                final_paths.append(final_p)
 
         if self.make_pdf:
             pdf_file = chap_dir / f"chap{chap_num_str}.pdf"
@@ -1070,7 +1120,7 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
         self.genres = genres
 
         # 4. Danh sách chapter
-        chapters = []
+        raw_list = []
         chuong = soup.find(id="chuong")
         if chuong:
             for tr in chuong.find_all("tr"):
@@ -1078,17 +1128,29 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
                 if a and a["href"] != "#" and not a["href"].startswith("javascript"):
                     c_url = urllib.parse.urljoin(self.BASE_URL, a["href"])
                     c_title = a.get_text(strip=True)
-                    m = re.search(r'(?:chap|chương|tập|hoi|hồi|lần)\s*([0-9]+(?:\.[0-9]+)?)', c_title, re.I)
+
+                    # 1. Tìm số theo từ khóa: chap, chương, chapter, tập, hồi, lần, c1, ch1...
+                    m = re.search(r'(?:chap|chương|chapter|tập|hoi|hồi|lần|\bc)[\s\.:-]*([0-9]+(?:\.[0-9]+)?)', c_title, re.I)
+                    c_num = None
                     if m:
                         c_num = float(m.group(1))
-                    elif "oneshot" in c_title.lower() or "1shot" in c_title.lower():
-                        c_num = 1.0
-                        c_title = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', c_title, flags=re.I).strip() or "Oneshot"
                     else:
-                        c_num = float(len(chapters) + 1)
+                        # 2. Tìm số trong URL href (ví dụ: /chap-1, /chap-24)
+                        m_href = re.search(r'chap(?:ter)?[-_]?([0-9]+(?:\.[0-9]+)?)', a["href"], re.I)
+                        if m_href:
+                            c_num = float(m_href.group(1))
+                        elif "oneshot" in c_title.lower() or "1shot" in c_title.lower() or "oneshot" in a["href"].lower():
+                            c_num = 1.0
+                            c_title = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', c_title, flags=re.I).strip() or "Oneshot"
+                        else:
+                            # 3. Tìm số độc lập bất kỳ trong tiêu đề
+                            m_any = re.search(r'\b([0-9]+(?:\.[0-9]+)?)\b', c_title)
+                            if m_any:
+                                c_num = float(m_any.group(1))
+
                     date_td = tr.find_all("td")
                     c_date = date_td[1].get_text(strip=True) if len(date_td) > 1 else ""
-                    chapters.append({
+                    raw_list.append({
                         "number": c_num,
                         "title": c_title,
                         "url": c_url,
@@ -1096,15 +1158,24 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
                         "updated_at": parse_date_to_iso(c_date)
                     })
 
-        chapters.reverse()
+        # Bảng HentaiVN sắp xếp từ mới nhất -> cũ nhất, nên cần đảo ngược về tăng dần (cũ nhất -> mới nhất)
+        raw_list.reverse()
+        chapters = []
+        seen_numbers = set()
+        for idx, chap in enumerate(raw_list, 1):
+            if chap["number"] is None:
+                chap["number"] = float(idx)
+            # Tránh trùng lặp số chapter
+            if chap["number"] in seen_numbers:
+                candidate = float(idx)
+                while candidate in seen_numbers:
+                    candidate += 1.0
+                chap["number"] = candidate
+            seen_numbers.add(chap["number"])
+            chapters.append(chap)
+
         if len(chapters) == 1 and ("oneshot" in title.lower() or "one-shot" in title.lower() or any("oneshot" in g.lower() for g in genres)):
             chapters[0]["title"] = "Oneshot"
-
-        seen_numbers = set()
-        for idx, chap in enumerate(chapters, 1):
-            if chap["number"] in seen_numbers:
-                chap["number"] = float(idx)
-            seen_numbers.add(chap["number"])
 
         return {
             "title": title,

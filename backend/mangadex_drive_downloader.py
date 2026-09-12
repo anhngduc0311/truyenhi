@@ -537,9 +537,12 @@ def merge_images_vertical(image_paths: list, output_dir: Path, group_size: int =
                     loaded_imgs.append(im)
 
             if not loaded_imgs:
-                return group_idx, None
+                return group_idx, []
 
             max_width = max(im.width for im in loaded_imgs)
+            if max_width > 16000:
+                max_width = 16000
+
             total_height = 0
             for im in loaded_imgs:
                 if im.width != max_width:
@@ -557,12 +560,27 @@ def merge_images_vertical(image_paths: list, output_dir: Path, group_size: int =
                 combined.paste(im, (0, curr_y))
                 curr_y += im.height
 
-            chunk_file = output_dir / f"page_{group_idx:03d}.webp"
-            combined.save(chunk_file, 'WEBP', quality=90, method=6)
-            return group_idx, chunk_file
+            # Nếu chiều cao vượt quá giới hạn WebP (16.383px), cắt lát thành các phần <= 10000px
+            created = []
+            if combined.height <= 16000:
+                chunk_file = output_dir / f"slice_grp_{group_idx:04d}_00.webp"
+                combined.save(chunk_file, 'WEBP', quality=90, method=6)
+                created.append(chunk_file)
+            else:
+                max_slice_h = 10000
+                num_slices = (combined.height + max_slice_h - 1) // max_slice_h
+                for s_i in range(num_slices):
+                    top = s_i * max_slice_h
+                    bottom = min(combined.height, (s_i + 1) * max_slice_h)
+                    part = combined.crop((0, top, max_width, bottom))
+                    chunk_file = output_dir / f"slice_grp_{group_idx:04d}_{s_i:02d}.webp"
+                    part.save(chunk_file, 'WEBP', quality=90, method=6)
+                    part.close()
+                    created.append(chunk_file)
+            return group_idx, created
         except Exception as e:
             log_warning(f"Lỗi ghép nhóm ảnh {group_idx}: {e}")
-            return group_idx, None
+            return group_idx, []
         finally:
             to_close = {id(im): im for im in (loaded_imgs + resized_imgs)}
             for im in to_close.values():
@@ -576,24 +594,79 @@ def merge_images_vertical(image_paths: list, output_dir: Path, group_size: int =
     with ThreadPoolExecutor(max_workers=min(len(groups), 8)) as stitch_pool:
         futures = [stitch_pool.submit(process_group, g) for g in groups]
         for f in as_completed(futures):
-            g_idx, f_path = f.result()
-            if f_path:
-                results[g_idx] = f_path
+            g_idx, f_paths = f.result()
+            if f_paths:
+                results[g_idx] = f_paths
 
-    return [results[k] for k in sorted(results.keys())]
+    all_stitched = []
+    for k in sorted(results.keys()):
+        all_stitched.extend(results[k])
+
+    final_results = []
+    for p_i, s_file in enumerate(all_stitched, 1):
+        final_p = output_dir / f"page_{p_i:03d}.webp"
+        if s_file != final_p:
+            s_file.rename(final_p)
+        final_results.append(final_p)
+
+    return final_results
 
 
 def convert_to_webp(src_file: Path, dest_webp_file: Path, quality: int = 90) -> bool:
+    """Chuyển đổi 1 file ảnh (như ảnh bìa) sang WebP, đảm bảo kích thước không vượt quá giới hạn 16383px."""
     try:
         with Image.open(src_file) as im:
             im.load()
             im = im.convert('RGB') if im.mode != 'RGB' else im
+            w, h = im.size
+            if w > 16000 or h > 16000:
+                scale = min(16000 / w, 16000 / h)
+                im = im.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.Resampling.LANCZOS)
             im.save(dest_webp_file, 'WEBP', quality=quality, method=6)
         if src_file != dest_webp_file and src_file.exists():
             src_file.unlink(missing_ok=True)
         return True
-    except Exception:
+    except Exception as e:
+        log_error(f"Lỗi nén ảnh {src_file.name} sang WebP: {e}")
         return False
+
+
+def convert_and_slice_to_webp(src_file: Path, out_dir: Path, page_index: int, quality: int = 90, max_slice_h: int = 10000) -> list:
+    """
+    Chuyển đổi trang ảnh sang WebP.
+    Nếu ảnh manhwa siêu dài (h > 16000px, vượt ngưỡng 16383px của WebP), tự động cắt lát dọc thành các trang <= 10000px.
+    """
+    out_files = []
+    try:
+        with Image.open(src_file) as im:
+            im.load()
+            if im.mode != 'RGB':
+                im = im.convert('RGB')
+            w, h = im.size
+            if w > 16000:
+                new_h = max(1, int(h * (16000 / w)))
+                im = im.resize((16000, new_h), Image.Resampling.LANCZOS)
+                w, h = im.size
+
+            if h <= 16000:
+                target_file = out_dir / f"slice_{page_index:04d}_00.webp"
+                im.save(target_file, 'WEBP', quality=quality, method=6)
+                out_files.append(target_file)
+            else:
+                num_slices = (h + max_slice_h - 1) // max_slice_h
+                for s_i in range(num_slices):
+                    top = s_i * max_slice_h
+                    bottom = min(h, (s_i + 1) * max_slice_h)
+                    cropped = im.crop((0, top, w, bottom))
+                    target_file = out_dir / f"slice_{page_index:04d}_{s_i:02d}.webp"
+                    cropped.save(target_file, 'WEBP', quality=quality, method=6)
+                    cropped.close()
+                    out_files.append(target_file)
+        if src_file.exists():
+            src_file.unlink(missing_ok=True)
+    except Exception as e:
+        log_error(f"Lỗi nén ảnh {src_file.name} sang WebP: {e}")
+    return out_files
 
 
 # =============================================================================
@@ -694,7 +767,7 @@ class HentaiVNRealDownloader:
                     genres.append(gt)
 
         # 4. Danh sách chapter
-        chapters = []
+        raw_list = []
         chuong = soup.find(id="chuong")
         if chuong:
             for tr in chuong.find_all("tr"):
@@ -702,17 +775,29 @@ class HentaiVNRealDownloader:
                 if a and a["href"] != "#" and not a["href"].startswith("javascript"):
                     c_url = urllib.parse.urljoin(self.BASE_URL, a["href"])
                     c_title = a.get_text(strip=True)
-                    m = re.search(r'(?:chap|chương|tập|hoi|hồi|lần)\s*([0-9]+(?:\.[0-9]+)?)', c_title, re.I)
+
+                    # 1. Tìm số theo từ khóa: chap, chương, chapter, tập, hồi, lần, c1, ch1...
+                    m = re.search(r'(?:chap|chương|chapter|tập|hoi|hồi|lần|\bc)[\s\.:-]*([0-9]+(?:\.[0-9]+)?)', c_title, re.I)
+                    c_num = None
                     if m:
                         c_num = float(m.group(1))
-                    elif "oneshot" in c_title.lower() or "1shot" in c_title.lower():
-                        c_num = 1.0
-                        c_title = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', c_title, flags=re.I).strip() or "Oneshot"
                     else:
-                        c_num = float(len(chapters) + 1)
+                        # 2. Tìm số trong URL href (ví dụ: /chap-1, /chap-24)
+                        m_href = re.search(r'chap(?:ter)?[-_]?([0-9]+(?:\.[0-9]+)?)', a["href"], re.I)
+                        if m_href:
+                            c_num = float(m_href.group(1))
+                        elif "oneshot" in c_title.lower() or "1shot" in c_title.lower() or "oneshot" in a["href"].lower():
+                            c_num = 1.0
+                            c_title = re.sub(r'^(?:chương|chap|chapter)\s*[\d\.]*\s*[-:]*\s*', '', c_title, flags=re.I).strip() or "Oneshot"
+                        else:
+                            # 3. Tìm số độc lập bất kỳ trong tiêu đề
+                            m_any = re.search(r'\b([0-9]+(?:\.[0-9]+)?)\b', c_title)
+                            if m_any:
+                                c_num = float(m_any.group(1))
+
                     date_td = tr.find_all("td")
                     c_date = date_td[1].get_text(strip=True) if len(date_td) > 1 else ""
-                    chapters.append({
+                    raw_list.append({
                         "number": c_num,
                         "title": c_title,
                         "url": c_url,
@@ -720,15 +805,24 @@ class HentaiVNRealDownloader:
                         "updated_at": parse_date_to_iso(c_date)
                     })
 
-        chapters.reverse()
+        # Bảng HentaiVN sắp xếp từ mới nhất -> cũ nhất, nên cần đảo ngược về tăng dần (cũ nhất -> mới nhất)
+        raw_list.reverse()
+        chapters = []
+        seen_numbers = set()
+        for idx, chap in enumerate(raw_list, 1):
+            if chap["number"] is None:
+                chap["number"] = float(idx)
+            # Tránh trùng lặp số chapter
+            if chap["number"] in seen_numbers:
+                candidate = float(idx)
+                while candidate in seen_numbers:
+                    candidate += 1.0
+                chap["number"] = candidate
+            seen_numbers.add(chap["number"])
+            chapters.append(chap)
+
         if len(chapters) == 1 and ("oneshot" in title.lower() or "one-shot" in title.lower() or any("oneshot" in g.lower() for g in genres)):
             chapters[0]["title"] = "Oneshot"
-
-        seen_numbers = set()
-        for idx, chap in enumerate(chapters, 1):
-            if chap["number"] in seen_numbers:
-                chap["number"] = float(idx)
-            seen_numbers.add(chap["number"])
 
         return {
             "title": title,
@@ -1099,26 +1193,40 @@ class NekoSynchronizerPro:
 
             downloaded_raw = sorted([p for p in raw_paths if p.exists()])
 
-            # Ghép Manhwa 5-in-1 hoặc nén WebP
+            # Ghép Manhwa 5-in-1 hoặc nén WebP (tự động cắt lát ảnh > 16.000px)
             final_paths = []
             if should_stitch:
                 final_paths = merge_images_vertical(downloaded_raw, chap_dir, group_size=STITCH_GROUP_SIZE)
                 total_pages_downloaded += len(final_paths)
                 shutil.rmtree(download_dir, ignore_errors=True)
             else:
-                final_paths_dict = {}
+                all_slices = []
                 with ThreadPoolExecutor(max_workers=min(self.workers, 16)) as conv_pool:
-                    conv_futures = {}
-                    for p_idx, p_file in enumerate(downloaded_raw, 1):
-                        final_webp = chap_dir / f"page_{p_idx:03d}.webp"
-                        conv_futures[conv_pool.submit(convert_to_webp, p_file, final_webp, 90)] = (p_idx, final_webp)
-                    for f in as_completed(conv_futures):
-                        p_idx, final_webp = conv_futures[f]
-                        if f.result() and final_webp.exists():
-                            final_paths_dict[p_idx] = final_webp
+                    futures = {
+                        conv_pool.submit(convert_and_slice_to_webp, p_file, chap_dir, p_idx, 90): p_idx
+                        for p_idx, p_file in enumerate(downloaded_raw, 1)
+                    }
+                    for f in as_completed(futures):
+                        try:
+                            slices = f.result()
+                            if slices:
+                                all_slices.extend(slices)
+                        except Exception as e:
+                            log_error(f"    ❌ Lỗi khi nén ảnh: {e}")
 
-                final_paths = [final_paths_dict[k] for k in sorted(final_paths_dict.keys())]
+                all_slices.sort(key=lambda p: p.name)
+                for p_i, s_file in enumerate(all_slices, 1):
+                    final_p = chap_dir / f"page_{p_i:03d}.webp"
+                    if s_file != final_p:
+                        s_file.rename(final_p)
+                    final_paths.append(final_p)
+
                 total_pages_downloaded += len(final_paths)
+
+            if not final_paths:
+                log_error(f"    ❌ Không có ảnh nào được xuất ra cho {chap_title}! (Ảnh gốc có thể bị lỗi hoặc không đọc được)")
+                has_chapter_failure = True
+                continue
 
             # Đẩy lên Cloud Storage Bucket & Đồng bộ Web API
             chapter_synced = False
