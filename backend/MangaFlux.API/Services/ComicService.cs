@@ -76,7 +76,7 @@ namespace NekoHentai.API.Services
             {
                 var query = _context.Comics
                     .AsNoTracking()
-                    .Where(c => c.IsPublic && c.Chapters.Any())
+                    .Where(c => c.IsPublic)
                     .AsQueryable();
 
                 query = crit switch
@@ -85,7 +85,6 @@ namespace NekoHentai.API.Services
                     "chapters" => query.OrderByDescending(c => c.Chapters.Count).ThenByDescending(c => c.UpdatedAt),
                     "views" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.UpdatedAt),
                     _ => query.OrderByDescending(c => c.Views)
-                              .ThenByDescending(c => c.Chapters.Count)
                               .ThenByDescending(c => c.UpdatedAt)
                 };
 
@@ -94,19 +93,6 @@ namespace NekoHentai.API.Services
                     .Include(c => c.ComicCategories).ThenInclude(cc => cc.Category)
                     .Include(c => c.Chapters)
                     .ToListAsync();
-
-                if (result.Count == 0)
-                {
-                    result = await _context.Comics
-                        .AsNoTracking()
-                        .Where(c => c.IsPublic)
-                        .OrderByDescending(c => c.Views)
-                        .ThenByDescending(c => c.UpdatedAt)
-                        .Take(count)
-                        .Include(c => c.ComicCategories).ThenInclude(cc => cc.Category)
-                        .Include(c => c.Chapters)
-                        .ToListAsync();
-                }
 
                 return result.Select(c => MapToComicDto(c)).ToList();
             }, TimeSpan.FromMinutes(10))) ?? new List<ComicDto>();
