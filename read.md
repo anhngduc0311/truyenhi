@@ -35,6 +35,10 @@ docker compose down -v
 
 docker-compose up -d postgres redis meilisearch
 
+tải truyện ko skip
+./tai_mangadex_ubuntu.sh --url nhiem-vu-tinh-yeu --no-skip
+
+
 # ================= SAO LƯU & AN TOÀN DỮ LIỆU =================
 # 1. Chạy sao lưu Database thủ công bất kỳ lúc nào:
 ./backup_db.sh
