@@ -131,7 +131,8 @@ dump.rdb
 mssql_data/
 redis_data/
 minio_data/
-data/
+/data/
+!backend/MangaFlux.API/Data/
 *.sqlite
 *.sqlite3
 *.db
