@@ -103,36 +103,47 @@ Lần đầu tiên khởi chạy:
    ⚡ Luồng tải & Upload song song:            32 luồng (Turbo Speed)
    ⚡ Nén WebP chất lượng cao (quality=90):    BẬT
 ================================================================
-  [1] ⚡ Tải TOÀN BỘ HentaiVNReal trực tiếp trên màn hình (Trang 1 ➜ 982+)
-  [2] 🆕 Tải NGẦM toàn bộ HentaiVNReal 24/7 (nohup - Khuyên dùng)
-  [3] 🔗 Tải 1 bộ truyện theo Link / Slug HentaiVNReal
-  [4] 📊 Xem trạng thái, thống kê & nhật ký (Live Logs)
-  [5] 🛑 Dừng tiến trình tải ngầm
-  [6] 🛡️  Thiết lập / Bật bộ nhớ ảo Swap (4GB / 2GB)
-  [7] 📝 Tạo / Khôi phục file .env từ .env.example
+  [1] 🔄 Kiểm tra & Tải TRUYỆN MỚI CẬP NHẬT trực tiếp (Quét 5-10 trang đầu)
+  [2] 🤖 Tự động kiểm tra & Tải truyện mới NGẦM 24/7 (Auto-Updater định kỳ)
+  [3] ⚡ Tải TOÀN BỘ HentaiVNReal trực tiếp trên màn hình (Trang 1 ➜ 982+)
+  [4] 🆕 Tải NGẦM toàn bộ HentaiVNReal 24/7 (nohup - Khuyên dùng)
+  [5] 🔗 Tải 1 bộ truyện theo Link / Slug HentaiVNReal
+  [6] 📊 Xem trạng thái, thống kê & nhật ký (Live Logs)
+  [7] 🛑 Dừng tiến trình tải ngầm
+  [8] 🛡️  Thiết lập / Bật bộ nhớ ảo Swap (4GB / 2GB)
+  [9] 📝 Tạo / Khôi phục file .env từ .env.example
   [0] ❌ Thoát
 ----------------------------------------------------------------
-Chọn thao tác [0-7]:
+Chọn thao tác [0-9]:
 ```
 
 ---
 
-## 🚀 Bước 3: Bắt Đầu Tải Truyện
+## 🚀 Bước 3: Bắt Đầu Tải & Tự Động Cập Nhật Truyện
 
-### Tùy chọn A: Chạy ngầm 24/7 (Khuyên Dùng Cho Máy Chủ / VPS)
-- Chọn phím **`2`** trên menu (hoặc chạy lệnh: `./tai_mangadex_ubuntu.sh --bg-hentai` hoặc `./tai_mangadex_ubuntu.sh --bg`).
-- Script sẽ kích hoạt tiến trình chạy ngầm qua `nohup`.
-- Lúc này bạn có thể **tắt terminal SSH**, **tắt máy tính cá nhân**, máy chủ Ubuntu vẫn sẽ tải liên tục từng bộ truyện và tự đẩy lên Cloud Bucket & Web API.
+### Tùy chọn A: Tự động kiểm tra & Tải truyện mới ra chapter NGẦM 24/7 (Auto-Updater)
+- Chọn phím **`2`** trên menu (hoặc gõ: `./tai_mangadex_ubuntu.sh --bg-updates 10 30`).
+- Tính năng này sẽ quét các trang đầu tiên trên HentaiVNReal (mặc định 10 trang = ~400 bộ truyện mới nhất).
+- Nếu phát hiện truyện đã có nhưng **vừa ra thêm chapter mới**, script sẽ **chỉ tải các chapter mới** rồi đẩy lên Cloud S3 & Web API.
+- Cứ sau mỗi 30 phút (tùy chỉnh được), tiến trình tự động quét lại vòng lặp mới hoàn toàn tự động 24/7.
 
-### Tùy chọn B: Xem tiến độ & nhật ký thời gian thực
-- Chọn phím **`4`** trên menu để xem thống kê số truyện, số chương, số ảnh đã hoàn thành và dung lượng RAM/Swap đang sử dụng.
+### Tùy chọn B: Kiểm tra cập nhật ngay trên màn hình (Foreground)
+- Chọn phím **`1`** trên menu (hoặc gõ: `./tai_mangadex_ubuntu.sh --check-updates 10`).
+- Script sẽ quét nhanh 10 trang mới nhất, tải ngay các chapter mới hoặc truyện mới toanh chưa có trong hệ thống và hiển thị kết quả trực tiếp.
+
+### Tùy chọn C: Cào toàn bộ kho truyện 24/7 (Chạy ngầm nohup)
+- Chọn phím **`4`** trên menu (hoặc chạy lệnh: `./tai_mangadex_ubuntu.sh --bg-hentai`).
+- Script sẽ kích hoạt tiến trình tải lần lượt toàn bộ ~39.000+ bộ truyện từ mới nhất đến cũ nhất.
+
+### Tùy chọn D: Xem tiến độ & nhật ký thời gian thực
+- Chọn phím **`6`** trên menu để xem thống kê số truyện, số chương, số ảnh đã hoàn thành và dung lượng RAM/Swap đang sử dụng.
 - Hoặc gõ lệnh xem nhật ký live:
   ```bash
   tail -f mangadex_sync.log
   ```
 
-### Tùy chọn C: Tải 1 bộ truyện cụ thể để kiểm tra
-- Chọn phím **`3`** trên menu (hoặc gõ: `./tai_mangadex_ubuntu.sh --url https://hentaivnreal.com/truyen/slug-truyen`).
+### Tùy chọn E: Tải 1 bộ truyện cụ thể để kiểm tra
+- Chọn phím **`5`** trên menu (hoặc gõ: `./tai_mangadex_ubuntu.sh --url https://hentaivnreal.com/truyen/slug-truyen`).
 - Script sẽ tải đầy đủ các chương của bộ truyện đó và đẩy ngay lên Cloud Storage Bucket & Web.
 
 ---
@@ -172,21 +183,28 @@ Nếu bạn muốn tạo cronjob hoặc tự động hóa trong bash script khá
 # Thiết lập / cập nhật cấu hình .env:
 ./tai_mangadex_ubuntu.sh --setup-env
 
-# 1. TẢI HENTAIVNREAL (~39.000+ TRUYỆN MỚI ➜ CŨ):
+# 1. TỰ ĐỘNG KIỂM TRA & TẢI TRUYỆN MỚI CẬP NHẬT (CHƯƠNG MỚI RA):
+# Quét 10 trang đầu trực tiếp trên màn hình:
+./tai_mangadex_ubuntu.sh --check-updates 10
+
+# Chạy ngầm 24/7 kiểm tra cập nhật định kỳ (Quét 10 trang, lặp lại mỗi 30 phút):
+./tai_mangadex_ubuntu.sh --bg-updates 10 30
+
+# 2. TẢI HENTAIVNREAL TOÀN BỘ (~39.000+ TRUYỆN MỚI ➜ CŨ):
 # Tải toàn bộ HentaiVNReal trực tiếp trên màn hình:
 ./tai_mangadex_ubuntu.sh --all-hentai
 
-# Tải ngầm HentaiVNReal 24/7 (nohup background):
+# Tải ngầm toàn bộ HentaiVNReal 24/7 (nohup background):
 ./tai_mangadex_ubuntu.sh --bg-hentai
 
 # Tùy chỉnh trang bắt đầu / trang kết thúc:
 ./tai_mangadex_ubuntu.sh --all-hentai --start-page 1 --end-page 50
 
-# 2. TẢI 1 TRUYỆN DUY NHẤT (Theo Link hoặc Slug):
+# 3. TẢI 1 TRUYỆN DUY NHẤT (Theo Link hoặc Slug):
 ./tai_mangadex_ubuntu.sh --url "https://hentaivnreal.com/truyen/slug-truyen"
 ./tai_mangadex_ubuntu.sh --url "slug-truyen"
 
-# 3. QUẢN LÝ TIẾN TRÌNH:
+# 4. QUẢN LÝ TIẾN TRÌNH:
 # Xem trạng thái tiến trình, thống kê và theo dõi live logs:
 ./tai_mangadex_ubuntu.sh --status
 

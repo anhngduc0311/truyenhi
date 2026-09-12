@@ -497,7 +497,7 @@ class SyncStateManager:
             del self.data["failed_manga"][manga_id]
         stats = self.data.setdefault("stats", {"total_comics": 0, "total_chapters": 0, "total_pages": 0})
         stats["total_comics"] = len(self.data["completed_manga"])
-        stats["total_chapters"] += chapters_count
+        stats["total_chapters"] = sum(c.get("chapters_count", 0) for c in self.data["completed_manga"].values())
         stats["total_pages"] += pages_count
         self.save()
         if len(self.data["completed_manga"]) % 10 == 0:
@@ -925,6 +925,19 @@ class HentaiVNRealDownloader:
                     img_elem = it.find("img")
                     thumb_url = img_elem.get("src") or img_elem.get("data-src") or "" if img_elem else ""
 
+                    # Bóc tách số lượng chapter mới nhất hiển thị trong danh sách (vd: "- 97 chap" hoặc "- Oneshot")
+                    remote_chaps_count = None
+                    p_desc_first = desc_elem.find("p") if desc_elem else None
+                    raw_desc_text = p_desc_first.get_text(" ", strip=True) if p_desc_first else ""
+                    m_chap = re.search(r'-\s*([\d\.]+)\s*(?:chap|chương|tập|hoi|hồi)', raw_desc_text, re.I)
+                    if m_chap:
+                        try:
+                            remote_chaps_count = int(float(m_chap.group(1)))
+                        except Exception:
+                            remote_chaps_count = None
+                    elif "oneshot" in raw_desc_text.lower():
+                        remote_chaps_count = 1
+
                     other_names = ""
                     for p in it.find_all("p"):
                         if "Tên Khác:" in p.get_text():
@@ -949,6 +962,7 @@ class HentaiVNRealDownloader:
                         "title": comic_title,
                         "url": comic_full_url,
                         "cover_thumb": thumb_url,
+                        "chapters_count": remote_chaps_count,
                         "other_names": other_names,
                         "tags": tags,
                         "views": views,
@@ -1050,11 +1064,19 @@ class NekoSynchronizerPro:
             c_page = item.get("page", 1)
             tot_pages = item.get("total_pages", "?")
 
+            remote_chaps = item.get("chapters_count")
             if self.state.is_completed(slug) and self.skip_existing:
                 comp_info = self.state.get_completed_info(slug) or {}
                 prev_count = comp_info.get("chapters_count", 0)
-                log_info(f"[#{count} | Trang {c_page}/{tot_pages}] ⏭️ Đã hoàn tất ({prev_count} chaps): {title} (Bỏ qua)")
-                continue
+                synced_list = self.state.data.get("synced_chapters", {}).get(slug, [])
+                local_count = max(prev_count, len(synced_list))
+
+                if remote_chaps is not None and remote_chaps > local_count:
+                    diff = remote_chaps - local_count
+                    log_info(f"[#{count} | Trang {c_page}/{tot_pages}] 🔄 Phát hiện truyện ra {diff} chapter mới! (Hiện có: {local_count} ➜ Web: {remote_chaps} chaps): {title}")
+                else:
+                    log_info(f"[#{count} | Trang {c_page}/{tot_pages}] ⏭️ Đã hoàn tất ({local_count}{f'/{remote_chaps}' if remote_chaps else ''} chaps): {title} (Bỏ qua)")
+                    continue
 
             log_info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             log_info(f"▶ [#{count} | Trang {c_page}/{tot_pages}] 📖 {title}")
@@ -1310,6 +1332,137 @@ class NekoSynchronizerPro:
         log_info(f"🏷️ Xử lý truyện HentaiVNReal: {val}")
         return self.sync_single_hentai(val)
 
+    # =========================================================================
+    # C. KIỂM TRA VÀ TẢI TRUYỆN MỚI CẬP NHẬT (CHƯƠNG MỚI RA)
+    # =========================================================================
+    def sync_updates(self, max_pages: int = 10, continuous: bool = False, interval_minutes: int = 30):
+        """
+        Quét các trang đầu tiên trên hentaivnreal.com/danh-sach (mặc định 10 trang = ~400 truyện mới nhất):
+        - Nếu truyện chưa có trong hệ thống -> Tải mới toàn bộ
+        - Nếu truyện đã có nhưng số chapter mới > số chapter cũ -> Tải bổ sung các chapter mới
+        - Nếu đã đủ chapter -> Bỏ qua nhanh
+        - Hỗ trợ chế độ continuous chạy ngầm 24/7 theo chu kỳ interval_minutes
+        """
+        loop_count = 0
+        while True:
+            loop_count += 1
+            now_str = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+            log_header(f"🔄 [VÒNG QUÉT #{loop_count}] KIỂM TRA TRUYỆN MỚI CẬP NHẬT (Trang 1 ➔ {max_pages}) - {now_str}")
+            log_info(f"• Nguồn: https://hentaivnreal.com/danh-sach (Mới Nhất ➜ Cũ Nhất)")
+            log_info(f"• Phạm vi quét: {max_pages} trang đầu (~{max_pages * 40} bộ truyện mới cập nhật nhất)")
+            log_info(f"• Chế độ: {'Chạy liên tục định kỳ 24/7 (mỗi ' + str(interval_minutes) + ' phút)' if continuous else 'Quét 1 lần'}\n")
+
+            comic_iter = HentaiVNRealDownloader.fetch_all_hentaivn_comics_iter(
+                start_page=1,
+                end_page=max_pages
+            )
+
+            checked_count = 0
+            new_comics_count = 0
+            updated_comics_count = 0
+            skipped_count = 0
+            failed_count = 0
+
+            for item in comic_iter:
+                checked_count += 1
+                slug = item["slug"]
+                title = item["title"]
+                c_url = item["url"]
+                c_page = item.get("page", 1)
+                remote_chaps = item.get("chapters_count")
+
+                comp_info = self.state.get_completed_info(slug) or {}
+                prev_count = comp_info.get("chapters_count", 0)
+                synced_list = self.state.data.get("synced_chapters", {}).get(slug, [])
+                local_count = max(prev_count, len(synced_list))
+                is_completed = self.state.is_completed(slug)
+
+                # 1. Truyện chưa từng có trong hệ thống -> Tải mới
+                if not is_completed and local_count == 0:
+                    log_info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    log_info(f"[#{checked_count} | Trang {c_page}] ✨ TRUYỆN MỚI TOANH CHƯA CÓ: {title} ({remote_chaps or '?'} chaps)")
+                    log_info(f"   🔗 {c_url}")
+                    try:
+                        ok = self.sync_single_hentai(c_url)
+                        if ok:
+                            new_comics_count += 1
+                        else:
+                            failed_count += 1
+                    except Exception as e:
+                        log_error(f"Lỗi khi tải truyện mới '{title}': {e}")
+                        failed_count += 1
+                    time.sleep(0.3)
+                    continue
+
+                # 2. Truyện đã có trong hệ thống -> Kiểm tra số chapter mới
+                if remote_chaps is not None:
+                    if remote_chaps > local_count:
+                        diff = remote_chaps - local_count
+                        log_info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                        log_info(f"[#{checked_count} | Trang {c_page}] 🔄 PHÁT HIỆN CHAPTER MỚI: {title}")
+                        log_info(f"   ⚡ Ra thêm {diff} chapter mới! (Hiện có: {local_count} ➜ Mới nhất trên web: {remote_chaps} chaps)")
+                        log_info(f"   🔗 {c_url}")
+                        try:
+                            ok = self.sync_single_hentai(c_url)
+                            if ok:
+                                updated_comics_count += 1
+                            else:
+                                failed_count += 1
+                        except Exception as e:
+                            log_error(f"Lỗi khi tải chapter mới của '{title}': {e}")
+                            failed_count += 1
+                        time.sleep(0.3)
+                    else:
+                        skipped_count += 1
+                        log_info(f"[#{checked_count} | Trang {c_page}] ⏭️ [Đã đủ] {title} ({local_count}/{remote_chaps} chaps) - Bỏ qua")
+                else:
+                    # Nếu không bóc tách được số chap từ danh sách -> kiểm tra sâu bằng get_comic_info
+                    try:
+                        downloader = HentaiVNRealDownloader(c_url)
+                        info = downloader.get_comic_info()
+                        web_chaps = len(info.get("chapters", []))
+                        if web_chaps > local_count:
+                            diff = web_chaps - local_count
+                            log_info(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                            log_info(f"[#{checked_count} | Trang {c_page}] 🔄 PHÁT HIỆN CHAPTER MỚI: {title}")
+                            log_info(f"   ⚡ Ra thêm {diff} chapter mới! (Hiện có: {local_count} ➜ Mới nhất trên web: {web_chaps} chaps)")
+                            ok = self.sync_single_hentai(c_url)
+                            if ok:
+                                updated_comics_count += 1
+                            else:
+                                failed_count += 1
+                            time.sleep(0.3)
+                        else:
+                            skipped_count += 1
+                            log_info(f"[#{checked_count} | Trang {c_page}] ⏭️ [Đã đủ] {title} ({local_count}/{web_chaps} chaps) - Bỏ qua")
+                    except Exception:
+                        skipped_count += 1
+
+            finish_str = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+            log_header(f"📊 KẾT QUẢ VÒNG QUÉT #{loop_count} ({finish_str})")
+            log_info(f"• Tổng số truyện đã duyệt:     {checked_count} bộ ({max_pages} trang)")
+            log_success(f"• Số truyện mới tải về:        {new_comics_count} bộ")
+            log_success(f"• Số truyện cập nhật chap mới: {updated_comics_count} bộ")
+            log_info(f"• Số truyện đã đủ (bỏ qua):    {skipped_count} bộ")
+            if failed_count > 0:
+                log_warning(f"• Số truyện gặp lỗi/chưa xong: {failed_count} bộ")
+
+            if not continuous:
+                log_success("🎉 ĐÃ HOÀN TẤT KIỂM TRA & CẬP NHẬT TRUYỆN MỚI!\n")
+                break
+
+            next_run = datetime.now().timestamp() + (interval_minutes * 60)
+            next_run_str = datetime.fromtimestamp(next_run).strftime("%H:%M:%S %d/%m/%Y")
+            log_info(f"\n⏳ Tự động nghỉ {interval_minutes} phút trước lần quét tiếp theo.")
+            log_info(f"   ⏰ Dự kiến lần quét tới: {next_run_str}")
+            log_info(f"   💡 Bấm Ctrl+C (hoặc chạy ./tai_mangadex_ubuntu.sh --stop nếu chạy ngầm) để dừng.\n")
+
+            try:
+                time.sleep(interval_minutes * 60)
+            except KeyboardInterrupt:
+                log_info("🛑 Đã dừng tiến trình kiểm tra cập nhật định kỳ.")
+                break
+
 
 # Backward compatibility aliases
 MangaDexSynchronizer = NekoSynchronizerPro
@@ -1324,6 +1477,12 @@ def main():
     parser = argparse.ArgumentParser(
         description="🚀 NekoHentai Crawler Pro (HentaiVNReal) cho Ubuntu / Linux VPS"
     )
+    # Check updates
+    parser.add_argument("--check-updates", "--updates", action="store_true", help="Kiểm tra và tải các truyện mới cập nhật / chương mới ra")
+    parser.add_argument("--pages", type=int, default=10, help="Số trang muốn quét cập nhật (Mặc định: 10 trang = ~400 truyện mới nhất)")
+    parser.add_argument("--continuous", "--watch", action="store_true", help="Chạy lặp lại liên tục định kỳ 24/7")
+    parser.add_argument("--interval", type=int, default=30, help="Khoảng thời gian nghỉ giữa các lần quét (phút, Mặc định: 30)")
+
     # HentaiVNReal
     parser.add_argument("--all-hentai", "--hentai", action="store_true", help="Tải toàn bộ truyện từ HentaiVNReal (Mới Nhất ➜ Cũ Nhất, Trang 1 ➜ 982+)")
     parser.add_argument("--start-page", "--page", type=int, default=1, help="Trang bắt đầu cào HentaiVNReal (Mặc định: 1)")
@@ -1354,6 +1513,8 @@ def main():
 
     if args.url:
         engine.sync_single_comic(args.url)
+    elif args.check_updates:
+        engine.sync_updates(max_pages=args.pages, continuous=args.continuous, interval_minutes=args.interval)
     elif args.all_hentai:
         engine.sync_all_hentaivn_comics(start_page=args.start_page, end_page=args.end_page, max_comics=args.max_manga)
     else:
