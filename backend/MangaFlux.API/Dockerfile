@@ -12,7 +12,7 @@ RUN dotnet restore "MangaFlux.API.csproj"
 
 # Copy source code and build release
 COPY . .
-RUN dotnet publish "MangaFlux.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "MangaFlux.API.csproj" -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
 # Stage 2: Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final

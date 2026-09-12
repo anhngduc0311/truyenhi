@@ -1,0 +1,12 @@
+.git/
+.github/
+.vscode/
+node_modules/
+dist/
+bin/
+obj/
+downloads/
+temp_downloads/
+output/
+stitched_output/
+*.log
