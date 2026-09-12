@@ -81,11 +81,12 @@ namespace NekoHentai.API.Services
 
                 query = crit switch
                 {
-                    "latest" => query.OrderByDescending(c => c.UpdatedAt),
-                    "chapters" => query.OrderByDescending(c => c.Chapters.Count).ThenByDescending(c => c.UpdatedAt),
-                    "views" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.UpdatedAt),
+                    "latest" => query.OrderByDescending(c => c.UpdatedAt).ThenByDescending(c => c.Id),
+                    "chapters" => query.OrderByDescending(c => c.Chapters.Count).ThenByDescending(c => c.UpdatedAt).ThenByDescending(c => c.Id),
+                    "views" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.UpdatedAt).ThenByDescending(c => c.Id),
                     _ => query.OrderByDescending(c => c.Views)
                               .ThenByDescending(c => c.UpdatedAt)
+                              .ThenByDescending(c => c.Id)
                 };
 
                 var result = await query
@@ -107,6 +108,7 @@ namespace NekoHentai.API.Services
                     .AsNoTracking()
                     .Where(c => c.IsPublic)
                     .OrderByDescending(c => c.UpdatedAt)
+                    .ThenByDescending(c => c.Id)
                     .Take(count)
                     .Include(c => c.ComicCategories).ThenInclude(cc => cc.Category)
                     .Include(c => c.Chapters)
@@ -193,32 +195,44 @@ namespace NekoHentai.API.Services
 
             comicsQuery = (sortBy?.ToLowerInvariant()) switch
             {
-                "day" or "daily" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.UpdatedAt),
-                "week" or "weekly" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.Rating),
-                "month" or "monthly" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.Bookmarks.Count),
-                "favorite" or "likes" or "yeu-thich" => comicsQuery.OrderByDescending(c => c.Bookmarks.Count).ThenByDescending(c => c.Rating),
+                "day" or "daily" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.UpdatedAt).ThenByDescending(c => c.Id),
+                "week" or "weekly" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.Rating).ThenByDescending(c => c.Id),
+                "month" or "monthly" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.Bookmarks.Count).ThenByDescending(c => c.Id),
+                "favorite" or "likes" or "yeu-thich" => comicsQuery.OrderByDescending(c => c.Bookmarks.Count).ThenByDescending(c => c.Rating).ThenByDescending(c => c.Id),
                 "new" or "created" => comicsQuery.OrderByDescending(c => c.CreatedAt).ThenByDescending(c => c.Id),
-                "views" or "hot" => comicsQuery.OrderByDescending(c => c.Views),
-                "rating" => comicsQuery.OrderByDescending(c => c.Rating),
-                "title" or "az" => comicsQuery.OrderBy(c => c.Title),
-                "chapters" => comicsQuery.OrderByDescending(c => c.Chapters.Count),
+                "views" or "hot" => comicsQuery.OrderByDescending(c => c.Views).ThenByDescending(c => c.Id),
+                "rating" => comicsQuery.OrderByDescending(c => c.Rating).ThenByDescending(c => c.Id),
+                "title" or "az" => comicsQuery.OrderBy(c => c.Title).ThenBy(c => c.Id),
+                "chapters" => comicsQuery.OrderByDescending(c => c.Chapters.Count).ThenByDescending(c => c.Id),
                 "random" => comicsQuery.OrderBy(c => EF.Functions.Random()),
-                _ => comicsQuery.OrderByDescending(c => c.UpdatedAt)
+                _ => comicsQuery.OrderByDescending(c => c.UpdatedAt).ThenByDescending(c => c.Id)
             };
 
             page = page < 1 ? 1 : page;
             pageSize = pageSize < 1 ? 24 : (pageSize > 100 ? 100 : pageSize);
 
-            var comics = await comicsQuery
+            var pagedIds = await comicsQuery
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            var comics = await _context.Comics
+                .AsNoTracking()
+                .Where(c => pagedIds.Contains(c.Id))
                 .Include(c => c.ComicCategories).ThenInclude(cc => cc.Category)
                 .Include(c => c.Chapters)
                 .ToListAsync();
 
+            var comicDict = comics.ToDictionary(c => c.Id);
+            var pagedComics = pagedIds
+                .Where(id => comicDict.ContainsKey(id))
+                .Select(id => MapToComicDto(comicDict[id]))
+                .ToList();
+
             return new PagedSearchResultDto<ComicDto>
             {
-                Items = comics.Select(c => MapToComicDto(c)).ToList(),
+                Items = pagedComics,
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize
@@ -602,6 +616,7 @@ namespace NekoHentai.API.Services
 
             var commentEntities = await query
                 .OrderByDescending(c => c.CreatedAt)
+                .ThenByDescending(c => c.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Include(c => c.User)

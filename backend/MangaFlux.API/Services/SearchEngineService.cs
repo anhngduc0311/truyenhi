@@ -291,34 +291,44 @@ namespace NekoHentai.API.Services
             // 7. Total Count directly in Database
             int totalCount = await query.CountAsync();
 
-            // 8. Sorting directly in Database
+            // 8. Sorting directly in Database with deterministic Id tie-breaker
             query = (filter.SortBy?.ToLowerInvariant()) switch
             {
-                "day" or "daily" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.UpdatedAt),
-                "week" or "weekly" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.Rating),
-                "month" or "monthly" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.Bookmarks.Count),
-                "favorite" or "likes" or "yeu-thich" => query.OrderByDescending(c => c.Bookmarks.Count).ThenByDescending(c => c.Rating),
+                "day" or "daily" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.UpdatedAt).ThenByDescending(c => c.Id),
+                "week" or "weekly" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.Rating).ThenByDescending(c => c.Id),
+                "month" or "monthly" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.Bookmarks.Count).ThenByDescending(c => c.Id),
+                "favorite" or "likes" or "yeu-thich" => query.OrderByDescending(c => c.Bookmarks.Count).ThenByDescending(c => c.Rating).ThenByDescending(c => c.Id),
                 "new" or "created" => query.OrderByDescending(c => c.CreatedAt).ThenByDescending(c => c.Id),
-                "views" or "hot" => query.OrderByDescending(c => c.Views),
-                "rating" => query.OrderByDescending(c => c.Rating),
-                "az" or "title" => query.OrderBy(c => c.Title),
-                "chapters" => query.OrderByDescending(c => c.Chapters.Count),
+                "views" or "hot" => query.OrderByDescending(c => c.Views).ThenByDescending(c => c.Id),
+                "rating" => query.OrderByDescending(c => c.Rating).ThenByDescending(c => c.Id),
+                "az" or "title" => query.OrderBy(c => c.Title).ThenBy(c => c.Id),
+                "chapters" => query.OrderByDescending(c => c.Chapters.Count).ThenByDescending(c => c.Id),
                 "random" => query.OrderBy(c => EF.Functions.Random()),
-                _ => query.OrderByDescending(c => c.UpdatedAt)
+                _ => query.OrderByDescending(c => c.UpdatedAt).ThenByDescending(c => c.Id)
             };
 
             int page = filter.Page < 1 ? 1 : filter.Page;
             int pageSize = filter.PageSize < 1 ? 24 : (filter.PageSize > 100 ? 100 : filter.PageSize);
 
-            // 9. Pagination Skip/Take directly in SQL Server with EF Core
-            var comics = await query
+            // 9. Hai bước phân trang chuẩn xác: lấy pagedIds trước để tránh lỗi lệch OFFSET/LIMIT của include collection trong PostgreSQL
+            var pagedIds = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            var comics = await _context.Comics
+                .AsNoTracking()
+                .Where(c => pagedIds.Contains(c.Id))
                 .Include(c => c.ComicCategories).ThenInclude(cc => cc.Category)
                 .Include(c => c.Chapters)
                 .ToListAsync();
 
-            var pagedComics = comics.Select(c => MapToComicDto(c)).ToList();
+            var comicDict = comics.ToDictionary(c => c.Id);
+            var pagedComics = pagedIds
+                .Where(id => comicDict.ContainsKey(id))
+                .Select(id => MapToComicDto(comicDict[id]))
+                .ToList();
 
             return new PagedSearchResultDto<ComicDto>
             {
@@ -423,13 +433,16 @@ namespace NekoHentai.API.Services
                 OtherNames = comic.OtherNames,
                 Artist = comic.Artist,
                 Country = ComicService.ResolveComicCountry(comic),
+                TranslatorGroup = comic.TranslatorGroup ?? "Đang cập nhật",
+                AgeLimit = string.IsNullOrWhiteSpace(comic.AgeLimit) ? "13+" : comic.AgeLimit,
                 ReleaseYear = comic.ReleaseYear,
                 Status = comic.Status,
                 Views = comic.Views,
                 Rating = comic.Rating,
+                RatingCount = comic.RatingCount,
                 IsFeatured = comic.IsFeatured,
                 IsPublic = comic.IsPublic,
-                TotalChapters = comic.Chapters?.Count ?? 0,
+                TotalChapters = orderedChapters?.Count ?? (comic.Chapters?.Count ?? 0),
                 CommentsCount = comic.Comments?.Count ?? 0,
                 LikesCount = comic.Bookmarks?.Count ?? 0,
                 CreatedAt = comic.CreatedAt,
