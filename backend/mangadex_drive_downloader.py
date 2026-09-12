@@ -91,6 +91,14 @@ def log_error(msg: str):
         print(f"❌ {msg}", flush=True)
 
 
+def log_header(msg: str):
+    line = "=" * 64
+    if HAS_RICH and console:
+        console.print(f"\n[bold cyan]{line}\n{msg}\n{line}[/bold cyan]\n")
+    else:
+        print(f"\n{line}\n{msg}\n{line}\n", flush=True)
+
+
 def create_reusable_session(pool_size: int = 64) -> requests.Session:
     """Tạo requests.Session dùng chung Connection Pool (HTTP Keep-Alive) để tăng tốc tải & upload tối đa"""
     s = requests.Session()
