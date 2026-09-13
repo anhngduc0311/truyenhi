@@ -42,6 +42,15 @@
   }
 
   .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      width: 100%;
+    }
+
     .btn {
       padding: 0.65rem 1.25rem;
       font-weight: 700;
@@ -51,6 +60,23 @@
         width: 100%;
         padding: 0.6rem 1rem;
         font-size: 0.9rem;
+      }
+    }
+
+    .btn-hot-manager {
+      background: rgba(249, 115, 22, 0.12);
+      color: #f97316;
+      border: 1px solid rgba(249, 115, 22, 0.35);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition-fast);
+
+      &:hover {
+        background: rgba(249, 115, 22, 0.22);
+        border-color: #f97316;
+        box-shadow: 0 0 12px rgba(249, 115, 22, 0.3);
       }
     }
   }
@@ -310,6 +336,52 @@
 
     &:hover {
       background: rgba(244, 63, 94, 0.22);
+    }
+  }
+}
+
+/* Hot Toggle Button */
+.hot-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  border: 1px solid transparent;
+
+  &.is-hot {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.35);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.18);
+
+    i {
+      color: #f97316;
+    }
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.28);
+      border-color: #ef4444;
+    }
+  }
+
+  &.not-hot {
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    border-color: var(--border-color);
+
+    i {
+      opacity: 0.5;
+    }
+
+    &:hover {
+      background: rgba(249, 115, 22, 0.12);
+      color: #f97316;
+      border-color: rgba(249, 115, 22, 0.4);
     }
   }
 }
@@ -574,6 +646,225 @@
           }
         }
       }
+    }
+  }
+}
+
+/* ==========================================================================
+   MODAL 3: HOT MANAGER MODAL STYLES
+   ========================================================================== */
+.hot-manager-modal {
+  max-width: 640px;
+  width: 92%;
+
+  .hot-modal-desc {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+
+    strong {
+      color: #f97316;
+    }
+  }
+
+  .hot-section-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hot-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+
+    .hot-card-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      transition: var(--transition-fast);
+
+      &:hover {
+        border-color: rgba(249, 115, 22, 0.4);
+      }
+
+      .hot-card-cover {
+        width: 42px;
+        height: 56px;
+        object-fit: cover;
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+
+      .hot-card-info {
+        flex: 1;
+        min-width: 0;
+
+        .hot-card-title {
+          display: block;
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: var(--text-main);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .hot-card-sub {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 2px;
+        }
+      }
+
+      .btn-remove-hot {
+        padding: 5px 12px;
+        border-radius: var(--radius-pill);
+        background: rgba(244, 63, 94, 0.12);
+        color: #f43f5e;
+        border: 1px solid rgba(244, 63, 94, 0.3);
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: var(--transition-fast);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+
+        &:hover {
+          background: rgba(244, 63, 94, 0.25);
+          border-color: #f43f5e;
+        }
+      }
+    }
+  }
+
+  .empty-hot-notice {
+    padding: 1.5rem;
+    text-align: center;
+    background: var(--bg-elevated);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+
+    i {
+      font-size: 1.8rem;
+      color: #f97316;
+      margin-bottom: 0.5rem;
+      opacity: 0.7;
+    }
+
+    p {
+      font-size: 0.88rem;
+      line-height: 1.4;
+      margin: 0;
+    }
+  }
+
+  .hot-search-box {
+    position: relative;
+    margin-bottom: 0.75rem;
+
+    i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.6rem 0.8rem 0.6rem 34px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+
+      &:focus {
+        border-color: var(--primary-orange);
+      }
+    }
+  }
+
+  .hot-candidate-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+
+    .hot-candidate-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+
+      .cand-cover {
+        width: 36px;
+        height: 48px;
+        object-fit: cover;
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+
+      .cand-info {
+        flex: 1;
+        min-width: 0;
+
+        .cand-title {
+          display: block;
+          font-size: 0.88rem;
+          font-weight: 600;
+          color: var(--text-main);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .cand-sub {
+          font-size: 0.78rem;
+          color: var(--text-muted);
+        }
+      }
+
+      .btn {
+        padding: 4px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: var(--radius-pill);
+        flex-shrink: 0;
+      }
+    }
+
+    .no-candidate-found {
+      padding: 0.75rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-style: italic;
     }
   }
 }

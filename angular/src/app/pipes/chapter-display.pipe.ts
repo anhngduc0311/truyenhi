@@ -53,21 +53,23 @@ export function extractChapterSubtitle(title?: string | null, chapterNumber?: nu
   let clean = title.trim();
   if (!clean) return '';
 
-  // Oneshot check
-  if (/oneshot|one-shot|1shot/i.test(clean)) {
-    clean = clean.replace(/^(?:chapter|chương|chap|tập|ep|episode)\s*[\d\.]*\s*[-:–—.]*\s*/i, '').trim();
-    return clean || '';
+  // Oneshot check: Nếu tiêu đề gốc chỉ là "oneshot", "1shot", "one-shot" thì không có phụ đề
+  if (/^(?:oneshot|one-shot|1shot)$/i.test(clean)) {
+    return '';
   }
 
   let prev = '';
-  // Vòng lặp giải quyết chuỗi tiền tố lặp (ví dụ "Chapter 4 - Chap 4: ...")
+  // Vòng lặp giải quyết chuỗi tiền tố lặp (ví dụ "Chapter 4 - Chap 4: ...", "Oneshot - Oneshot")
   while (clean !== prev) {
     prev = clean;
 
     // 1. Xóa các từ tiền tố chương: Chap / Chapter / Chương / Tập / Ep / Episode / Vol / Volume kèm số (hoặc không số)
     clean = clean.replace(/^(?:(?:vol|volume)\s*[\d\.]*\s*[-:–—.]*\s*)?(?:chapter|chương|chap|tập|ep|episode)\s*[\d\.]*\s*[-:–—.]*\s*/i, '').trim();
 
-    // 2. Xóa số thứ tự kèm dấu phân cách (nếu trùng chapterNumber, ví dụ: chapterNumber = 4 và bắt đầu bằng "4 - " hay "04: ")
+    // 2. Xóa các tiền tố oneshot lặp: "Oneshot - ", "One-shot: ", "1shot - ", "Oneshot "
+    clean = clean.replace(/^(?:oneshot|one-shot|1shot)\s*[-:–—.]*\s*/i, '').trim();
+
+    // 3. Xóa số thứ tự kèm dấu phân cách (nếu trùng chapterNumber, ví dụ: chapterNumber = 4 và bắt đầu bằng "4 - " hay "04: ")
     if (chapterNumber !== undefined && chapterNumber !== null) {
       const numStr = `${chapterNumber}`.trim();
       const escapedNum = numStr.replace('.', '\\.');
@@ -84,6 +86,11 @@ export function extractChapterSubtitle(title?: string | null, chapterNumber?: nu
   // Xóa dấu câu thừa ở đầu và cuối nếu có
   clean = clean.replace(/^[-:–—.\s]+/, '').replace(/[-:–—.\s]+$/, '').trim();
 
+  // Kiểm tra lần cuối: nếu sau khi bóc tách chuỗi chỉ còn là "oneshot", "one-shot", "1shot"
+  if (/^(?:oneshot|one-shot|1shot)$/i.test(clean)) {
+    return '';
+  }
+
   return clean;
 }
 
@@ -94,8 +101,13 @@ export function formatChapterDisplay(
   includeTitle: boolean = false
 ): string {
   if (isChapterOneshot(chap, comic)) {
-    const subtitle = extractChapterSubtitle(chap?.title, chap?.chapterNumber);
-    return subtitle ? `Oneshot - ${subtitle}` : 'Oneshot';
+    if (includeTitle && chap?.title) {
+      const subtitle = extractChapterSubtitle(chap.title, chap.chapterNumber);
+      if (subtitle && !/^(?:oneshot|one-shot|1shot)$/i.test(subtitle)) {
+        return `Oneshot - ${subtitle}`;
+      }
+    }
+    return 'Oneshot';
   }
 
   const num = chap?.chapterNumber;
@@ -110,7 +122,7 @@ export function formatChapterDisplay(
 
   if (includeTitle && chap?.title) {
     const subtitle = extractChapterSubtitle(chap.title, num);
-    if (subtitle) {
+    if (subtitle && !/^(?:oneshot|one-shot|1shot)$/i.test(subtitle)) {
       return `${baseName} - ${subtitle}`;
     }
   }

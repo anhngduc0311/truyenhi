@@ -179,6 +179,20 @@ namespace NekoHentai.API.Controllers
             return Ok(new { success = true, isPublic });
         }
 
+        [HttpPut("comics/{id}/toggle-featured")]
+        public async Task<IActionResult> ToggleFeatured(int id)
+        {
+            var isFeatured = await _comicService.ToggleComicFeaturedAsync(id);
+            return Ok(new { success = true, isFeatured });
+        }
+
+        [HttpGet("comics/hot")]
+        public async Task<IActionResult> GetHotComics()
+        {
+            var hotComics = await _comicService.GetHotComicsForAdminAsync();
+            return Ok(hotComics);
+        }
+
         [HttpDelete("comics/{id}")]
         public async Task<IActionResult> DeleteComic(int id)
         {

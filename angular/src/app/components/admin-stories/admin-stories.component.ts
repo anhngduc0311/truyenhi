@@ -25,8 +25,13 @@ export class AdminStoriesComponent implements OnInit {
   searchTerm: string = '';
   selectedStatus: string = 'All';
   selectedVisibility: string = 'All'; // 'All', 'Public', 'Hidden'
+  selectedFeatured: string = 'All'; // 'All', 'Featured', 'NotFeatured'
   selectedCategory: string = 'All';
   sortBy: 'latest' | 'views' | 'rating' | 'title' | 'chapters' = 'latest';
+
+  // Hot Manager Modal State
+  showHotModal: boolean = false;
+  hotSearchTerm: string = '';
 
   // Form Modal State
   showFormModal: boolean = false;
@@ -112,6 +117,13 @@ export class AdminStoriesComponent implements OnInit {
       result = result.filter(c => c.isPublic === false);
     }
 
+    // Filter Hot / Featured
+    if (this.selectedFeatured === 'Featured') {
+      result = result.filter(c => c.isFeatured);
+    } else if (this.selectedFeatured === 'NotFeatured') {
+      result = result.filter(c => !c.isFeatured);
+    }
+
     // Filter Category
     if (this.selectedCategory !== 'All') {
       const catId = Number(this.selectedCategory);
@@ -139,6 +151,46 @@ export class AdminStoriesComponent implements OnInit {
       },
       error: () => this.showMessage('Chuyển đổi trạng thái thất bại.', true)
     });
+  }
+
+  toggleFeatured(comic: Comic): void {
+    this.comicService.toggleComicFeatured(comic.id).subscribe({
+      next: (res) => {
+        comic.isFeatured = res.isFeatured;
+        this.showMessage(
+          res.isFeatured
+            ? `Đã thêm '${comic.title}' vào mục Truyện Hot ngoài Trang Chủ!`
+            : `Đã gỡ '${comic.title}' khỏi mục Truyện Hot.`
+        );
+        this.applyFilters();
+      },
+      error: () => this.showMessage('Chuyển đổi trạng thái Truyện Hot thất bại.', true)
+    });
+  }
+
+  getFeaturedCount(): number {
+    return this.comics.filter(c => c.isFeatured).length;
+  }
+
+  get hotComicsList(): Comic[] {
+    return this.comics.filter(c => c.isFeatured);
+  }
+
+  get nonHotComicsSearch(): Comic[] {
+    const q = this.hotSearchTerm.toLowerCase().trim();
+    return this.comics
+      .filter(c => !c.isFeatured)
+      .filter(c => !q || c.title.toLowerCase().includes(q) || (c.author && c.author.toLowerCase().includes(q)))
+      .slice(0, 10);
+  }
+
+  openHotModal(): void {
+    this.showHotModal = true;
+    this.hotSearchTerm = '';
+  }
+
+  closeHotModal(): void {
+    this.showHotModal = false;
   }
 
   openAddModal(): void {

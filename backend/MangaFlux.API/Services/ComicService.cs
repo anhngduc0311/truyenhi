@@ -32,6 +32,8 @@ namespace NekoHentai.API.Services
         Task<bool> UpdateComicMetadataAsync(int comicId, string? author, string? translatorGroup, string? otherNames, string? ageLimit, string? coverImage, int? views = null, DateTime? createdAt = null, DateTime? updatedAt = null);
         Task SyncComicCategoriesAsync(int comicId, List<string> categoryNames);
         Task<bool> ToggleComicVisibilityAsync(int id);
+        Task<bool> ToggleComicFeaturedAsync(int id);
+        Task<List<ComicDto>> GetHotComicsForAdminAsync();
         Task<bool> DeleteComicAsync(int id);
         Task<List<ChapterDetailDto>> GetAdminChaptersByComicIdAsync(int comicId);
         Task<ChapterDto> AddChapterAsync(ChapterCreateDto dto);
@@ -70,10 +72,31 @@ namespace NekoHentai.API.Services
 
         public async Task<List<ComicDto>> GetFeaturedComicsAsync(string? criteria = null, int count = 10)
         {
-            string crit = criteria?.Trim().ToLowerInvariant() ?? "trending";
+            string crit = criteria?.Trim().ToLowerInvariant() ?? "hot";
             string cacheKey = $"featured_comics_cache_{crit}_{count}";
             return (await _cache.GetOrSetAsync(cacheKey, async () =>
             {
+                if (crit == "hot" || crit == "featured" || crit == "trending")
+                {
+                    var featuredComics = await _context.Comics
+                        .AsNoTracking()
+                        .Where(c => c.IsPublic && c.IsFeatured)
+                        .OrderByDescending(c => c.UpdatedAt)
+                        .ThenByDescending(c => c.Id)
+                        .Take(count)
+                        .Include(c => c.ComicCategories).ThenInclude(cc => cc.Category)
+                        .Include(c => c.Chapters)
+                        .ToListAsync();
+
+                    if (featuredComics.Any())
+                    {
+                        return featuredComics.Select(c => MapToComicDto(c)).ToList();
+                    }
+
+                    // Fallback to top views if no comics have been marked as featured yet
+                    crit = "views";
+                }
+
                 var query = _context.Comics
                     .AsNoTracking()
                     .Where(c => c.IsPublic)
@@ -945,6 +968,32 @@ namespace NekoHentai.API.Services
             await _context.SaveChangesAsync();
             await InvalidateComicCacheAsync(comic.Slug);
             return comic.IsPublic;
+        }
+
+        public async Task<bool> ToggleComicFeaturedAsync(int id)
+        {
+            var comic = await _context.Comics.FindAsync(id);
+            if (comic == null) return false;
+
+            comic.IsFeatured = !comic.IsFeatured;
+            comic.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            await InvalidateComicCacheAsync(comic.Slug);
+            return comic.IsFeatured;
+        }
+
+        public async Task<List<ComicDto>> GetHotComicsForAdminAsync()
+        {
+            var hotComics = await _context.Comics
+                .AsNoTracking()
+                .Where(c => c.IsFeatured)
+                .OrderByDescending(c => c.UpdatedAt)
+                .ThenByDescending(c => c.Id)
+                .Include(c => c.ComicCategories).ThenInclude(cc => cc.Category)
+                .Include(c => c.Chapters)
+                .ToListAsync();
+
+            return hotComics.Select(c => MapToComicDto(c)).ToList();
         }
 
         public async Task<bool> DeleteComicAsync(int id)

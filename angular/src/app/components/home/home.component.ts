@@ -66,7 +66,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isLoadingHot = true;
 
     // Load Hot Comics for Suggested Carousel (15 items)
-    this.comicService.getFeaturedComics('views', 15).subscribe({
+    this.comicService.getFeaturedComics('hot', 15).subscribe({
       next: (data) => {
         this.hotComics = data;
         // Duplicate items for seamless continuous infinite loop (TruyenGG style)

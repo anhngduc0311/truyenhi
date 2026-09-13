@@ -6,6 +6,9 @@
       <p>Quản lý chi tiết toàn bộ kho truyện, tìm kiếm, chỉnh sửa, tải ảnh bìa và phân quyền hiển thị.</p>
     </div>
     <div class="header-actions">
+      <button (click)="openHotModal()" class="btn btn-hot-manager">
+        <i class="fa-solid fa-fire text-orange"></i> Quản Lý Truyện Hot ({{ getFeaturedCount() }})
+      </button>
       <a routerLink="/admin/stories/create" class="btn btn-primary">
         <i class="fa-solid fa-plus"></i> Thêm Truyện Mới
       </a>
@@ -73,6 +76,16 @@
         </select>
       </div>
 
+      <!-- Hot / Featured Filter -->
+      <div class="filter-item">
+        <label><i class="fa-solid fa-fire text-danger"></i> Mục Hot:</label>
+        <select [(ngModel)]="selectedFeatured" (change)="applyFilters()">
+          <option value="All">Tất cả</option>
+          <option value="Featured">🔥 Đang là Truyện Hot ({{ getFeaturedCount() }})</option>
+          <option value="NotFeatured">Không Hot</option>
+        </select>
+      </div>
+
       <!-- Category Filter -->
       <div class="filter-item">
         <label><i class="fa-solid fa-folder-tree"></i> Thể Loại:</label>
@@ -124,7 +137,8 @@
           <th>Thể Loại</th>
           <th>Trạng Thái</th>
           <th>Lượt Xem</th>
-          <th>Hiển Thị</th>
+          <th style="width: 110px; text-align: center;">Mục Hot</th>
+          <th style="width: 110px; text-align: center;">Hiển Thị</th>
           <th style="width: 140px; text-align: right;">Hành Động</th>
         </tr>
       </thead>
@@ -144,7 +158,7 @@
               <strong class="comic-title">{{ comic.title }}</strong>
               <span class="comic-author" *ngIf="comic.author"><i class="fa-solid fa-user-pen"></i> {{ comic.author }}</span>
               <div class="comic-badges">
-                <span class="badge badge-featured" *ngIf="comic.isFeatured"><i class="fa-solid fa-star"></i> Hero Slide</span>
+                <span class="badge badge-featured" *ngIf="comic.isFeatured"><i class="fa-solid fa-fire"></i> Truyện Hot</span>
                 <span class="rating-tag"><i class="fa-solid fa-star text-warning"></i> {{ comic.rating }}</span>
               </div>
             </div>
@@ -165,7 +179,18 @@
               <span class="views-count"><i class="fa-solid fa-eye"></i> {{ comic.views | number }}</span>
             </div>
           </td>
-          <td>
+          <td style="text-align: center;">
+            <!-- Toggle Hot / Featured Switch -->
+            <button class="hot-toggle-btn" 
+                    [class.is-hot]="comic.isFeatured" 
+                    [class.not-hot]="!comic.isFeatured"
+                    (click)="toggleFeatured(comic)" 
+                    [title]="comic.isFeatured ? 'Bấm để gỡ khỏi mục Truyện Hot ngoài Trang Chủ' : 'Bấm để ghim vào mục Truyện Hot ngoài Trang Chủ'">
+              <i class="fa-solid fa-fire"></i>
+              {{ comic.isFeatured ? 'Đang Hot' : '+ Đặt Hot' }}
+            </button>
+          </td>
+          <td style="text-align: center;">
             <!-- Toggle Visibility Switch -->
             <button class="visibility-btn" 
                     [class.is-public]="comic.isPublic !== false" 
@@ -250,7 +275,7 @@
           <div class="form-group checkbox-row full-width">
             <label class="checkbox-label">
               <input type="checkbox" [(ngModel)]="comicForm.isFeatured" name="isFeatured" /> 
-              <span><i class="fa-solid fa-star text-warning"></i> Đặt làm Truyện Nổi Bật (Hero Slide Trang Chủ)</span>
+              <span><i class="fa-solid fa-fire text-warning"></i> Đặt làm Truyện Hot (Hiển thị tại mục Truyện Hot ngoài Trang Chủ)</span>
             </label>
 
             <label class="checkbox-label">
@@ -332,6 +357,81 @@
       <button type="button" (click)="saveCoverImage()" class="btn btn-primary">
         <i class="fa-solid fa-floppy-disk"></i> Lưu Ảnh Bìa Mới
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL 3: HOT COMICS MANAGER MODAL
+     ========================================================================== -->
+<div class="modal-overlay" *ngIf="showHotModal" (click)="closeHotModal()">
+  <div class="modal-card bg-glass hot-manager-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="fa-solid fa-fire text-orange"></i> Quản Lý Danh Sách Truyện Hot Trang Chủ
+      </h3>
+      <button (click)="closeHotModal()" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <p class="hot-modal-desc">
+        Các bộ truyện dưới đây sẽ được hiển thị trên thanh trượt <strong>"TRUYỆN HOT"</strong> ngoài Trang chủ. Bạn có thể bấm gỡ bỏ hoặc tìm kiếm truyện bên dưới để đưa vào.
+      </p>
+
+      <!-- Active Hot Comics List -->
+      <div class="hot-section-title">
+        <span>🔥 Đang hiển thị ở mục Hot ({{ hotComicsList.length }} truyện)</span>
+      </div>
+
+      <div class="hot-cards-list" *ngIf="hotComicsList.length > 0; else noHotState">
+        <div class="hot-card-item" *ngFor="let hComic of hotComicsList">
+          <img [src]="hComic.coverImage || 'assets/images/default-cover.jpg'" [alt]="hComic.title" class="hot-card-cover" />
+          <div class="hot-card-info">
+            <strong class="hot-card-title">{{ hComic.title }}</strong>
+            <span class="hot-card-sub"><i class="fa-solid fa-eye"></i> {{ hComic.views | number }} lượt xem • #{{ hComic.id }}</span>
+          </div>
+          <button class="btn-remove-hot" (click)="toggleFeatured(hComic)" title="Gỡ khỏi Truyện Hot">
+            <i class="fa-solid fa-xmark"></i> Gỡ Hot
+          </button>
+        </div>
+      </div>
+
+      <ng-template #noHotState>
+        <div class="empty-hot-notice">
+          <i class="fa-solid fa-fire-burner"></i>
+          <p>Hiện chưa có truyện nào được chọn làm Truyện Hot. Ngoài Trang chủ đang tự động lấy theo truyện có lượt xem cao nhất.</p>
+        </div>
+      </ng-template>
+
+      <!-- Search & Add More Comics to Hot -->
+      <div class="hot-section-title" style="margin-top: 1.5rem;">
+        <span><i class="fa-solid fa-plus-circle"></i> Thêm truyện khác vào Truyện Hot</span>
+      </div>
+
+      <div class="hot-search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" [(ngModel)]="hotSearchTerm" placeholder="Nhập tên truyện muốn thêm vào Hot..." />
+      </div>
+
+      <div class="hot-candidate-list" *ngIf="hotSearchTerm.trim()">
+        <div class="hot-candidate-item" *ngFor="let candidate of nonHotComicsSearch">
+          <img [src]="candidate.coverImage || 'assets/images/default-cover.jpg'" [alt]="candidate.title" class="cand-cover" />
+          <div class="cand-info">
+            <span class="cand-title">{{ candidate.title }}</span>
+            <small class="cand-sub"><i class="fa-solid fa-eye"></i> {{ candidate.views | number }} lượt xem</small>
+          </div>
+          <button class="btn btn-sm btn-primary" (click)="toggleFeatured(candidate)">
+            <i class="fa-solid fa-plus"></i> Thêm Hot
+          </button>
+        </div>
+        <div class="no-candidate-found" *ngIf="nonHotComicsSearch.length === 0">
+          Không tìm thấy truyện phù hợp hoặc truyện đã nằm trong mục Hot.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="closeHotModal()" class="btn btn-secondary">Đóng</button>
     </div>
   </div>
 </div>
