@@ -19,22 +19,22 @@
       </div>
 
       <div class="history-list-box" *ngIf="!isLoading && historyItems.length > 0">
-        <div class="history-item-row" *ngFor="let item of historyItems">
+        <div class="history-item-row" *ngFor="let item of historyItems; trackBy: trackByHistoryId">
           <a [routerLink]="['/comic', item.comic.slug]" class="thumb">
-            <img [src]="item.comic.coverImage" [alt]="item.comic.title" />
+            <img [src]="item.comic.coverImage" [alt]="item.comic.title" loading="lazy" decoding="async" />
           </a>
           <div class="details">
             <h3 class="title">
-              <a [routerLink]="['/comic', item.comic.slug]">{{ item.comic.title }}</a>
+              <a [routerLink]="['/comic', item.comic.slug]" [title]="item.comic.title">{{ item.comic.title }}</a>
             </h3>
             <p class="current-chapter" *ngIf="item.chapter">
               Đang đọc: <a [routerLink]="['/read', item.comic.slug, 'chuong-' + item.chapter.chapterNumber]">{{ item.chapter | chapterDisplay:item.comic:'Chapter ':true }}</a>
             </p>
-            <span class="read-date"><i class="fa fa-clock-o"></i> {{ item.lastReadAt | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span class="read-date"><i class="fa fa-clock-o"></i> {{ item.lastReadAt | timeAgo }}</span>
           </div>
           <div class="action">
-            <a [routerLink]="['/read', item.comic.slug, 'chuong-' + item.chapter.chapterNumber]" class="btn-read-continue">
-              Đọc Tiếp <i class="fa fa-angle-right"></i>
+            <a [routerLink]="['/read', item.comic.slug, 'chuong-' + item.chapter.chapterNumber]" class="btn-read-continue" title="Đọc tiếp chương này">
+              <span>Đọc Tiếp</span> <i class="fa fa-angle-right"></i>
             </a>
           </div>
         </div>

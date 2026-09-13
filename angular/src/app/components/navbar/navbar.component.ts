@@ -187,6 +187,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (this.isMobileMenuOpen) {
       this.isUserDropdownOpen = false;
       this.isAutocompleteOpen = false;
+      if (this.categories.length === 0) {
+        this.loadCategories();
+      }
     }
   }
 
