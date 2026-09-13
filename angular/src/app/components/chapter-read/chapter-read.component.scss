@@ -518,6 +518,9 @@
       border: none;
       outline: none;
       background-color: #07090e;
+      content-visibility: auto;
+      contain-intrinsic-size: auto 800px;
+      transform: translateZ(0);
 
       &:not(.is-loaded):not(.is-error) {
         min-height: 650px;

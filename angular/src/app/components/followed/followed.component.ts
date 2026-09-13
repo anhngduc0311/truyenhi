@@ -4,11 +4,13 @@ import { RouterModule } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { Bookmark } from '../../models/user.model';
 import { ChapterDisplayPipe } from '../../pipes/chapter-display.pipe';
+import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
+import { CompactNumberPipe } from '../../pipes/compact-number.pipe';
 
 @Component({
   selector: 'app-followed',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChapterDisplayPipe],
+  imports: [CommonModule, RouterModule, ChapterDisplayPipe, TimeAgoPipe, CompactNumberPipe],
   templateUrl: './followed.component.html',
   styleUrls: ['./followed.component.scss']
 })
@@ -64,5 +66,13 @@ export class FollowedComponent implements OnInit {
     if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
     if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
     return Math.floor(n).toString();
+  }
+
+  trackByBookmarkId(index: number, b: Bookmark): number {
+    return b?.comicId ?? index;
+  }
+
+  trackByChapterId(index: number, ch: any): number {
+    return ch?.id ?? index;
   }
 }

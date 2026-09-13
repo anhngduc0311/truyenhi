@@ -2,8 +2,7 @@
    NEKOHENTAI NEXT-GEN DESIGN SYSTEM & GLOBAL STYLES
    ============================================================================ */
 
-/* Google Fonts Import */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
+/* Fonts are loaded via high-priority preconnected <link> in index.html */
 
 /* CSS Variables */
 :root {
@@ -93,10 +92,10 @@
   --radius-xl: 28px;
   --radius-pill: 9999px;
 
-  /* Transitions */
-  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* High-Performance GPU-Friendly Transitions */
+  --transition-fast: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  --transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  --transition-slow: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
 /* Enforce Dark Theme for body and data-theme */
@@ -423,9 +422,12 @@ button, input, select, textarea {
   overflow: visible;
   transition: transform 0.25s ease;
   position: relative;
+  content-visibility: auto;
+  contain-intrinsic-size: 170px 240px;
+  transform: translateZ(0);
 
   &:hover {
-    transform: translateY(-4px);
+    transform: translateY(-4px) translateZ(0);
 
     .book_avatar img {
       transform: scale(1.05);

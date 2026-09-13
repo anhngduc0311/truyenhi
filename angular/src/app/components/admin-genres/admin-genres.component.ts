@@ -15,10 +15,20 @@ import { Category } from '../../models/comic.model';
 export class AdminGenresComponent implements OnInit {
   genres: Category[] = [];
   filteredGenres: Category[] = [];
+  paginatedGenres: Category[] = [];
 
   isLoading: boolean = true;
   message: string = '';
   isError: boolean = false;
+
+  // View mode: 'table' (compact list, default) | 'grid' (compact cards)
+  viewMode: 'table' | 'grid' = 'table';
+
+  // Pagination
+  currentPage: number = 1;
+  pageSize: number = 30;
+  totalPages: number = 1;
+  pageSizeOptions: number[] = [15, 30, 60, 100];
 
   // Search & Filters
   searchTerm: string = '';
@@ -55,6 +65,10 @@ export class AdminGenresComponent implements OnInit {
   constructor(private comicService: ComicService) {}
 
   ngOnInit(): void {
+    const savedMode = localStorage.getItem('admin_genres_view_mode');
+    if (savedMode === 'table' || savedMode === 'grid') {
+      this.viewMode = savedMode;
+    }
     this.loadGenres();
   }
 
@@ -123,10 +137,63 @@ export class AdminGenresComponent implements OnInit {
     });
 
     this.filteredGenres = result;
+    this.updatePagination();
+  }
+
+  setViewMode(mode: 'table' | 'grid'): void {
+    this.viewMode = mode;
+    localStorage.setItem('admin_genres_view_mode', mode);
+  }
+
+  updatePagination(): void {
+    this.totalPages = Math.max(1, Math.ceil(this.filteredGenres.length / this.pageSize));
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+    const start = (this.currentPage - 1) * this.pageSize;
+    this.paginatedGenres = this.filteredGenres.slice(start, start + this.pageSize);
+  }
+
+  onPageChange(page: number): void {
+    if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
+      this.currentPage = page;
+      this.updatePagination();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  onPageSizeChange(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    if (target) {
+      this.pageSize = parseInt(target.value, 10) || 30;
+      this.currentPage = 1;
+      this.updatePagination();
+    }
+  }
+
+  getPageNumbers(): (number | string)[] {
+    const pages: (number | string)[] = [];
+    const total = this.totalPages;
+    const current = this.currentPage;
+
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+      return pages;
+    }
+
+    pages.push(1);
+    if (current > 3) pages.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
   }
 
   setFilterStatus(status: 'all' | 'has_comics' | 'no_comics'): void {
     this.filterStatus = status;
+    this.currentPage = 1;
     this.applyFilters();
   }
 

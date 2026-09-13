@@ -6,11 +6,13 @@ import { ComicService } from '../../services/comic.service';
 import { SeoService } from '../../services/seo.service';
 import { Comic, Category } from '../../models/comic.model';
 import { ChapterDisplayPipe } from '../../pipes/chapter-display.pipe';
+import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
+import { CompactNumberPipe } from '../../pipes/compact-number.pipe';
 
 @Component({
   selector: 'app-comic-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ChapterDisplayPipe],
+  imports: [CommonModule, RouterModule, FormsModule, ChapterDisplayPipe, TimeAgoPipe, CompactNumberPipe],
   templateUrl: './comic-list.component.html',
   styleUrls: ['./comic-list.component.scss']
 })
@@ -273,5 +275,17 @@ export class ComicListComponent implements OnInit {
     if (target) {
       target.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=190&q=80';
     }
+  }
+
+  trackByComicId(index: number, comic: Comic): number {
+    return comic?.id ?? index;
+  }
+
+  trackByChapterId(index: number, ch: any): number {
+    return ch?.id ?? index;
+  }
+
+  trackByIndex(index: number): number {
+    return index;
   }
 }

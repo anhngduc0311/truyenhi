@@ -102,24 +102,24 @@
         </button>
 
         <!-- Viewport & Track -->
-        <div class="suggest-slider-viewport" #suggestContainer (scroll)="onSuggestScroll()">
+        <div class="suggest-slider-viewport" #suggestContainer>
           <div class="suggest-slider-track">
             <!-- Original & Cloned items for seamless infinite loop -->
-            <div class="comic-card-v3 suggest-card" *ngFor="let comic of displayHotComics; let i = index">
+            <div class="comic-card-v3 suggest-card" *ngFor="let comic of displayHotComics; let i = index; trackBy: trackByIndex">
               <div class="book_avatar">
                 <a [routerLink]="['/comic', comic.slug]">
-                  <img [src]="comic.coverImage" [alt]="comic.title" loading="lazy" (error)="onImgError($event)" />
+                  <img [src]="comic.coverImage" [alt]="comic.title" loading="lazy" decoding="async" (error)="onImgError($event)" />
                 </a>
                 <div class="top-notice-left" *ngIf="comic.updatedAt">
-                  <span class="time-badge">{{ formatTimeAgo(comic.updatedAt) }}</span>
+                  <span class="time-badge">{{ comic.updatedAt | timeAgo }}</span>
                 </div>
                 <div class="top-notice-right" *ngIf="comic.isFeatured || comic.views > 10000 || i % 2 === 0">
                   <span class="type-label hot">HOT</span>
                 </div>
                 <div class="cover-stats-overlay">
-                  <span class="stat-item"><i class="fa fa-eye"></i> {{ formatNumber(comic.views || 0) }}</span>
-                  <span class="stat-item"><i class="fa fa-heart"></i> {{ formatNumber(comic.likesCount || (comic.views ?
-                    (comic.views / 50) : 0)) }}</span>
+                  <span class="stat-item"><i class="fa fa-eye"></i> {{ comic.views | compactNumber }}</span>
+                  <span class="stat-item"><i class="fa fa-heart"></i> {{ (comic.likesCount || (comic.views ?
+                    (comic.views / 50) : 0)) | compactNumber }}</span>
                 </div>
               </div>
               <div class="book_info">
@@ -158,7 +158,7 @@
 
       <!-- Quick Filter Chips Bar -->
       <div class="filter-chips-bar">
-        <button *ngFor="let chip of filterChips" class="chip-btn" [class.active]="selectedFilter === chip.key"
+        <button *ngFor="let chip of filterChips; trackBy: trackByIndex" class="chip-btn" [class.active]="selectedFilter === chip.key"
           (click)="setFilter(chip.key)">
           <i class="fa" [ngClass]="chip.icon"></i>
           <span>{{ chip.label }}</span>
@@ -167,20 +167,19 @@
 
       <!-- Latest Comics Grid -->
       <div class="comics-grid-modern" *ngIf="!isLoading; else gridSkeleton">
-        <div class="comic-card-v3" *ngFor="let comic of filteredComics; let i = index">
+        <div class="comic-card-v3" *ngFor="let comic of filteredComics; let i = index; trackBy: trackByComicId">
           <div class="book_avatar">
             <a [routerLink]="['/comic', comic.slug]">
-              <img [src]="comic.coverImage" [alt]="comic.title" loading="lazy" (error)="onImgError($event)" />
+              <img [src]="comic.coverImage" [alt]="comic.title" loading="lazy" decoding="async" (error)="onImgError($event)" />
             </a>
             <div class="top-notice-right" *ngIf="comic.isFeatured || comic.views > 10000 || i % 2 === 0">
               <span class="type-label hot">HOT!</span>
             </div>
             <div class="cover-stats-overlay">
-              <span class="stat-item"><i class="fa fa-eye"></i> {{ formatNumber(comic.views || 0) }}</span>
-              <span class="stat-item"><i class="fa fa-comment-o"></i> {{ formatNumber(comic.commentsCount || 0)
-                }}</span>
-              <span class="stat-item"><i class="fa fa-heart"></i> {{ formatNumber(comic.likesCount || (comic.views ?
-                (comic.views / 50) : 0)) }}</span>
+              <span class="stat-item"><i class="fa fa-eye"></i> {{ comic.views | compactNumber }}</span>
+              <span class="stat-item"><i class="fa fa-comment-o"></i> {{ comic.commentsCount | compactNumber }}</span>
+              <span class="stat-item"><i class="fa fa-heart"></i> {{ (comic.likesCount || (comic.views ?
+                (comic.views / 50) : 0)) | compactNumber }}</span>
             </div>
           </div>
 
@@ -193,10 +192,10 @@
 
             <div class="chapters-preview"
               *ngIf="comic.recentChapters && comic.recentChapters.length > 0; else singleLatestGrid">
-              <div class="chapter-row-clean" *ngFor="let ch of comic.recentChapters | slice:0:3">
+              <div class="chapter-row-clean" *ngFor="let ch of comic.recentChapters | slice:0:3; trackBy: trackByChapterId">
                 <a [routerLink]="['/comic', comic.slug, 'chapter', ch.id]" class="ch-name">{{ ch |
                   chapterDisplay:comic:'Chapter ' }}</a>
-                <span class="ch-time">{{ formatTimeAgo(ch.createdAt || comic.updatedAt) }}</span>
+                <span class="ch-time">{{ (ch.createdAt || comic.updatedAt) | timeAgo }}</span>
               </div>
             </div>
             <ng-template #singleLatestGrid>
@@ -204,7 +203,7 @@
                 <div class="chapter-row-clean">
                   <a [routerLink]="['/comic', comic.slug, 'chapter', comic.latestChapter.id]" class="ch-name">{{
                     comic.latestChapter | chapterDisplay:comic:'Chapter ' }}</a>
-                  <span class="ch-time">{{ formatTimeAgo(comic.latestChapter.createdAt || comic.updatedAt) }}</span>
+                  <span class="ch-time">{{ (comic.latestChapter.createdAt || comic.updatedAt) | timeAgo }}</span>
                 </div>
               </div>
               <ng-template #noChaptersGrid>
@@ -216,7 +215,7 @@
                     <ng-template #comingSoonHome>
                       <span class="ch-name ch-updating"><i class="fa fa-clock-o"></i> Đang cập nhật</span>
                     </ng-template>
-                    <span class="ch-time">{{ formatTimeAgo(comic.updatedAt) }}</span>
+                    <span class="ch-time">{{ comic.updatedAt | timeAgo }}</span>
                   </div>
                 </div>
               </ng-template>

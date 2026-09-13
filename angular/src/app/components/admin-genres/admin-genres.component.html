@@ -113,6 +113,7 @@
     </div>
 
     <div class="filters-group">
+      <!-- Sort -->
       <div class="filter-item">
         <label><i class="fa-solid fa-arrow-down-short-wide"></i> Sắp Xếp:</label>
         <select [(ngModel)]="sortBy" (change)="applyFilters()">
@@ -123,6 +124,24 @@
           <option value="id">ID thể loại (Mới -> Cũ)</option>
         </select>
       </div>
+
+      <!-- View Mode Toggle -->
+      <div class="view-mode-toggle">
+        <button type="button" 
+                class="btn-toggle-view" 
+                [class.active]="viewMode === 'table'" 
+                (click)="setViewMode('table')" 
+                title="Dạng bảng danh sách gọn">
+          <i class="fa-solid fa-list-ul"></i> <span>Bảng Gọn</span>
+        </button>
+        <button type="button" 
+                class="btn-toggle-view" 
+                [class.active]="viewMode === 'grid'" 
+                (click)="setViewMode('grid')" 
+                title="Dạng thẻ mini">
+          <i class="fa-solid fa-grip"></i> <span>Thẻ Mini</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -132,11 +151,20 @@
     <p>Đang tải danh sách thể loại...</p>
   </div>
 
-  <!-- Genre Cards Grid -->
-  <div class="genres-grid-container" *ngIf="!isLoading">
-    <!-- Results summary info -->
-    <div class="results-meta" *ngIf="filteredGenres.length > 0">
-      <span>Hiển thị <strong>{{ filteredGenres.length }}</strong> thể loại</span>
+  <!-- Main Content Container -->
+  <div class="genres-content-container" *ngIf="!isLoading">
+    <!-- Meta info & Page size bar -->
+    <div class="results-meta-bar" *ngIf="filteredGenres.length > 0">
+      <div class="results-count">
+        Hiển thị <strong>{{ filteredGenres.length }}</strong> thể loại 
+        <span class="page-current-info" *ngIf="totalPages > 1">• Trang {{ currentPage }} / {{ totalPages }}</span>
+      </div>
+      <div class="page-size-selector">
+        <label>Hiển thị:</label>
+        <select [ngModel]="pageSize" (change)="onPageSizeChange($event)">
+          <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }} mục/trang</option>
+        </select>
+      </div>
     </div>
 
     <!-- Empty State -->
@@ -149,62 +177,134 @@
       </button>
     </div>
 
-    <!-- Cards Grid -->
-    <div class="genres-grid" *ngIf="filteredGenres.length > 0">
-      <div *ngFor="let genre of filteredGenres" class="genre-card bg-glass">
-        <!-- Card Cover Banner -->
-        <div class="card-cover">
-          <img [src]="genre.imageUrl || defaultFallbackCover"
-               [alt]="genre.name"
-               (error)="onImageError($event)"
-               loading="lazy" />
-          <div class="cover-gradient"></div>
-          
-          <span class="card-id-tag">#{{ genre.id }}</span>
+    <!-- 1. COMPACT TABLE VIEW (DEFAULT) -->
+    <div class="table-container bg-glass" *ngIf="viewMode === 'table' && filteredGenres.length > 0">
+      <table class="admin-table genre-compact-table">
+        <thead>
+          <tr>
+            <th style="width: 60px;">ID</th>
+            <th style="width: 200px;">Tên Thể Loại</th>
+            <th style="width: 140px;">Đường Dẫn (Slug)</th>
+            <th>Mô Tả</th>
+            <th style="width: 110px; text-align: center;">Số Truyện</th>
+            <th style="width: 120px; text-align: right;">Hành Động</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let genre of paginatedGenres">
+            <td class="id-cell">#{{ genre.id }}</td>
+            <td>
+              <div class="genre-name-cell">
+                <strong class="genre-name-text">{{ genre.name }}</strong>
+              </div>
+            </td>
+            <td>
+              <span class="genre-slug-badge" [title]="genre.slug">/{{ genre.slug }}</span>
+            </td>
+            <td>
+              <span class="genre-desc-cell" [title]="genre.description">
+                {{ genre.description || 'Chưa có mô tả' }}
+              </span>
+            </td>
+            <td style="text-align: center;">
+              <span class="comic-count-pill" [class.is-zero]="!genre.comicCount || genre.comicCount === 0">
+                <i class="fa-solid fa-book"></i> {{ genre.comicCount || 0 }}
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <div class="actions-group">
+                <a [routerLink]="['/categories']"
+                   [queryParams]="{ category: genre.slug }"
+                   class="btn btn-icon btn-view"
+                   title="Xem danh sách truyện thể loại {{ genre.name }}">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+                <button (click)="openEditModal(genre)"
+                        class="btn btn-icon btn-edit"
+                        title="Chỉnh sửa thể loại {{ genre.name }}">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button (click)="deleteGenre(genre)"
+                        class="btn btn-icon btn-delete"
+                        title="Xóa thể loại {{ genre.name }}">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-          <span class="comic-count-badge" [class.badge-zero]="!genre.comicCount || genre.comicCount === 0">
-            <i class="fa-solid fa-book"></i>
-            <span>{{ genre.comicCount || 0 }} truyện</span>
+    <!-- 2. COMPACT MINI CARDS GRID (ALTERNATIVE) -->
+    <div class="genres-mini-grid" *ngIf="viewMode === 'grid' && filteredGenres.length > 0">
+      <div *ngFor="let genre of paginatedGenres" class="genre-mini-card bg-glass">
+        <div class="mini-card-top">
+          <div class="mini-card-header">
+            <span class="mini-card-id">#{{ genre.id }}</span>
+            <h4 class="mini-card-title" [title]="genre.name">{{ genre.name }}</h4>
+            <span class="mini-card-slug" [title]="'Slug: ' + genre.slug">/{{ genre.slug }}</span>
+          </div>
+          <span class="comic-count-pill" [class.is-zero]="!genre.comicCount || genre.comicCount === 0">
+            <i class="fa-solid fa-book"></i> {{ genre.comicCount || 0 }}
           </span>
         </div>
 
-        <!-- Card Body -->
-        <div class="card-body">
-          <div class="genre-header">
-            <h3 class="genre-name" [title]="genre.name">{{ genre.name }}</h3>
-            <span class="genre-slug-tag" [title]="'Slug: ' + genre.slug">/{{ genre.slug }}</span>
-          </div>
+        <p class="mini-card-desc" [class.empty-desc]="!genre.description">
+          {{ genre.description || 'Chưa có mô tả chi tiết.' }}
+        </p>
 
-          <p class="genre-desc" [class.empty-desc]="!genre.description">
-            {{ genre.description || 'Chưa có mô tả chi tiết cho thể loại này.' }}
-          </p>
-
-          <!-- Action Buttons Bar -->
-          <div class="card-actions">
-            <a [routerLink]="['/categories']"
-               [queryParams]="{ category: genre.slug }"
-               class="btn-action btn-view"
-               title="Xem danh sách truyện thể loại {{ genre.name }}">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i>
-              <span>Xem Truyện</span>
-            </a>
-
-            <button (click)="openEditModal(genre)"
-                    class="btn-action btn-edit"
-                    title="Chỉnh sửa thể loại {{ genre.name }}">
-              <i class="fa-solid fa-pen-to-square"></i>
-              <span>Sửa</span>
-            </button>
-
-            <button (click)="deleteGenre(genre)"
-                    class="btn-action btn-delete"
-                    title="Xóa thể loại {{ genre.name }}">
-              <i class="fa-solid fa-trash-can"></i>
-              <span>Xóa</span>
-            </button>
-          </div>
+        <div class="mini-card-actions">
+          <a [routerLink]="['/categories']"
+             [queryParams]="{ category: genre.slug }"
+             class="btn btn-icon btn-view"
+             title="Xem truyện">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+          <button (click)="openEditModal(genre)"
+                  class="btn btn-icon btn-edit"
+                  title="Sửa">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </button>
+          <button (click)="deleteGenre(genre)"
+                  class="btn btn-icon btn-delete"
+                  title="Xóa">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
         </div>
       </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-wrapper" *ngIf="totalPages > 1">
+      <div class="pagination-info">
+        Trang <span class="highlight">{{ currentPage }}</span> / <span>{{ totalPages }}</span> (Tổng {{ filteredGenres.length }} thể loại)
+      </div>
+      <ul class="pagination-list">
+        <!-- Prev button -->
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <button class="page-link" [disabled]="currentPage === 1" (click)="onPageChange(currentPage - 1)" title="Trang trước">
+            <i class="fa-solid fa-angle-left"></i>
+          </button>
+        </li>
+
+        <!-- Page numbers -->
+        <li class="page-item" *ngFor="let p of getPageNumbers()" [class.active]="p === currentPage" [class.dots]="p === '...'">
+          <button class="page-link" *ngIf="p !== '...'; else dotsBlock" (click)="onPageChange(+p)">
+            {{ p }}
+          </button>
+          <ng-template #dotsBlock>
+            <span class="page-dots">...</span>
+          </ng-template>
+        </li>
+
+        <!-- Next button -->
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <button class="page-link" [disabled]="currentPage === totalPages" (click)="onPageChange(currentPage + 1)" title="Trang sau">
+            <i class="fa-solid fa-angle-right"></i>
+          </button>
+        </li>
+      </ul>
     </div>
   </div>
 </div>

@@ -134,7 +134,6 @@
           <th style="width: 50px;">ID</th>
           <th style="width: 80px;">Ảnh Bìa</th>
           <th>Thông Tin Bộ Truyện</th>
-          <th>Thể Loại</th>
           <th>Trạng Thái</th>
           <th>Lượt Xem</th>
           <th style="width: 110px; text-align: center;">Mục Hot</th>
@@ -161,12 +160,6 @@
                 <span class="badge badge-featured" *ngIf="comic.isFeatured"><i class="fa-solid fa-fire"></i> Truyện Hot</span>
                 <span class="rating-tag"><i class="fa-solid fa-star text-warning"></i> {{ comic.rating }}</span>
               </div>
-            </div>
-          </td>
-          <td>
-            <div class="category-tags">
-              <span *ngFor="let cat of comic.categories" class="cat-tag">{{ cat.name }}</span>
-              <span *ngIf="!comic.categories.length" class="text-muted font-italic">Chưa xếp loại</span>
             </div>
           </td>
           <td>

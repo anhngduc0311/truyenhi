@@ -78,18 +78,18 @@
       <!-- Comic Item Cards Grid -->
       <div class="list_grid_out">
         <ul class="list_grid grid" *ngIf="!isLoading; else gridSkeleton">
-          <li class="comic-item" *ngFor="let comic of comics; let i = index">
+          <li class="comic-item" *ngFor="let comic of comics; let i = index; trackBy: trackByComicId">
             <div class="book_avatar">
               <a [routerLink]="['/comic', comic.slug]">
-                <img [src]="comic.coverImage" [alt]="comic.title" loading="lazy" (error)="onImgError($event)" />
+                <img [src]="comic.coverImage" [alt]="comic.title" loading="lazy" decoding="async" (error)="onImgError($event)" />
               </a>
               <div class="top-notice-right" *ngIf="comic.isFeatured || comic.views > 10000 || i % 2 === 0">
                 <span class="type-label hot">HOT!</span>
               </div>
               <div class="cover-stats-overlay">
-                <span class="stat-item"><i class="fa fa-eye"></i> {{ formatNumber(comic.views || 0) }}</span>
-                <span class="stat-item"><i class="fa fa-comment-o"></i> {{ formatNumber(comic.commentsCount || 0) }}</span>
-                <span class="stat-item"><i class="fa fa-heart"></i> {{ formatNumber(comic.likesCount || (comic.views ? (comic.views / 50) : 0)) }}</span>
+                <span class="stat-item"><i class="fa fa-eye"></i> {{ (comic.views || 0) | compactNumber }}</span>
+                <span class="stat-item"><i class="fa fa-comment-o"></i> {{ (comic.commentsCount || 0) | compactNumber }}</span>
+                <span class="stat-item"><i class="fa fa-heart"></i> {{ (comic.likesCount || (comic.views ? (comic.views / 50) : 0)) | compactNumber }}</span>
               </div>
             </div>
             <div class="book_info">
@@ -99,16 +99,16 @@
                 </h3>
               </div>
               <div class="chapters-preview" *ngIf="comic.recentChapters && comic.recentChapters.length > 0; else singleLatestList">
-                <div class="chapter-row-clean" *ngFor="let ch of comic.recentChapters | slice:0:3">
+                <div class="chapter-row-clean" *ngFor="let ch of comic.recentChapters | slice:0:3; trackBy: trackByChapterId">
                   <a [routerLink]="['/comic', comic.slug, 'chapter', ch.id]" class="ch-name">{{ ch | chapterDisplay:comic:'Chapter ' }}</a>
-                  <span class="ch-time">{{ formatTimeAgo(ch.createdAt || comic.updatedAt) }}</span>
+                  <span class="ch-time">{{ (ch.createdAt || comic.updatedAt) | timeAgo }}</span>
                 </div>
               </div>
               <ng-template #singleLatestList>
                 <div class="chapters-preview" *ngIf="comic.latestChapter; else noChaptersList">
                   <div class="chapter-row-clean">
                     <a [routerLink]="['/comic', comic.slug, 'chapter', comic.latestChapter.id]" class="ch-name">{{ comic.latestChapter | chapterDisplay:comic:'Chapter ' }}</a>
-                    <span class="ch-time">{{ formatTimeAgo(comic.latestChapter.createdAt || comic.updatedAt) }}</span>
+                    <span class="ch-time">{{ (comic.latestChapter.createdAt || comic.updatedAt) | timeAgo }}</span>
                   </div>
                 </div>
                 <ng-template #noChaptersList>
@@ -118,7 +118,7 @@
                       <ng-template #comingSoonList>
                         <span class="ch-name ch-updating"><i class="fa fa-clock-o"></i> Đang cập nhật</span>
                       </ng-template>
-                      <span class="ch-time">{{ formatTimeAgo(comic.updatedAt) }}</span>
+                      <span class="ch-time">{{ comic.updatedAt | timeAgo }}</span>
                     </div>
                   </div>
                 </ng-template>
@@ -129,7 +129,7 @@
 
         <ng-template #gridSkeleton>
           <ul class="list_grid grid">
-            <li class="comic-item" *ngFor="let _ of skeletonCards">
+            <li class="comic-item" *ngFor="let _ of skeletonCards; trackBy: trackByIndex">
               <div class="book_avatar skeleton" style="height: 210px;"></div>
               <div class="book_info">
                 <div class="skeleton skeleton-text" style="width: 85%;"></div>

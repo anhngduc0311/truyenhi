@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -43,6 +43,7 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
   showHint: boolean = false;
   private lastScrollY: number = 0;
   private scrollThreshold: number = 4;
+  private scrollListenerRemover: (() => void) | null = null;
 
   // Preloading & Reading Position states
   private preloadedChapterId: number | null = null;
@@ -122,7 +123,9 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
     public authService: AuthService,
     private reportService: ReportService,
     private seoService: SeoService,
-    private location: Location
+    private location: Location,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -132,6 +135,12 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
     this.checkHintVisibility();
 
     document.addEventListener('fullscreenchange', this.onFullscreenChangeListener);
+
+    this.ngZone.runOutsideAngular(() => {
+      const onScroll = () => this.handleWindowScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      this.scrollListenerRemover = () => window.removeEventListener('scroll', onScroll);
+    });
 
     this.route.params.subscribe(params => {
       const slug = params['slug'];
@@ -151,6 +160,10 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stopAutoScroll();
     document.removeEventListener('fullscreenchange', this.onFullscreenChangeListener);
+    if (this.scrollListenerRemover) {
+      this.scrollListenerRemover();
+      this.scrollListenerRemover = null;
+    }
   }
 
 
@@ -413,33 +426,41 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
     }
   }
 
-  @HostListener('window:scroll', [])
-  onWindowScroll(): void {
+  private handleWindowScroll(): void {
     const currentScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-    this.showScrollTop = currentScrollY > 400;
+    const newShowScrollTop = currentScrollY > 400;
 
+    let newIsHeaderHidden = this.isHeaderHidden;
     // Smart Auto-hide logic: reveal header instantly when scrolling UP
     if (!this.isPinned) {
       if (currentScrollY <= 60) {
         // At the top: always show header
-        this.isHeaderHidden = false;
+        newIsHeaderHidden = false;
       } else if (currentScrollY > this.lastScrollY + this.scrollThreshold) {
         // Scrolling down: smoothly hide header
-        this.isHeaderHidden = true;
+        newIsHeaderHidden = true;
       } else if (currentScrollY < this.lastScrollY - this.scrollThreshold) {
         // Scrolling up: reveal header immediately
-        this.isHeaderHidden = false;
+        newIsHeaderHidden = false;
       }
     }
 
     this.lastScrollY = Math.max(0, currentScrollY);
+
+    // Only trigger Angular change detection when visible UI toggles change
+    if (newShowScrollTop !== this.showScrollTop || newIsHeaderHidden !== this.isHeaderHidden) {
+      this.ngZone.run(() => {
+        this.showScrollTop = newShowScrollTop;
+        this.isHeaderHidden = newIsHeaderHidden;
+        this.cdr.markForCheck();
+      });
+    }
 
     // Save scroll position for the current chapter (throttled 300ms)
     if (this.chapter && currentScrollY > 50) {
       if (this.saveScrollTimeout) clearTimeout(this.saveScrollTimeout);
       this.saveScrollTimeout = setTimeout(() => {
         if (this.chapter) {
-          localStorage.setItem(`nekohentai_scroll_${this.chapter.id}`, currentScrollY.toString());
           localStorage.setItem(`nekohentai_scroll_${this.chapter.id}`, currentScrollY.toString());
         }
       }, 300);
@@ -880,5 +901,9 @@ export class ChapterReadComponent implements OnInit, OnDestroy {
         this.reportErrorMessage = 'Có lỗi xảy ra khi gửi báo lỗi. Vui lòng thử lại sau.';
       }
     });
+  }
+
+  trackByIndex(index: number): number {
+    return index;
   }
 }

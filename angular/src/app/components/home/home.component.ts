@@ -1,34 +1,30 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, AfterViewInit, ViewChild, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ComicService } from '../../services/comic.service';
 import { SeoService } from '../../services/seo.service';
 import { Comic, Category } from '../../models/comic.model';
 import { ChapterDisplayPipe } from '../../pipes/chapter-display.pipe';
+import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
+import { CompactNumberPipe } from '../../pipes/compact-number.pipe';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, ChapterDisplayPipe],
+  imports: [CommonModule, RouterModule, ChapterDisplayPipe, TimeAgoPipe, CompactNumberPipe],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit, OnDestroy {
+export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('suggestContainer') suggestContainer?: ElementRef<HTMLDivElement>;
 
-  featuredComics: Comic[] = [];
   latestComics: Comic[] = [];
   hotComics: Comic[] = [];
   categories: Category[] = [];
 
-  activeSpotlightIndex: number = 0;
-  private spotlightTimer?: any;
-
-
   selectedFilter: string = 'all';
   filterChips = [
     { label: 'Tất Cả', key: 'all', icon: 'fa-globe' },
-    // { label: 'Mới Nhất', key: 'new', icon: 'fa-bolt' },
     { label: 'Hot Tuần', key: 'hot', icon: 'fa-fire' },
     { label: 'Manhwa', key: 'manhwa', icon: 'fa-flag' }
   ];
@@ -40,15 +36,16 @@ export class HomeComponent implements OnInit, OnDestroy {
   skeletonHotCards: number[] = Array(8).fill(0);
   skeletonCards: number[] = Array(12).fill(0);
 
-  constructor(
-    private comicService: ComicService,
-    private seoService: SeoService
-  ) { }
-
   private suggestTimer?: any;
   private isSuggestHovered: boolean = false;
   displayHotComics: Comic[] = [];
   private isSliding: boolean = false;
+
+  constructor(
+    private comicService: ComicService,
+    private seoService: SeoService,
+    private ngZone: NgZone
+  ) { }
 
   ngOnInit(): void {
     this.seoService.setHomeSeo();
@@ -56,8 +53,20 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.startSuggestAutoScroll();
   }
 
+  ngAfterViewInit(): void {
+    if (this.suggestContainer?.nativeElement) {
+      // Attach passive scroll listener outside Angular zone to achieve 60-120fps smooth scrolling
+      this.ngZone.runOutsideAngular(() => {
+        this.suggestContainer!.nativeElement.addEventListener(
+          'scroll',
+          () => this.checkInfiniteLoopReset(),
+          { passive: true }
+        );
+      });
+    }
+  }
+
   ngOnDestroy(): void {
-    this.stopSpotlightAutoPlay();
     this.stopSuggestAutoScroll();
   }
 
@@ -91,20 +100,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  startSpotlightAutoPlay(): void {
-    this.spotlightTimer = setInterval(() => {
-      if (this.featuredComics.length > 0) {
-        this.activeSpotlightIndex = (this.activeSpotlightIndex + 1) % this.featuredComics.length;
-      }
-    }, 6000);
-  }
-
-  stopSpotlightAutoPlay(): void {
-    if (this.spotlightTimer) {
-      clearInterval(this.spotlightTimer);
-    }
-  }
-
   get itemWidth(): number {
     if (!this.suggestContainer?.nativeElement) return 174;
     const firstCard = this.suggestContainer.nativeElement.querySelector('.suggest-card') as HTMLElement;
@@ -113,10 +108,13 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   startSuggestAutoScroll(): void {
     this.stopSuggestAutoScroll();
-    this.suggestTimer = setInterval(() => {
-      if (this.isSuggestHovered || !this.suggestContainer?.nativeElement || this.isSliding) return;
-      this.scrollSuggest('right');
-    }, 3500);
+    // Run timer outside Angular Zone to avoid triggering global Change Detection every 3.5s
+    this.ngZone.runOutsideAngular(() => {
+      this.suggestTimer = setInterval(() => {
+        if (this.isSuggestHovered || !this.suggestContainer?.nativeElement || this.isSliding) return;
+        this.scrollSuggest('right');
+      }, 3500);
+    });
   }
 
   stopSuggestAutoScroll(): void {
@@ -134,10 +132,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isSuggestHovered = false;
   }
 
-  onSuggestScroll(): void {
-    this.checkInfiniteLoopReset();
-  }
-
   private checkInfiniteLoopReset(): void {
     if (!this.suggestContainer?.nativeElement) return;
     const el = this.suggestContainer.nativeElement;
@@ -147,16 +141,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (el.scrollLeft >= oneSetWidth * 2) {
       el.scrollLeft -= oneSetWidth;
     }
-  }
-
-  selectSpotlight(index: number): void {
-    this.activeSpotlightIndex = index;
-    this.stopSpotlightAutoPlay();
-    this.startSpotlightAutoPlay();
-  }
-
-  get currentSpotlight(): Comic | undefined {
-    return this.featuredComics[this.activeSpotlightIndex];
   }
 
   setFilter(key: string): void {
@@ -204,35 +188,23 @@ export class HomeComponent implements OnInit, OnDestroy {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  formatTimeAgo(dateStr?: string): string {
-    if (!dateStr) return 'Vừa xong';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMins < 5) return 'Vừa xong';
-    if (diffMins < 60) return `${diffMins} phút trước`;
-    if (diffHours < 24) return `${diffHours} giờ trước`;
-    if (diffDays < 30) return `${diffDays} ngày trước`;
-    return date.toLocaleDateString('vi-VN');
-  }
-
-  formatNumber(num?: number | string | null): string {
-    if (!num) return '0';
-    const n = typeof num === 'string' ? parseFloat(num) : num;
-    if (isNaN(n)) return '0';
-    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-    return Math.floor(n).toString();
-  }
-
   onImgError(event: Event): void {
     const target = event.target as HTMLImageElement;
     if (target) {
       target.src = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=300&q=80';
     }
+  }
+
+  // DOM Optimization: TrackBy functions
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  trackByComicId(index: number, comic: Comic): number {
+    return comic.id;
+  }
+
+  trackByChapterId(index: number, ch: any): number {
+    return ch?.id || index;
   }
 }
