@@ -190,6 +190,10 @@ export class ComicService {
     return this.api.put<{ success: boolean; isFeatured: boolean }>(`admin/comics/${id}/toggle-featured`, {});
   }
 
+  unfeatureAllComics(): Observable<{ success: boolean; count: number }> {
+    return this.api.put<{ success: boolean; count: number }>('admin/comics/unfeature-all', {});
+  }
+
   getAdminHotComics(): Observable<Comic[]> {
     return this.api.get<Comic[]>('admin/comics/hot');
   }

@@ -28,7 +28,7 @@
               <button class="btn-remove-bookmark" (click)="removeBookmark(b.comicId, $event)" title="Bỏ theo dõi">
                 <i class="fa fa-times"></i>
               </button>
-              <div class="top-notice-right" *ngIf="b.comic.isFeatured || b.comic.views > 10000 || i % 2 === 0">
+              <div class="top-notice-right" *ngIf="b.comic.isFeatured || b.comic.views > 10000">
                 <span class="type-label hot">HOT!</span>
               </div>
               <div class="cover-stats-overlay">

@@ -20,6 +20,7 @@ import webbrowser
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
+import json
 
 # Fix console encoding
 if sys.platform == 'win32':
@@ -76,17 +77,165 @@ ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
 
+# =============================================================================
+# QUẢN LÝ TIẾN TRÌNH TẢI & NHẬN DIỆN TRUYỆN ĐÃ TẢI (CRAWLER SYNC STATE)
+# =============================================================================
+def normalize_chapter_key(val) -> str:
+    """Chuẩn hóa số chapter về dạng chuỗi thống nhất (vd: 1 -> '1', 1.0 -> '1', 1.5 -> '1.5')"""
+    if val is None:
+        return ""
+    try:
+        f = float(val)
+        return f"{int(f)}" if f.is_integer() else f"{f}"
+    except (ValueError, TypeError):
+        s = str(val).strip()
+        if s.endswith(".0"):
+            return s[:-2]
+        return s
+
+
+class CrawlerSyncStateManager:
+    """Quản lý trạng thái đồng bộ từ crawler_sync_state.json để biết truyện & chapter nào đã tải"""
+    def __init__(self, default_file_path: str = None):
+        self.file_path = None
+        self.data = {
+            "version": 3,
+            "last_updated": datetime.now(timezone.utc).isoformat(),
+            "completed_manga": {},
+            "synced_chapters": {},
+            "failed_manga": {},
+            "stats": {"total_comics": 0, "total_chapters": 0, "total_pages": 0}
+        }
+        # Tự động quét tìm các file tiến trình sẵn có trong thư mục làm việc
+        candidates = []
+        if default_file_path:
+            candidates.append(Path(default_file_path))
+        candidates.extend([
+            Path("crawler_sync_state.json"),
+            Path("mangadex_temp_cache/crawler_sync_state.json"),
+            Path("mangadex_temp_cache/mangadex_sync_state.json"),
+            Path("downloads/crawler_sync_state.json"),
+            Path.home() / "Downloads" / "crawler_sync_state.json",
+            Path.home() / "Downloads" / "mangadex_sync_state.json",
+            Path("../crawler_sync_state.json"),
+            Path("../mangadex_temp_cache/crawler_sync_state.json")
+        ])
+        for p in candidates:
+            if p.exists() and p.is_file():
+                if self.load_from_file(p):
+                    break
+
+    def load_from_file(self, path: Path or str) -> bool:
+        p = Path(path)
+        try:
+            if p.exists() and p.is_file():
+                with open(p, "r", encoding="utf-8") as f:
+                    d = json.load(f)
+                    if isinstance(d, dict):
+                        self.data = d
+                        self.file_path = p.resolve()
+                        return True
+        except Exception as e:
+            print(f"Lỗi khi đọc file sync state ({path}): {e}")
+        return False
+
+    def save(self):
+        """Lưu toàn bộ tiến trình vào file JSON để ghi nhớ cho các lần tải sau"""
+        if not self.file_path:
+            self.file_path = Path("crawler_sync_state.json").resolve()
+        try:
+            self.data["last_updated"] = datetime.now(timezone.utc).isoformat()
+            self.file_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.file_path, "w", encoding="utf-8") as f:
+                json.dump(self.data, f, ensure_ascii=False, indent=2)
+
+            # Đồng thời sao lưu một bản vào thư mục dự án nếu file gốc ở nơi khác (vd: thư mục Downloads)
+            local_p = Path("crawler_sync_state.json").resolve()
+            if self.file_path.resolve() != local_p:
+                try:
+                    with open(local_p, "w", encoding="utf-8") as f_local:
+                        json.dump(self.data, f_local, ensure_ascii=False, indent=2)
+                except Exception:
+                    pass
+            return True
+        except Exception as e:
+            print(f"Lỗi khi ghi file sync state: {e}")
+            return False
+
+    def is_comic_completed(self, slug: str) -> bool:
+        if not slug:
+            return False
+        clean = slug.strip().rstrip("/").split("/")[-1]
+        return clean in self.data.get("completed_manga", {})
+
+    def get_completed_info(self, slug: str) -> dict:
+        if not slug:
+            return None
+        clean = slug.strip().rstrip("/").split("/")[-1]
+        return self.data.get("completed_manga", {}).get(clean)
+
+    def get_synced_chapters(self, slug: str) -> list:
+        if not slug:
+            return []
+        clean = slug.strip().rstrip("/").split("/")[-1]
+        return self.data.get("synced_chapters", {}).get(clean, [])
+
+    def is_chapter_synced(self, slug: str, chap_num_str: str) -> bool:
+        synced = self.get_synced_chapters(slug)
+        norm_key = normalize_chapter_key(chap_num_str)
+        return norm_key in [normalize_chapter_key(x) for x in synced]
+
+    def mark_chapter_synced(self, slug: str, chap_num_str: str):
+        clean = slug.strip().rstrip("/").split("/")[-1]
+        chaps = self.data.setdefault("synced_chapters", {}).setdefault(clean, [])
+        norm_key = normalize_chapter_key(chap_num_str)
+        norm_existing = [normalize_chapter_key(x) for x in chaps]
+        if norm_key not in norm_existing:
+            chaps.append(norm_key)
+            self.save()
+
+    def mark_comic_completed(self, slug: str, title: str, chapters_count: int, pages_count: int = 0, source: str = "HentaiVNReal"):
+        clean = slug.strip().rstrip("/").split("/")[-1]
+        self.data.setdefault("completed_manga", {})[clean] = {
+            "title": title,
+            "slug": clean,
+            "chapters_count": chapters_count,
+            "pages_count": pages_count,
+            "source": source,
+            "synced_at": datetime.now(timezone.utc).isoformat()
+        }
+        if clean in self.data.get("failed_manga", {}):
+            del self.data["failed_manga"][clean]
+        stats = self.data.setdefault("stats", {"total_comics": 0, "total_chapters": 0, "total_pages": 0})
+        stats["total_comics"] = len(self.data.get("completed_manga", {}))
+        stats["total_chapters"] = sum(c.get("chapters_count", 0) for c in self.data.get("completed_manga", {}).values())
+        stats["total_pages"] = stats.get("total_pages", 0) + pages_count
+        self.save()
+
+    @property
+    def completed_count(self) -> int:
+        return len(self.data.get("completed_manga", {}))
+
+    @property
+    def synced_chapters_count(self) -> int:
+        total = 0
+        for ch_list in self.data.get("synced_chapters", {}).values():
+            total += len(ch_list)
+        return total
+
+
 class HentaiVNBatchConfigDialog(ctk.CTkToplevel):
     """Cửa sổ cấu hình tải hàng loạt toàn bộ truyện từ https://hentaivnreal.com/danh-sach theo thứ tự Mới Nhất ➜ Cũ Nhất"""
-    def __init__(self, parent, default_save_dir: str, default_api_url: str, on_start_callback):
+    def __init__(self, parent, default_save_dir: str, default_api_url: str, on_start_callback, sync_state: CrawlerSyncStateManager = None):
         super().__init__(parent)
         self.title("⚡ Tải Toàn Bộ Truyện HentaiVNReal (Mới Nhất ➜ Cũ Nhất)")
-        self.geometry("660x720")
-        self.minsize(580, 640)
+        self.geometry("660x740")
+        self.minsize(580, 660)
         self.resizable(False, False)
         self.default_save_dir = default_save_dir
         self.default_api_url = default_api_url
         self.on_start_callback = on_start_callback
+        self.sync_state = sync_state
 
         self.transient(parent)
         self.grab_set()
@@ -181,6 +330,18 @@ class HentaiVNBatchConfigDialog(ctk.CTkToplevel):
         self.cb_skip_existing.select()
         self.cb_skip_existing.pack(anchor="w", padx=12, pady=4)
 
+        if self.sync_state and self.sync_state.completed_count > 0:
+            c_cnt = self.sync_state.completed_count
+            self.cb_skip_sync_state = ctk.CTkCheckBox(
+                opts_frame, 
+                text=f"⚡ Bỏ qua {c_cnt:,} bộ truyện đã ghi nhận trong crawler_sync_state.json", 
+                fg_color="#10b981"
+            )
+            self.cb_skip_sync_state.select()
+            self.cb_skip_sync_state.pack(anchor="w", padx=12, pady=4)
+        else:
+            self.cb_skip_sync_state = None
+
         self.cb_merge = ctk.CTkCheckBox(opts_frame, text="🧩 Ghép ảnh Manhwa 5-in-1 (Tự động khi chapter > 70 ảnh)", fg_color="#0284c7")
         self.cb_merge.pack(anchor="w", padx=12, pady=4)
 
@@ -260,6 +421,7 @@ class HentaiVNBatchConfigDialog(ctk.CTkToplevel):
             "save_dir": self.save_dir_entry.get().strip(),
             "upload_to_web": self.cb_upload_web.get() == 1,
             "skip_existing": self.cb_skip_existing.get() == 1,
+            "skip_sync_state": self.cb_skip_sync_state.get() == 1 if self.cb_skip_sync_state else True,
             "merge_slices": self.cb_merge.get() == 1,
             "make_pdf": self.cb_pdf.get() == 1,
             "workers": int(self.slider_threads_dialog.get())
@@ -288,8 +450,61 @@ class MangaDownloaderGUI(ctk.CTk):
         self.current_hentai_page = 1
         self.total_hentai_pages = 982
         self.is_fetching_hentai_list = False
+        self.last_hentai_items = []
+
+        # Quản lý tiến trình tải crawler_sync_state.json
+        self.sync_state = CrawlerSyncStateManager()
 
         self._setup_ui()
+        self._update_sync_state_ui()
+
+    def _update_sync_state_ui(self):
+        """Cập nhật nhãn trạng thái của crawler_sync_state.json trên Header"""
+        if not hasattr(self, 'lbl_sync_state_badge'):
+            return
+        c_cnt = self.sync_state.completed_count
+        ch_cnt = self.sync_state.synced_chapters_count
+        if c_cnt > 0:
+            fn = Path(self.sync_state.file_path).name if self.sync_state.file_path else "crawler_sync_state.json"
+            self.lbl_sync_state_badge.configure(
+                text=f"🟢 Đã nạp: {c_cnt:,} bộ ({ch_cnt:,} chaps) • {fn}",
+                text_color="#10b981"
+            )
+        else:
+            self.lbl_sync_state_badge.configure(
+                text="⚪ Chưa nạp crawler_sync_state.json",
+                text_color="#94a3b8"
+            )
+
+    def import_sync_state_file(self):
+        """Mở hộp thoại chọn file crawler_sync_state.json hoặc mangadex_sync_state.json để nạp"""
+        initial_dir = str(Path.cwd())
+        file_path = filedialog.askopenfilename(
+            title="Chọn file crawler_sync_state.json hoặc mangadex_sync_state.json",
+            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
+            initialdir=initial_dir
+        )
+        if file_path:
+            ok = self.sync_state.load_from_file(file_path)
+            if ok:
+                c_count = self.sync_state.completed_count
+                ch_count = self.sync_state.synced_chapters_count
+                self._update_sync_state_ui()
+                self.log(f"\n📂 ĐÃ NẠP FILE TIẾN TRÌNH: {file_path}")
+                self.log(f"   • Số bộ truyện đã hoàn tất: {c_count:,} bộ")
+                self.log(f"   • Số chapter đã đồng bộ: {ch_count:,} chương")
+                messagebox.showinfo(
+                    "Thành công",
+                    f"Đã nạp file tiến trình thành công!\n\n"
+                    f"📂 File: {Path(file_path).name}\n"
+                    f"• {c_count:,} bộ truyện đã hoàn tất\n"
+                    f"• {ch_count:,} chapter đã đồng bộ\n\n"
+                    f"Các truyện đã tải sẽ được đánh dấu viền xanh và huy hiệu '✅ ĐÃ TẢI XONG' trong danh sách."
+                )
+                if hasattr(self, 'last_hentai_items') and self.last_hentai_items:
+                    self._render_hentai_results(self.last_hentai_items)
+            else:
+                messagebox.showerror("Lỗi", f"Không thể đọc file {file_path} hoặc dữ liệu JSON không đúng cấu trúc!")
 
     def _setup_ui(self):
         self.grid_columnconfigure(0, weight=1)
@@ -319,18 +534,44 @@ class MangaDownloaderGUI(ctk.CTk):
         )
         sub_lbl.pack(anchor="w")
 
-        # Quick Batch Download Button in Header
+        # Quick Batch Download Button & Sync State in Header
+        hdr_right_box = ctk.CTkFrame(header_frame, fg_color="transparent")
+        hdr_right_box.pack(side="right", padx=15, pady=8)
+
         self.btn_header_batch = ctk.CTkButton(
-            header_frame,
+            hdr_right_box,
             text="⚡ Tải Toàn Bộ HentaiVN (Mới ➜ Cũ)",
             command=self.open_hentaivn_batch_dialog,
             fg_color="#db2777",
             hover_color="#be185d",
             font=ctk.CTkFont(size=13, weight="bold"),
-            height=36,
-            width=290
+            height=34,
+            width=270
         )
-        self.btn_header_batch.pack(side="right", padx=20, pady=10)
+        self.btn_header_batch.pack(side="top", anchor="e", pady=(0, 4))
+
+        state_bar = ctk.CTkFrame(hdr_right_box, fg_color="transparent")
+        state_bar.pack(side="top", anchor="e")
+
+        self.lbl_sync_state_badge = ctk.CTkLabel(
+            state_bar,
+            text="⚪ Chưa nạp crawler_sync_state.json",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color="#94a3b8"
+        )
+        self.lbl_sync_state_badge.pack(side="left", padx=(0, 10))
+
+        self.btn_import_state = ctk.CTkButton(
+            state_bar,
+            text="📁 Nạp File JSON",
+            command=self.import_sync_state_file,
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            height=26,
+            width=115
+        )
+        self.btn_import_state.pack(side="left")
 
         # ---------------- 2. TAB VIEW (DOWNLOADER / HENTAIVN BROWSER) ----------------
         self.tabview = ctk.CTkTabview(self, corner_radius=10)
@@ -574,6 +815,15 @@ class MangaDownloaderGUI(ctk.CTk):
         )
         self.lbl_hentai_status.pack(side="left", padx=5)
 
+        self.cb_hide_downloaded = ctk.CTkCheckBox(
+            nav_row,
+            text="Ẩn truyện đã tải",
+            command=self._on_toggle_hide_downloaded,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color="#10b981"
+        )
+        self.cb_hide_downloaded.pack(side="left", padx=15)
+
         # Right Action Buttons
         btn_action_box = ctk.CTkFrame(nav_row, fg_color="transparent")
         btn_action_box.pack(side="right")
@@ -711,6 +961,10 @@ class MangaDownloaderGUI(ctk.CTk):
     # =========================================================================
     # HENTAIVNREAL BROWSER LOGIC
     # =========================================================================
+    def _on_toggle_hide_downloaded(self):
+        if hasattr(self, 'last_hentai_items') and self.last_hentai_items:
+            self._render_hentai_results(self.last_hentai_items)
+
     def refresh_hentai_list(self):
         self.fetch_hentai_list_thread()
 
@@ -843,6 +1097,7 @@ class MangaDownloaderGUI(ctk.CTk):
             ))
 
     def _render_hentai_results(self, items):
+        self.last_hentai_items = items
         for widget in self.hentai_scroll_frame.winfo_children():
             widget.destroy()
 
@@ -853,22 +1108,63 @@ class MangaDownloaderGUI(ctk.CTk):
         self.hentai_page_entry.delete(0, "end")
         self.hentai_page_entry.insert(0, str(self.current_hentai_page))
 
-        self.lbl_hentai_status.configure(
-            text=f"Trang {self.current_hentai_page}/{self.total_hentai_pages} • Hiển thị {len(items)} bộ truyện (Mới nhất ➜ Cũ nhất)"
-        )
+        hide_downloaded = hasattr(self, 'cb_hide_downloaded') and (self.cb_hide_downloaded.get() == 1)
+        hidden_count = 0
 
-        if not items:
+        # Lọc danh sách nếu người dùng bật ẩn truyện đã tải
+        visible_items = []
+        for item in items:
+            slug = item.get("slug") or item["url"].split("?")[0].rstrip("/").split("/")[-1]
+            if hide_downloaded and self.sync_state.is_comic_completed(slug):
+                hidden_count += 1
+                continue
+            visible_items.append(item)
+
+        status_text = f"Trang {self.current_hentai_page}/{self.total_hentai_pages} • Hiển thị {len(visible_items)} bộ truyện"
+        if hidden_count > 0:
+            status_text += f" (Đã ẩn {hidden_count} bộ đã tải)"
+        self.lbl_hentai_status.configure(text=status_text)
+
+        if not visible_items:
+            msg = "❌ Không có truyện nào trên trang này!"
+            if hidden_count > 0:
+                msg = f"✅ Tất cả {hidden_count} bộ truyện trên trang này đã được tải xong!\n(Bỏ chọn 'Ẩn truyện đã tải' ở góc trên để xem lại)"
             empty_lbl = ctk.CTkLabel(
                 self.hentai_scroll_frame, 
-                text="❌ Không có truyện nào trên trang này!",
+                text=msg,
                 font=ctk.CTkFont(size=14, weight="bold"),
-                text_color="#ef4444"
+                text_color="#10b981" if hidden_count > 0 else "#ef4444"
             )
             empty_lbl.pack(pady=40)
             return
 
-        for item in items:
-            card = ctk.CTkFrame(self.hentai_scroll_frame, corner_radius=8, fg_color="#18202f")
+        for item in visible_items:
+            slug = item.get("slug") or item["url"].split("?")[0].rstrip("/").split("/")[-1]
+            is_completed = self.sync_state.is_comic_completed(slug)
+            synced_chaps = self.sync_state.get_synced_chapters(slug)
+
+            if is_completed:
+                card_bg = "#0c281e"
+                card_border = "#10b981"
+                border_w = 2
+            elif synced_chaps:
+                card_bg = "#1f2430"
+                card_border = "#f59e0b"
+                border_w = 1
+            else:
+                card_bg = "#18202f"
+                card_border = "#334155"
+                border_w = 0
+
+            card_kwargs = {
+                "corner_radius": 8,
+                "fg_color": card_bg,
+                "border_width": border_w
+            }
+            if border_w > 0:
+                card_kwargs["border_color"] = card_border
+
+            card = ctk.CTkFrame(self.hentai_scroll_frame, **card_kwargs)
             card.pack(fill="x", padx=5, pady=5)
             card.grid_columnconfigure(1, weight=1)
 
@@ -878,18 +1174,30 @@ class MangaDownloaderGUI(ctk.CTk):
 
             # Details
             title_txt = item["title"]
+            if is_completed:
+                comp = self.sync_state.get_completed_info(slug) or {}
+                chap_c = comp.get("chapters_count", len(synced_chaps))
+                disp_title = f"✅ [ĐÃ TẢI XONG - {chap_c} CHAP]  {title_txt}"
+                title_color = "#6ee7b7"
+            elif synced_chaps:
+                disp_title = f"⚡ [ĐÃ TẢI {len(synced_chaps)} CHAP]  {title_txt}"
+                title_color = "#fbbf24"
+            else:
+                disp_title = title_txt
+                title_color = "#38bdf8"
+
             t_lbl = ctk.CTkLabel(
                 card, 
-                text=title_txt, 
+                text=disp_title, 
                 font=ctk.CTkFont(size=14, weight="bold"), 
-                text_color="#38bdf8",
+                text_color=title_color,
                 anchor="w",
                 justify="left",
                 wraplength=550
             )
             t_lbl.grid(row=0, column=1, padx=5, pady=(8, 2), sticky="w")
 
-            genres_txt = ", ".join(item["tags"][:5]) if item["tags"] else "Manga"
+            genres_txt = ", ".join(item["tags"][:5]) if item.get("tags") else "Manga"
             meta_txt = f"🏷️ Thể loại: {genres_txt}"
             if item.get("other_names"):
                 meta_txt += f"  •  Tên khác: {item['other_names'][:40]}"
@@ -919,12 +1227,25 @@ class MangaDownloaderGUI(ctk.CTk):
             btn_box = ctk.CTkFrame(card, fg_color="transparent")
             btn_box.grid(row=0, column=2, rowspan=3, padx=10, pady=10)
 
+            if is_completed:
+                btn_dl_text = "✅ Đã Tải (Tải Lại)"
+                btn_dl_color = "#059669"
+                btn_dl_hover = "#047857"
+            elif synced_chaps:
+                btn_dl_text = "⚡ Tải Tiếp"
+                btn_dl_color = "#d97706"
+                btn_dl_hover = "#b45309"
+            else:
+                btn_dl_text = "📥 Chọn Tải Truyện"
+                btn_dl_color = "#10b981"
+                btn_dl_hover = "#059669"
+
             btn_select = ctk.CTkButton(
                 btn_box,
-                text="📥 Chọn Tải Truyện",
-                fg_color="#10b981",
-                hover_color="#059669",
-                width=135,
+                text=btn_dl_text,
+                fg_color=btn_dl_color,
+                hover_color=btn_dl_hover,
+                width=145,
                 font=ctk.CTkFont(weight="bold"),
                 command=lambda u=item['url']: self.select_comic_for_download(u)
             )
@@ -935,7 +1256,7 @@ class MangaDownloaderGUI(ctk.CTk):
                 text="🌐 Mở Web",
                 fg_color="#334155",
                 hover_color="#475569",
-                width=135,
+                width=145,
                 command=lambda u=item['url']: webbrowser.open(u)
             )
             btn_open_web.pack(pady=3)
@@ -1046,12 +1367,26 @@ class MangaDownloaderGUI(ctk.CTk):
     def _on_fetch_success(self):
         info = self.comic_info
         self.btn_fetch.configure(state="normal", text="🔍 Lấy Thông Tin")
-        self.lbl_comic_title.configure(text=f"📖 {info['title']}")
-        
+
+        slug = info.get("slug", "")
         src_name = getattr(self.downloader_instance, 'source_name', 'NekoHentai')
         chapters_count = len(info.get('chapters', []))
         views_txt = f"{info.get('views', 0):,} lượt xem" if info.get('views') else "0 lượt xem"
         genres_txt = ", ".join(info.get('genres', [])[:4]) if info.get('genres') else "Manga"
+
+        is_completed = self.sync_state.is_comic_completed(slug)
+        synced_ch = self.sync_state.get_synced_chapters(slug)
+
+        if is_completed:
+            comp_info = self.sync_state.get_completed_info(slug) or {}
+            c_cnt = comp_info.get("chapters_count", len(synced_ch))
+            self.lbl_comic_title.configure(text=f"✅ [ĐÃ TẢI XONG - {c_cnt} CHƯƠNG] {info['title']}", text_color="#10b981")
+            self.log(f"✅ Bộ truyện '{info['title']}' ĐÃ ĐƯỢC TẢI XONG theo crawler_sync_state.json ({c_cnt} chapters)!")
+        elif synced_ch:
+            self.lbl_comic_title.configure(text=f"⚡ [ĐÃ TẢI {len(synced_ch)} CHƯƠNG] {info['title']}", text_color="#f59e0b")
+            self.log(f"⚡ Truyện '{info['title']}' đã có {len(synced_ch)} chương trong sync state: {', '.join(synced_ch[:8])}...")
+        else:
+            self.lbl_comic_title.configure(text=f"📖 {info['title']}", text_color="#38bdf8")
 
         self.lbl_comic_stats.configure(
             text=f"🏷️ Nguồn: {src_name}  •  📚 {chapters_count} chương\n✍️ Tác giả: {info.get('author', 'Đang cập nhật')}  •  Nhóm dịch: {info.get('translator_group', 'Đang cập nhật')}\n🏷️ Thể loại: {genres_txt}"
@@ -1354,6 +1689,22 @@ class MangaDownloaderGUI(ctk.CTk):
                             f"  ⚠️ Đã upload Cloud {t} ({cnt} ảnh) - Chưa kết nối được Web API ({DEFAULT_API_BASE_URL})"
                         ))
 
+            # Ghi nhận chapter đã đồng bộ vào crawler_sync_state
+            self.sync_state.mark_chapter_synced(slug, num_str)
+
+        # Ghi nhận hoàn tất bộ truyện vào crawler_sync_state
+        if not self.cancel_requested:
+            self.sync_state.mark_comic_completed(
+                slug=slug,
+                title=title,
+                chapters_count=len(target_chaps),
+                pages_count=total_images_all,
+                source=getattr(downloader, 'source_name', 'NekoHentai')
+            )
+            self.after(0, self._update_sync_state_ui)
+            st_name = Path(self.sync_state.file_path).name if self.sync_state.file_path else "crawler_sync_state.json"
+            self.after(0, lambda fn=st_name: self.log(f"💾 Đã lưu tiến trình bộ truyện vào '{fn}' để ghi nhớ cho lần tải tiếp theo!"))
+
         elapsed = time.time() - start_time
         public_domain = os.getenv("PUBLIC_DOMAIN", "https://nekohentai.lol").rstrip("/")
         web_link = f"{public_domain}/comic/{slug}"
@@ -1377,7 +1728,8 @@ class MangaDownloaderGUI(ctk.CTk):
             self,
             default_save_dir=self.save_entry.get(),
             default_api_url=DEFAULT_API_BASE_URL,
-            on_start_callback=self.start_batch_hentaivn_download
+            on_start_callback=self.start_batch_hentaivn_download,
+            sync_state=self.sync_state
         )
 
     # Alias
@@ -1414,6 +1766,7 @@ class MangaDownloaderGUI(ctk.CTk):
         out_root = Path(config.get("save_dir", self.save_entry.get()))
         upload_to_web = config.get("upload_to_web", True)
         skip_existing = config.get("skip_existing", True)
+        skip_sync_state = config.get("skip_sync_state", True)
         merge_slices = config.get("merge_slices", False)
         make_pdf = config.get("make_pdf", False)
         workers = config.get("workers", 16)
@@ -1424,6 +1777,11 @@ class MangaDownloaderGUI(ctk.CTk):
         self.after(0, lambda: self.log(f"📂 Thư mục lưu: {out_root.resolve()}"))
         self.after(0, lambda: self.log(f"⚡ Luồng tải song song: {workers} luồng"))
         self.after(0, lambda: self.log(f"🌐 Đồng bộ Web & Cloud: {'BẬT' if upload_to_web else 'TẮT'} | ⏭️ Bỏ qua chapter đã có: {'BẬT' if skip_existing else 'TẮT'}"))
+        if self.sync_state.completed_count > 0:
+            self.after(0, lambda cc=self.sync_state.completed_count, sc=self.sync_state.synced_chapters_count: (
+                self.log(f"📦 Đã nạp crawler_sync_state.json: {cc:,} bộ truyện đã hoàn tất ({sc:,} chapters)."),
+                self.log(f"⏭️ Bỏ qua truyện đã tải trong file state: {'BẬT' if skip_sync_state else 'TẮT'}")
+            ))
         self.after(0, lambda: self.log("=" * 70 + "\n"))
 
         self.after(0, lambda: self.lbl_status.configure(text="Đang kết nối lấy danh sách truyện từ hentaivnreal.com/danh-sach..."))
@@ -1455,6 +1813,28 @@ class MangaDownloaderGUI(ctk.CTk):
             c_page = item.get("page", 1)
             tot_pages = item.get("total_pages", "?")
             c_slug = item["slug"]
+            remote_chaps = item.get("chapters_count")
+
+            # 1. Kiểm tra xem truyện đã tải hoàn tất trong crawler_sync_state.json chưa
+            if skip_sync_state and self.sync_state.is_comic_completed(c_slug):
+                comp_info = self.sync_state.get_completed_info(c_slug) or {}
+                prev_count = comp_info.get("chapters_count", 0)
+                synced_list = self.sync_state.get_synced_chapters(c_slug)
+                local_count = max(prev_count, len(synced_list))
+
+                if remote_chaps is not None and remote_chaps > local_count:
+                    diff = remote_chaps - local_count
+                    self.after(0, lambda t=c_title, d=diff, lc=local_count, rc=remote_chaps, n=total_processed_comics, p=c_page, tp=tot_pages: (
+                        self.lbl_status.configure(text=f"[#{n} | Trang {p}/{tp}] 🔄 Cập nhật chapter mới: {t}..."),
+                        self.log(f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"),
+                        self.log(f"▶ [#{n} | Trang {p}/{tp}] 📖 {t}"),
+                        self.log(f"   🔄 Phát hiện truyện ra {d} chapter mới! (Hiện có: {lc} ➜ Web: {rc} chaps). Bắt đầu tải...")
+                    ))
+                else:
+                    self.after(0, lambda t=c_title, lc=local_count, rc=remote_chaps, n=total_processed_comics, p=c_page, tp=tot_pages: (
+                        self.log(f"[#{n} | Trang {p}/{tp}] ⏭️ [crawler_sync_state.json] Đã hoàn tất ({lc}{f'/{rc}' if rc else ''} chaps): '{t}' ➜ Bỏ qua.")
+                    ))
+                    continue
 
             self.after(0, lambda n=total_processed_comics, p=c_page, tp=tot_pages, t=c_title, u=c_url: (
                 self.lbl_status.configure(text=f"[#{n} | Trang {p}/{tp}] Đang xử lý: {t}..."),
@@ -1538,10 +1918,15 @@ class MangaDownloaderGUI(ctk.CTk):
 
                     chap_dir = chapters_root_dir / f"chap{num_str}"
 
-                    # Skip if existing
+                    # Skip if existing in sync state or on disk
+                    if skip_sync_state and self.sync_state.is_chapter_synced(slug, num_str):
+                        self.after(0, lambda t=chap_title: self.log(f"   ⏭️ [crawler_sync_state.json] {t} đã ghi nhận hoàn tất ➜ Bỏ qua."))
+                        continue
+
                     if skip_existing and chap_dir.exists():
                         existing_webp = list(chap_dir.glob("page_*.webp")) or list(chap_dir.glob("*.webp"))
                         if len(existing_webp) >= 1:
+                            self.sync_state.mark_chapter_synced(slug, num_str)
                             self.after(0, lambda t=chap_title, c=len(existing_webp): self.log(f"   ⏭️ {t} đã có trên máy ({c} ảnh WebP) ➜ Bỏ qua."))
                             continue
 
@@ -1667,6 +2052,22 @@ class MangaDownloaderGUI(ctk.CTk):
                                 self.after(0, lambda t=chap_title: self.log(f"     🌐 Đã đồng bộ {t} lên Website!"))
                             else:
                                 self.after(0, lambda t=chap_title: self.log(f"     ⚠️ Đã upload Cloud {t} - Chưa đồng bộ Web API"))
+
+                    # Ghi nhận chapter vào sync state
+                    self.sync_state.mark_chapter_synced(slug, num_str)
+
+                # Ghi nhận hoàn tất bộ truyện vào sync state
+                if not self.cancel_requested:
+                    self.sync_state.mark_comic_completed(
+                        slug=slug,
+                        title=info["title"],
+                        chapters_count=len(chapters),
+                        pages_count=comic_img_count,
+                        source="HentaiVNReal"
+                    )
+                    self.after(0, self._update_sync_state_ui)
+                    st_name = Path(self.sync_state.file_path).name if self.sync_state.file_path else "crawler_sync_state.json"
+                    self.after(0, lambda t=info["title"], fn=st_name: self.log(f"   💾 [Sync State] Đã lưu '{t}' vào '{fn}' để ghi nhớ cho lần sau."))
 
                 self.after(0, lambda t=c_title, img_c=comic_img_count, n=total_processed_comics: self.log(f"   🎉 [#{n}] Hoàn tất bộ '{t}' ({img_c} ảnh)!"))
 

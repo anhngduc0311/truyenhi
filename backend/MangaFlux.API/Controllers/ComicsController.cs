@@ -149,7 +149,7 @@ namespace NekoHentai.API.Controllers
                     OtherNames = otherNames,
                     AgeLimit = string.IsNullOrWhiteSpace(ageLimit) ? "13+" : ageLimit,
                     Status = "Ongoing",
-                    IsFeatured = true,
+                    IsFeatured = false,
                     IsPublic = true,
                     CreatedAt = initCreatedAt,
                     UpdatedAt = initUpdatedAt

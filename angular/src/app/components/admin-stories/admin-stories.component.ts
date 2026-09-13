@@ -32,6 +32,7 @@ export class AdminStoriesComponent implements OnInit {
   // Hot Manager Modal State
   showHotModal: boolean = false;
   hotSearchTerm: string = '';
+  isUnfeaturingAll: boolean = false;
 
   // Form Modal State
   showFormModal: boolean = false;
@@ -174,6 +175,26 @@ export class AdminStoriesComponent implements OnInit {
 
   get hotComicsList(): Comic[] {
     return this.comics.filter(c => c.isFeatured);
+  }
+
+  unfeatureAll(): void {
+    if (!confirm('Bạn có chắc chắn muốn gỡ Hot cho TOÀN BỘ truyện không? Toàn bộ danh sách Truyện Hot sẽ được đưa về mặc định.')) {
+      return;
+    }
+    this.isUnfeaturingAll = true;
+    this.comicService.unfeatureAllComics().subscribe({
+      next: (res) => {
+        this.comics.forEach(c => c.isFeatured = false);
+        this.applyFilters();
+        this.showMessage(`Đã gỡ Hot thành công cho ${res.count ?? 'toàn bộ'} truyện!`);
+        this.isUnfeaturingAll = false;
+      },
+      error: (err) => {
+        console.error('Lỗi gỡ Hot toàn bộ:', err);
+        this.showMessage('Không thể gỡ Hot toàn bộ truyện. Vui lòng thử lại.', true);
+        this.isUnfeaturingAll = false;
+      }
+    });
   }
 
   get nonHotComicsSearch(): Comic[] {

@@ -49,6 +49,7 @@ namespace NekoHentai.API.Services
         Task<bool> ResolveCommentReportAsync(int commentId);
         Task<bool> DeleteCommentAsync(int commentId);
         Task<int> FixAllComicDatesAsync();
+        Task<int> UnfeatureAllComicsAsync();
     }
 
     public class ComicService : IComicService
@@ -980,6 +981,15 @@ namespace NekoHentai.API.Services
             await _context.SaveChangesAsync();
             await InvalidateComicCacheAsync(comic.Slug);
             return comic.IsFeatured;
+        }
+
+        public async Task<int> UnfeatureAllComicsAsync()
+        {
+            var count = await _context.Comics
+                .Where(c => c.IsFeatured)
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsFeatured, false));
+            await InvalidateComicCacheAsync();
+            return count;
         }
 
         public async Task<List<ComicDto>> GetHotComicsForAdminAsync()

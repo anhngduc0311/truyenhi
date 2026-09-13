@@ -113,7 +113,7 @@
                 <div class="top-notice-left" *ngIf="comic.updatedAt">
                   <span class="time-badge">{{ comic.updatedAt | timeAgo }}</span>
                 </div>
-                <div class="top-notice-right" *ngIf="comic.isFeatured || comic.views > 10000 || i % 2 === 0">
+                <div class="top-notice-right" *ngIf="comic.isFeatured || comic.views > 10000">
                   <span class="type-label hot">HOT</span>
                 </div>
                 <div class="cover-stats-overlay">
@@ -172,7 +172,7 @@
             <a [routerLink]="['/comic', comic.slug]">
               <img [src]="comic.coverImage" [alt]="comic.title" loading="lazy" decoding="async" (error)="onImgError($event)" />
             </a>
-            <div class="top-notice-right" *ngIf="comic.isFeatured || comic.views > 10000 || i % 2 === 0">
+            <div class="top-notice-right" *ngIf="comic.isFeatured || comic.views > 10000">
               <span class="type-label hot">HOT!</span>
             </div>
             <div class="cover-stats-overlay">

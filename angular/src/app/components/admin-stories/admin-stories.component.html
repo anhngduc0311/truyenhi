@@ -374,6 +374,16 @@
       <!-- Active Hot Comics List -->
       <div class="hot-section-title">
         <span>🔥 Đang hiển thị ở mục Hot ({{ hotComicsList.length }} truyện)</span>
+        <button 
+          *ngIf="hotComicsList.length > 0" 
+          type="button" 
+          class="btn-unfeature-all" 
+          (click)="unfeatureAll()" 
+          [disabled]="isUnfeaturingAll"
+          title="Gỡ toàn bộ truyện khỏi mục Truyện Hot">
+          <i class="fa-solid" [class.fa-trash-can]="!isUnfeaturingAll" [class.fa-spinner]="isUnfeaturingAll" [class.fa-spin]="isUnfeaturingAll"></i>
+          {{ isUnfeaturingAll ? 'Đang gỡ...' : 'Gỡ Hot toàn bộ' }}
+        </button>
       </div>
 
       <div class="hot-cards-list" *ngIf="hotComicsList.length > 0; else noHotState">

@@ -186,6 +186,13 @@ namespace NekoHentai.API.Controllers
             return Ok(new { success = true, isFeatured });
         }
 
+        [HttpPut("comics/unfeature-all")]
+        public async Task<IActionResult> UnfeatureAll()
+        {
+            var count = await _comicService.UnfeatureAllComicsAsync();
+            return Ok(new { success = true, count });
+        }
+
         [HttpGet("comics/hot")]
         public async Task<IActionResult> GetHotComics()
         {
