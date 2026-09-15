@@ -52,6 +52,8 @@ try:
         ZetMangaDownloader,
         HentaiVNRealDownloader,
         slugify,
+        is_manhwa_comic,
+        is_manhua_comic,
         upload_file_to_cloud,
         sync_chapter_to_web_api,
         parse_date_to_iso,
@@ -345,6 +347,12 @@ class HentaiVNBatchConfigDialog(ctk.CTkToplevel):
         self.cb_merge = ctk.CTkCheckBox(opts_frame, text="🧩 Ghép ảnh Manhwa 5-in-1 (Tự động khi chapter > 70 ảnh)", fg_color="#0284c7")
         self.cb_merge.pack(anchor="w", padx=12, pady=4)
 
+        self.cb_skip_manhwa = ctk.CTkCheckBox(opts_frame, text="🚫 Bỏ qua truyện Manhwa (Hàn Quốc / Webtoon)", fg_color="#ef4444")
+        self.cb_skip_manhwa.pack(anchor="w", padx=12, pady=4)
+
+        self.cb_skip_manhua = ctk.CTkCheckBox(opts_frame, text="🚫 Bỏ qua truyện Manhua (Trung Quốc)", fg_color="#ef4444")
+        self.cb_skip_manhua.pack(anchor="w", padx=12, pady=4)
+
         self.cb_pdf = ctk.CTkCheckBox(opts_frame, text="📄 Tự động xuất mỗi chapter thành file PDF", fg_color="#0284c7")
         self.cb_pdf.pack(anchor="w", padx=12, pady=(4, 10))
 
@@ -423,6 +431,8 @@ class HentaiVNBatchConfigDialog(ctk.CTkToplevel):
             "skip_existing": self.cb_skip_existing.get() == 1,
             "skip_sync_state": self.cb_skip_sync_state.get() == 1 if self.cb_skip_sync_state else True,
             "merge_slices": self.cb_merge.get() == 1,
+            "skip_manhwa": self.cb_skip_manhwa.get() == 1,
+            "skip_manhua": self.cb_skip_manhua.get() == 1,
             "make_pdf": self.cb_pdf.get() == 1,
             "workers": int(self.slider_threads_dialog.get())
         }
@@ -1768,6 +1778,8 @@ class MangaDownloaderGUI(ctk.CTk):
         skip_existing = config.get("skip_existing", True)
         skip_sync_state = config.get("skip_sync_state", True)
         merge_slices = config.get("merge_slices", False)
+        skip_manhwa = config.get("skip_manhwa", False)
+        skip_manhua = config.get("skip_manhua", False)
         make_pdf = config.get("make_pdf", False)
         workers = config.get("workers", 16)
 
@@ -1777,6 +1789,9 @@ class MangaDownloaderGUI(ctk.CTk):
         self.after(0, lambda: self.log(f"📂 Thư mục lưu: {out_root.resolve()}"))
         self.after(0, lambda: self.log(f"⚡ Luồng tải song song: {workers} luồng"))
         self.after(0, lambda: self.log(f"🌐 Đồng bộ Web & Cloud: {'BẬT' if upload_to_web else 'TẮT'} | ⏭️ Bỏ qua chapter đã có: {'BẬT' if skip_existing else 'TẮT'}"))
+        if skip_manhwa or skip_manhua:
+            f_txt = f"{'🚫 Bỏ qua Manhwa (Hàn Quốc) ' if skip_manhwa else ''}{'🚫 Bỏ qua Manhua (Trung Quốc)' if skip_manhua else ''}".strip()
+            self.after(0, lambda ft=f_txt: self.log(f"🎯 Bộ lọc loại trừ: {ft}"))
         if self.sync_state.completed_count > 0:
             self.after(0, lambda cc=self.sync_state.completed_count, sc=self.sync_state.synced_chapters_count: (
                 self.log(f"📦 Đã nạp crawler_sync_state.json: {cc:,} bộ truyện đã hoàn tất ({sc:,} chapters)."),
@@ -1814,6 +1829,20 @@ class MangaDownloaderGUI(ctk.CTk):
             tot_pages = item.get("total_pages", "?")
             c_slug = item["slug"]
             remote_chaps = item.get("chapters_count")
+
+            # Lọc bỏ qua Manhwa / Manhua
+            tags = item.get("tags", [])
+            other_names = item.get("other_names", "")
+            if skip_manhwa and is_manhwa_comic(tags=tags, title=c_title, other_names=other_names):
+                self.after(0, lambda n=total_processed_comics, p=c_page, tp=tot_pages, t=c_title: (
+                    self.log(f"[#{n} | Trang {p}/{tp}] ⏭️ [Bỏ qua Manhwa Hàn Quốc] '{t}'")
+                ))
+                continue
+            if skip_manhua and is_manhua_comic(tags=tags, title=c_title, other_names=other_names):
+                self.after(0, lambda n=total_processed_comics, p=c_page, tp=tot_pages, t=c_title: (
+                    self.log(f"[#{n} | Trang {p}/{tp}] ⏭️ [Bỏ qua Manhua Trung Quốc] '{t}'")
+                ))
+                continue
 
             # 1. Kiểm tra xem truyện đã tải hoàn tất trong crawler_sync_state.json chưa
             if skip_sync_state and self.sync_state.is_comic_completed(c_slug):

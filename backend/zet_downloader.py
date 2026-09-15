@@ -104,6 +104,40 @@ def slugify(text: str) -> str:
     return text.strip("-") or "comic"
 
 
+def is_manhwa_comic(tags: list = None, genres: list = None, title: str = "", other_names: str = "") -> bool:
+    """Kiểm tra xem truyện có phải là Manhwa (Hàn Quốc / Webtoon) hay không"""
+    combined_items = (tags or []) + (genres or [])
+    for item in combined_items:
+        t = unicodedata.normalize('NFKD', str(item)).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
+        if t in ("manhwa", "webtoon", "han quoc", "korea", "korean", "truyen han", "manhwa (18+)"):
+            return True
+        if "manhwa" in t or "webtoon" in t or "han quoc" in t or "korean" in t or "truyen han" in t:
+            return True
+
+    text = f"{title} {other_names}".lower()
+    norm_text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
+    if "[manhwa]" in norm_text or "(manhwa)" in norm_text or " manhwa" in norm_text or norm_text.endswith(" manhwa"):
+        return True
+    return False
+
+
+def is_manhua_comic(tags: list = None, genres: list = None, title: str = "", other_names: str = "") -> bool:
+    """Kiểm tra xem truyện có phải là Manhua (Trung Quốc) hay không"""
+    combined_items = (tags or []) + (genres or [])
+    for item in combined_items:
+        t = unicodedata.normalize('NFKD', str(item)).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
+        if t in ("manhua", "trung quoc", "china", "chinese", "truyen trung", "manhua (18+)"):
+            return True
+        if "manhua" in t or "trung quoc" in t or "chinese" in t or "truyen trung" in t:
+            return True
+
+    text = f"{title} {other_names}".lower()
+    norm_text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
+    if "[manhua]" in norm_text or "(manhua)" in norm_text or " manhua" in norm_text or norm_text.endswith(" manhua"):
+        return True
+    return False
+
+
 import boto3
 from botocore.config import Config
 

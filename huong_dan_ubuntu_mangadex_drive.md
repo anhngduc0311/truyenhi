@@ -204,7 +204,19 @@ Nếu bạn muốn tạo cronjob hoặc tự động hóa trong bash script khá
 ./tai_mangadex_ubuntu.sh --url "https://hentaivnreal.com/truyen/slug-truyen"
 ./tai_mangadex_ubuntu.sh --url "slug-truyen"
 
-# 4. QUẢN LÝ TIẾN TRÌNH:
+# 4. TÙY CHỌN LỌC THỂ LOẠI (MANHWA / MANHUA):
+# Bỏ qua không tải truyện Manhwa Hàn Quốc:
+./tai_mangadex_ubuntu.sh --all-hentai --skip-manhwa
+./tai_mangadex_ubuntu.sh --bg-updates 10 30 --skip-manhwa
+
+# Bỏ qua không tải truyện Manhua Trung Quốc:
+./tai_mangadex_ubuntu.sh --all-hentai --skip-manhua
+
+# Chỉ tải Manga Nhật Bản (tự động bỏ qua cả Manhwa và Manhua):
+./tai_mangadex_ubuntu.sh --all-hentai --manga-only
+./tai_mangadex_ubuntu.sh --bg-hentai --manga-only
+
+# 5. QUẢN LÝ TIẾN TRÌNH:
 # Xem trạng thái tiến trình, thống kê và theo dõi live logs:
 ./tai_mangadex_ubuntu.sh --status
 

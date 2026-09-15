@@ -153,6 +153,8 @@ DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "https://nekohentai.lol/api").r
 DEFAULT_UPLOAD_TO_WEB = True          # ☑️ Tự động tải lên Cloud Bucket & Đồng bộ Web API
 DEFAULT_SKIP_EXISTING = True          # ☑️ Bỏ qua chapter đã có trên máy / Cloud / Web
 DEFAULT_MERGE_SLICES = True           # ☑️ Ghép ảnh Manhwa 5-in-1 khi > 70 ảnh
+DEFAULT_SKIP_MANHWA = os.getenv("SKIP_MANHWA", "false").lower() in ("true", "1", "yes") # Bỏ qua Manhwa Hàn Quốc
+DEFAULT_SKIP_MANHUA = os.getenv("SKIP_MANHUA", "false").lower() in ("true", "1", "yes") # Bỏ qua Manhua Trung Quốc
 AUTO_STITCH_THRESHOLD = 70            # Ngưỡng tự động ghép dải ảnh manhwa
 STITCH_GROUP_SIZE = 5                 # Ghép 5 lát cắt thành 1 ảnh dài WebP
 DEFAULT_MAKE_PDF = False              # ⬜ Tự động xuất PDF: TẮT
@@ -257,6 +259,40 @@ def slugify(text: str) -> str:
     text = re.sub(r'[^\w\s-]', '', text).strip().lower()
     text = re.sub(r'[-\s]+', '-', text)
     return text.strip("-") or "comic"
+
+
+def is_manhwa_comic(tags: list = None, genres: list = None, title: str = "", other_names: str = "") -> bool:
+    """Kiểm tra xem truyện có phải là Manhwa (Hàn Quốc / Webtoon) hay không"""
+    combined_items = (tags or []) + (genres or [])
+    for item in combined_items:
+        t = unicodedata.normalize('NFKD', str(item)).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
+        if t in ("manhwa", "webtoon", "han quoc", "korea", "korean", "truyen han", "manhwa (18+)"):
+            return True
+        if "manhwa" in t or "webtoon" in t or "han quoc" in t or "korean" in t or "truyen han" in t:
+            return True
+
+    text = f"{title} {other_names}".lower()
+    norm_text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
+    if "[manhwa]" in norm_text or "(manhwa)" in norm_text or " manhwa" in norm_text or norm_text.endswith(" manhwa"):
+        return True
+    return False
+
+
+def is_manhua_comic(tags: list = None, genres: list = None, title: str = "", other_names: str = "") -> bool:
+    """Kiểm tra xem truyện có phải là Manhua (Trung Quốc) hay không"""
+    combined_items = (tags or []) + (genres or [])
+    for item in combined_items:
+        t = unicodedata.normalize('NFKD', str(item)).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
+        if t in ("manhua", "trung quoc", "china", "chinese", "truyen trung", "manhua (18+)"):
+            return True
+        if "manhua" in t or "trung quoc" in t or "chinese" in t or "truyen trung" in t:
+            return True
+
+    text = f"{title} {other_names}".lower()
+    norm_text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
+    if "[manhua]" in norm_text or "(manhua)" in norm_text or " manhua" in norm_text or norm_text.endswith(" manhua"):
+        return True
+    return False
 
 
 def parse_date_to_iso(date_val):
@@ -1002,6 +1038,8 @@ class NekoSynchronizerPro:
         upload_to_web: bool = DEFAULT_UPLOAD_TO_WEB,
         skip_existing: bool = DEFAULT_SKIP_EXISTING,
         merge_slices: bool = DEFAULT_MERGE_SLICES,
+        skip_manhwa: bool = DEFAULT_SKIP_MANHWA,
+        skip_manhua: bool = DEFAULT_SKIP_MANHUA,
         make_pdf: bool = DEFAULT_MAKE_PDF,
         delete_local: bool = True,
         api_base_url: str = DEFAULT_API_BASE_URL,
@@ -1014,6 +1052,8 @@ class NekoSynchronizerPro:
         self.upload_to_web = upload_to_web
         self.skip_existing = skip_existing
         self.merge_slices = merge_slices
+        self.skip_manhwa = skip_manhwa
+        self.skip_manhua = skip_manhua
         self.make_pdf = make_pdf
         self.delete_local = delete_local
         self.api_base_url = api_base_url
@@ -1055,7 +1095,11 @@ class NekoSynchronizerPro:
         log_info(f"• Nguồn: https://hentaivnreal.com/danh-sach (Bắt đầu từ Trang #{start_page})")
         log_info(f"• Cloud Storage Bucket: {GCS_BUCKET} ({GCS_ENDPOINT})")
         log_info(f"• Web API: {self.api_base_url}")
-        log_info(f"• Số luồng tải: {self.workers} luồng | Ghép Manhwa 5-in-1: {'BẬT' if self.merge_slices else 'TẮT'}\n")
+        filter_strs = []
+        if self.skip_manhwa: filter_strs.append("🚫 Bỏ qua Manhwa (Hàn Quốc)")
+        if self.skip_manhua: filter_strs.append("🚫 Bỏ qua Manhua (Trung Quốc)")
+        filter_info = f" | {' '.join(filter_strs)}" if filter_strs else ""
+        log_info(f"• Số luồng tải: {self.workers} luồng | Ghép Manhwa 5-in-1: {'BẬT' if self.merge_slices else 'TẮT'}{filter_info}\n")
 
         comic_iter = HentaiVNRealDownloader.fetch_all_hentaivn_comics_iter(
             start_page=start_page,
@@ -1071,6 +1115,16 @@ class NekoSynchronizerPro:
             c_url = item["url"]
             c_page = item.get("page", 1)
             tot_pages = item.get("total_pages", "?")
+
+            # Lọc bỏ qua Manhwa / Manhua
+            tags = item.get("tags", [])
+            other_names = item.get("other_names", "")
+            if self.skip_manhwa and is_manhwa_comic(tags=tags, title=title, other_names=other_names):
+                log_info(f"[#{count} | Trang {c_page}/{tot_pages}] ⏭️ [Bỏ qua Manhwa Hàn Quốc] {title}")
+                continue
+            if self.skip_manhua and is_manhua_comic(tags=tags, title=title, other_names=other_names):
+                log_info(f"[#{count} | Trang {c_page}/{tot_pages}] ⏭️ [Bỏ qua Manhua Trung Quốc] {title}")
+                continue
 
             remote_chaps = item.get("chapters_count")
             if self.state.is_completed(slug) and self.skip_existing:
@@ -1111,6 +1165,16 @@ class NekoSynchronizerPro:
         title = info["title"]
         slug = info["slug"]
         chapters = info["chapters"]
+
+        # Kiểm tra lọc thể loại (nếu tags ở danh sách chưa đầy đủ)
+        genres = info.get("genres", [])
+        other_names = info.get("other_names", "")
+        if self.skip_manhwa and is_manhwa_comic(genres=genres, title=title, other_names=other_names):
+            log_info(f"  ⏭️ Bỏ qua '{title}' vì thuộc thể loại Manhwa Hàn Quốc (skip_manhwa=True).\n")
+            return True
+        if self.skip_manhua and is_manhua_comic(genres=genres, title=title, other_names=other_names):
+            log_info(f"  ⏭️ Bỏ qua '{title}' vì thuộc thể loại Manhua Trung Quốc (skip_manhua=True).\n")
+            return True
 
         if not chapters:
             log_warning(f"  ⚠️ Bộ truyện '{title}' chưa có chapter hợp lệ!")
@@ -1379,6 +1443,18 @@ class NekoSynchronizerPro:
                 c_page = item.get("page", 1)
                 remote_chaps = item.get("chapters_count")
 
+                # Lọc bỏ qua Manhwa / Manhua
+                tags = item.get("tags", [])
+                other_names = item.get("other_names", "")
+                if self.skip_manhwa and is_manhwa_comic(tags=tags, title=title, other_names=other_names):
+                    skipped_count += 1
+                    log_info(f"[#{checked_count} | Trang {c_page}] ⏭️ [Bỏ qua Manhwa Hàn Quốc] {title}")
+                    continue
+                if self.skip_manhua and is_manhua_comic(tags=tags, title=title, other_names=other_names):
+                    skipped_count += 1
+                    log_info(f"[#{checked_count} | Trang {c_page}] ⏭️ [Bỏ qua Manhua Trung Quốc] {title}")
+                    continue
+
                 comp_info = self.state.get_completed_info(slug) or {}
                 prev_count = comp_info.get("chapters_count", 0)
                 synced_list = self.state.data.get("synced_chapters", {}).get(slug, [])
@@ -1502,6 +1578,9 @@ def main():
 
     # General settings
     parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS, help=f"Số luồng tải song song (Mặc định: {DEFAULT_WORKERS})")
+    parser.add_argument("--skip-manhwa", action="store_true", help="Bỏ qua không tải truyện Manhwa (Hàn Quốc / Webtoon)")
+    parser.add_argument("--skip-manhua", action="store_true", help="Bỏ qua không tải truyện Manhua (Trung Quốc)")
+    parser.add_argument("--manga-only", action="store_true", help="Chỉ tải Manga Nhật Bản (bỏ qua cả Manhwa và Manhua)")
     parser.add_argument("--no-merge", action="store_true", help="Tắt tự động ghép ảnh Manhwa 5-in-1")
     parser.add_argument("--no-skip", action="store_true", help="Tắt bỏ qua chapter đã có trên máy / cloud / web")
     parser.add_argument("--no-upload", action="store_true", help="Chỉ tải lưu cục bộ, không đẩy lên Cloud Bucket")
@@ -1510,11 +1589,16 @@ def main():
 
     args = parser.parse_args()
 
+    skip_manhwa = args.skip_manhwa or args.manga_only or DEFAULT_SKIP_MANHWA
+    skip_manhua = args.skip_manhua or args.manga_only or DEFAULT_SKIP_MANHUA
+
     engine = NekoSynchronizerPro(
         workers=args.workers,
         upload_to_web=not args.no_upload,
         skip_existing=not args.no_skip,
         merge_slices=not args.no_merge,
+        skip_manhwa=skip_manhwa,
+        skip_manhua=skip_manhua,
         delete_local=not args.keep_local,
         api_base_url=args.api
     )

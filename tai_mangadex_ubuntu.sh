@@ -235,6 +235,8 @@ DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "https://nekohentai.lol/api").r
 DEFAULT_UPLOAD_TO_WEB = True          # ☑️ Tự động tải lên Cloud Bucket & Đồng bộ Web API
 DEFAULT_SKIP_EXISTING = True          # ☑️ Bỏ qua chapter đã có trên máy / Cloud / Web
 DEFAULT_MERGE_SLICES = True           # ☑️ Ghép ảnh Manhwa 5-in-1 khi > 70 ảnh
+DEFAULT_SKIP_MANHWA = os.getenv("SKIP_MANHWA", "false").lower() in ("true", "1", "yes") # Bỏ qua Manhwa Hàn Quốc
+DEFAULT_SKIP_MANHUA = os.getenv("SKIP_MANHUA", "false").lower() in ("true", "1", "yes") # Bỏ qua Manhua Trung Quốc
 AUTO_STITCH_THRESHOLD = 70            # Ngưỡng tự động ghép dải ảnh manhwa
 STITCH_GROUP_SIZE = 5                 # Ghép 5 lát cắt thành 1 ảnh dài WebP
 DEFAULT_MAKE_PDF = False              # ⬜ Tự động xuất PDF: TẮT
@@ -339,6 +341,40 @@ def slugify(text: str) -> str:
     text = re.sub(r'[^\w\s-]', '', text).strip().lower()
     text = re.sub(r'[-\s]+', '-', text)
     return text.strip("-") or "comic"
+
+
+def is_manhwa_comic(tags: list = None, genres: list = None, title: str = "", other_names: str = "") -> bool:
+    """Kiểm tra xem truyện có phải là Manhwa (Hàn Quốc / Webtoon) hay không"""
+    combined_items = (tags or []) + (genres or [])
+    for item in combined_items:
+        t = unicodedata.normalize('NFKD', str(item)).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
+        if t in ("manhwa", "webtoon", "han quoc", "korea", "korean", "truyen han", "manhwa (18+)"):
+            return True
+        if "manhwa" in t or "webtoon" in t or "han quoc" in t or "korean" in t or "truyen han" in t:
+            return True
+
+    text = f"{title} {other_names}".lower()
+    norm_text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
+    if "[manhwa]" in norm_text or "(manhwa)" in norm_text or " manhwa" in norm_text or norm_text.endswith(" manhwa"):
+        return True
+    return False
+
+
+def is_manhua_comic(tags: list = None, genres: list = None, title: str = "", other_names: str = "") -> bool:
+    """Kiểm tra xem truyện có phải là Manhua (Trung Quốc) hay không"""
+    combined_items = (tags or []) + (genres or [])
+    for item in combined_items:
+        t = unicodedata.normalize('NFKD', str(item)).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
+        if t in ("manhua", "trung quoc", "china", "chinese", "truyen trung", "manhua (18+)"):
+            return True
+        if "manhua" in t or "trung quoc" in t or "chinese" in t or "truyen trung" in t:
+            return True
+
+    text = f"{title} {other_names}".lower()
+    norm_text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
+    if "[manhua]" in norm_text or "(manhua)" in norm_text or " manhua" in norm_text or norm_text.endswith(" manhua"):
+        return True
+    return False
 
 
 def parse_date_to_iso(date_val):
@@ -1084,6 +1120,8 @@ class NekoSynchronizerPro:
         upload_to_web: bool = DEFAULT_UPLOAD_TO_WEB,
         skip_existing: bool = DEFAULT_SKIP_EXISTING,
         merge_slices: bool = DEFAULT_MERGE_SLICES,
+        skip_manhwa: bool = DEFAULT_SKIP_MANHWA,
+        skip_manhua: bool = DEFAULT_SKIP_MANHUA,
         make_pdf: bool = DEFAULT_MAKE_PDF,
         delete_local: bool = True,
         api_base_url: str = DEFAULT_API_BASE_URL,
@@ -1096,6 +1134,8 @@ class NekoSynchronizerPro:
         self.upload_to_web = upload_to_web
         self.skip_existing = skip_existing
         self.merge_slices = merge_slices
+        self.skip_manhwa = skip_manhwa
+        self.skip_manhua = skip_manhua
         self.make_pdf = make_pdf
         self.delete_local = delete_local
         self.api_base_url = api_base_url
@@ -1137,7 +1177,11 @@ class NekoSynchronizerPro:
         log_info(f"• Nguồn: https://hentaivnreal.com/danh-sach (Bắt đầu từ Trang #{start_page})")
         log_info(f"• Cloud Storage Bucket: {GCS_BUCKET} ({GCS_ENDPOINT})")
         log_info(f"• Web API: {self.api_base_url}")
-        log_info(f"• Số luồng tải: {self.workers} luồng | Ghép Manhwa 5-in-1: {'BẬT' if self.merge_slices else 'TẮT'}\n")
+        filter_strs = []
+        if self.skip_manhwa: filter_strs.append("🚫 Bỏ qua Manhwa (Hàn Quốc)")
+        if self.skip_manhua: filter_strs.append("🚫 Bỏ qua Manhua (Trung Quốc)")
+        filter_info = f" | {' '.join(filter_strs)}" if filter_strs else ""
+        log_info(f"• Số luồng tải: {self.workers} luồng | Ghép Manhwa 5-in-1: {'BẬT' if self.merge_slices else 'TẮT'}{filter_info}\n")
 
         comic_iter = HentaiVNRealDownloader.fetch_all_hentaivn_comics_iter(
             start_page=start_page,
@@ -1153,6 +1197,16 @@ class NekoSynchronizerPro:
             c_url = item["url"]
             c_page = item.get("page", 1)
             tot_pages = item.get("total_pages", "?")
+
+            # Lọc bỏ qua Manhwa / Manhua
+            tags = item.get("tags", [])
+            other_names = item.get("other_names", "")
+            if self.skip_manhwa and is_manhwa_comic(tags=tags, title=title, other_names=other_names):
+                log_info(f"[#{count} | Trang {c_page}/{tot_pages}] ⏭️ [Bỏ qua Manhwa Hàn Quốc] {title}")
+                continue
+            if self.skip_manhua and is_manhua_comic(tags=tags, title=title, other_names=other_names):
+                log_info(f"[#{count} | Trang {c_page}/{tot_pages}] ⏭️ [Bỏ qua Manhua Trung Quốc] {title}")
+                continue
 
             remote_chaps = item.get("chapters_count")
             if self.state.is_completed(slug) and self.skip_existing:
@@ -1193,6 +1247,16 @@ class NekoSynchronizerPro:
         title = info["title"]
         slug = info["slug"]
         chapters = info["chapters"]
+
+        # Kiểm tra lọc thể loại (nếu tags ở danh sách chưa đầy đủ)
+        genres = info.get("genres", [])
+        other_names = info.get("other_names", "")
+        if self.skip_manhwa and is_manhwa_comic(genres=genres, title=title, other_names=other_names):
+            log_info(f"  ⏭️ Bỏ qua '{title}' vì thuộc thể loại Manhwa Hàn Quốc (skip_manhwa=True).\n")
+            return True
+        if self.skip_manhua and is_manhua_comic(genres=genres, title=title, other_names=other_names):
+            log_info(f"  ⏭️ Bỏ qua '{title}' vì thuộc thể loại Manhua Trung Quốc (skip_manhua=True).\n")
+            return True
 
         if not chapters:
             log_warning(f"  ⚠️ Bộ truyện '{title}' chưa có chapter hợp lệ!")
@@ -1461,6 +1525,18 @@ class NekoSynchronizerPro:
                 c_page = item.get("page", 1)
                 remote_chaps = item.get("chapters_count")
 
+                # Lọc bỏ qua Manhwa / Manhua
+                tags = item.get("tags", [])
+                other_names = item.get("other_names", "")
+                if self.skip_manhwa and is_manhwa_comic(tags=tags, title=title, other_names=other_names):
+                    skipped_count += 1
+                    log_info(f"[#{checked_count} | Trang {c_page}] ⏭️ [Bỏ qua Manhwa Hàn Quốc] {title}")
+                    continue
+                if self.skip_manhua and is_manhua_comic(tags=tags, title=title, other_names=other_names):
+                    skipped_count += 1
+                    log_info(f"[#{checked_count} | Trang {c_page}] ⏭️ [Bỏ qua Manhua Trung Quốc] {title}")
+                    continue
+
                 comp_info = self.state.get_completed_info(slug) or {}
                 prev_count = comp_info.get("chapters_count", 0)
                 synced_list = self.state.data.get("synced_chapters", {}).get(slug, [])
@@ -1584,6 +1660,9 @@ def main():
 
     # General settings
     parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS, help=f"Số luồng tải song song (Mặc định: {DEFAULT_WORKERS})")
+    parser.add_argument("--skip-manhwa", action="store_true", help="Bỏ qua không tải truyện Manhwa (Hàn Quốc / Webtoon)")
+    parser.add_argument("--skip-manhua", action="store_true", help="Bỏ qua không tải truyện Manhua (Trung Quốc)")
+    parser.add_argument("--manga-only", action="store_true", help="Chỉ tải Manga Nhật Bản (bỏ qua cả Manhwa và Manhua)")
     parser.add_argument("--no-merge", action="store_true", help="Tắt tự động ghép ảnh Manhwa 5-in-1")
     parser.add_argument("--no-skip", action="store_true", help="Tắt bỏ qua chapter đã có trên máy / cloud / web")
     parser.add_argument("--no-upload", action="store_true", help="Chỉ tải lưu cục bộ, không đẩy lên Cloud Bucket")
@@ -1592,11 +1671,16 @@ def main():
 
     args = parser.parse_args()
 
+    skip_manhwa = args.skip_manhwa or args.manga_only or DEFAULT_SKIP_MANHWA
+    skip_manhua = args.skip_manhua or args.manga_only or DEFAULT_SKIP_MANHUA
+
     engine = NekoSynchronizerPro(
         workers=args.workers,
         upload_to_web=not args.no_upload,
         skip_existing=not args.no_skip,
         merge_slices=not args.no_merge,
+        skip_manhwa=skip_manhwa,
+        skip_manhua=skip_manhua,
         delete_local=not args.keep_local,
         api_base_url=args.api
     )
@@ -1810,6 +1894,79 @@ prepare_execution() {
     fi
 }
 
+SKIP_MANHWA="${SKIP_MANHWA:-0}"
+SKIP_MANHUA="${SKIP_MANHUA:-0}"
+
+# Đọc cấu hình mặc định từ .env nếu có
+if [ -f ".env" ]; then
+    ENV_SKIP_MH=$(grep -i '^SKIP_MANHWA=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '\"' | tr -d "'" | tr '[:upper:]' '[:lower:]' || echo "")
+    if [ "$ENV_SKIP_MH" = "true" ] || [ "$ENV_SKIP_MH" = "1" ] || [ "$ENV_SKIP_MH" = "yes" ]; then
+        SKIP_MANHWA=1
+    fi
+    ENV_SKIP_MU=$(grep -i '^SKIP_MANHUA=' .env 2>/dev/null | cut -d'=' -f2 | tr -d '\"' | tr -d "'" | tr '[:upper:]' '[:lower:]' || echo "")
+    if [ "$ENV_SKIP_MU" = "true" ] || [ "$ENV_SKIP_MU" = "1" ] || [ "$ENV_SKIP_MU" = "yes" ]; then
+        SKIP_MANHUA=1
+    fi
+fi
+
+configure_filters() {
+    log_header "CẤU HÌNH BỘ LỌC BỎ QUA MANHWA (HÀN QUỐC) & MANHUA (TRUNG QUỐC)"
+    echo -e "Trạng thái hiện tại:"
+    if [ "$SKIP_MANHWA" = "1" ] || [ "$SKIP_MANHWA" = "true" ]; then
+        echo -e "  • Bỏ qua Manhwa Hàn Quốc:  ${GREEN}${BOLD}BẬT (Không tải Manhwa)${NC}"
+    else
+        echo -e "  • Bỏ qua Manhwa Hàn Quốc:  ${YELLOW}TẮT (Tải bình thường)${NC}"
+    fi
+
+    if [ "$SKIP_MANHUA" = "1" ] || [ "$SKIP_MANHUA" = "true" ]; then
+        echo -e "  • Bỏ qua Manhua Trung Quốc: ${GREEN}${BOLD}BẬT (Không tải Manhua)${NC}"
+    else
+        echo -e "  • Bỏ qua Manhua Trung Quốc: ${YELLOW}TẮT (Tải bình thường)${NC}"
+    fi
+
+    echo -e "\nChọn thao tác:"
+    echo -e "  [1] Đổi trạng thái: Bỏ qua Manhwa (Hàn Quốc)"
+    echo -e "  [2] Đổi trạng thái: Bỏ qua Manhua (Trung Quốc)"
+    echo -e "  [3] 🇯🇵 Chỉ tải Manga Nhật Bản (Bật bỏ qua cả Manhwa & Manhua)"
+    echo -e "  [4] 🌐 Tải TẤT CẢ thể loại (Tắt bỏ qua cả 2)"
+    echo -e "  [0] Quay lại Menu chính"
+    echo -n "👉 Chọn [0-4]: "
+    read -r f_choice
+
+    case "$f_choice" in
+        1)
+            if [ "$SKIP_MANHWA" = "1" ] || [ "$SKIP_MANHWA" = "true" ]; then
+                SKIP_MANHWA=0
+                log_success "Đã TẮT lọc Manhwa (sẽ tải cả truyện Hàn Quốc)."
+            else
+                SKIP_MANHWA=1
+                log_success "Đã BẬT lọc Manhwa (sẽ bỏ qua truyện Hàn Quốc)."
+            fi
+            ;;
+        2)
+            if [ "$SKIP_MANHUA" = "1" ] || [ "$SKIP_MANHUA" = "true" ]; then
+                SKIP_MANHUA=0
+                log_success "Đã TẮT lọc Manhua (sẽ tải cả truyện Trung Quốc)."
+            else
+                SKIP_MANHUA=1
+                log_success "Đã BẬT lọc Manhua (sẽ bỏ qua truyện Trung Quốc)."
+            fi
+            ;;
+        3)
+            SKIP_MANHWA=1
+            SKIP_MANHUA=1
+            log_success "Đã kích hoạt chế độ CHỈ TẢI MANGA NHẬT BẢN (bỏ qua Manhwa & Manhua)!"
+            ;;
+        4)
+            SKIP_MANHWA=0
+            SKIP_MANHUA=0
+            log_success "Đã tắt bộ lọc (tải toàn bộ mọi thể loại)!"
+            ;;
+        *)
+            ;;
+    esac
+}
+
 run_updates_foreground() {
     PAGES="${1:-}"
     CONTINUOUS="${2:-0}"
@@ -1838,6 +1995,12 @@ run_updates_foreground() {
     CMD=("$PY_RUNNER" "$SCRIPT_EXEC" "--check-updates" "--pages" "$PAGES" "--workers" "32")
     if [ "$CONTINUOUS" = "1" ] || [ "$CONTINUOUS" = "--continuous" ]; then
         CMD+=("--continuous" "--interval" "$INTERVAL")
+    fi
+    if [ "$SKIP_MANHWA" = "1" ] || [ "$SKIP_MANHWA" = "true" ]; then
+        CMD+=("--skip-manhwa")
+    fi
+    if [ "$SKIP_MANHUA" = "1" ] || [ "$SKIP_MANHUA" = "true" ]; then
+        CMD+=("--skip-manhua")
     fi
 
     log_header "BẮT ĐẦU KIỂM TRA TRUYỆN MỚI CẬP NHẬT (Quét $PAGES trang | 32 LUỒNG)"
@@ -1870,6 +2033,12 @@ run_updates_background() {
 
     prepare_execution
     CMD=("$PY_RUNNER" "$SCRIPT_EXEC" "--check-updates" "--pages" "$PAGES" "--continuous" "--interval" "${INTERVAL:-30}" "--workers" "32")
+    if [ "$SKIP_MANHWA" = "1" ] || [ "$SKIP_MANHWA" = "true" ]; then
+        CMD+=("--skip-manhwa")
+    fi
+    if [ "$SKIP_MANHUA" = "1" ] || [ "$SKIP_MANHUA" = "true" ]; then
+        CMD+=("--skip-manhua")
+    fi
 
     TASK_NAME="Auto-Updater HentaiVNReal (Quét $PAGES trang mỗi ${INTERVAL:-30} phút)"
     log_info "Đang khởi chạy tiến trình Auto-Updater ngầm 24/7 $TASK_NAME (nohup - 32 luồng)..."
@@ -1911,6 +2080,12 @@ run_hentaivn_foreground() {
     fi
     if [ "$MAX_M" -gt 0 ] 2>/dev/null; then
         CMD+=("--max-manga" "$MAX_M")
+    fi
+    if [ "$SKIP_MANHWA" = "1" ] || [ "$SKIP_MANHWA" = "true" ]; then
+        CMD+=("--skip-manhwa")
+    fi
+    if [ "$SKIP_MANHUA" = "1" ] || [ "$SKIP_MANHUA" = "true" ]; then
+        CMD+=("--skip-manhua")
     fi
 
     log_header "BẮT ĐẦU TẢI HENTAIVNREAL (Trang $START_P ➔ ${END_P:-Hết} | 32 LUỒNG)"
@@ -1954,6 +2129,12 @@ run_hentaivn_background() {
     if [ "$MAX_M" -gt 0 ] 2>/dev/null; then
         CMD+=("--max-manga" "$MAX_M")
     fi
+    if [ "$SKIP_MANHWA" = "1" ] || [ "$SKIP_MANHWA" = "true" ]; then
+        CMD+=("--skip-manhwa")
+    fi
+    if [ "$SKIP_MANHUA" = "1" ] || [ "$SKIP_MANHUA" = "true" ]; then
+        CMD+=("--skip-manhua")
+    fi
 
     TASK_NAME="HentaiVNReal (Trang $START_P ➔ ${END_P:-982+})"
     log_info "Đang khởi chạy tiến trình tải ngầm 24/7 $TASK_NAME (nohup - 32 luồng)..."
@@ -1981,6 +2162,12 @@ run_single_comic() {
     EXTRA_ARGS=()
     if [ "$force_sync" = "y" ] || [ "$force_sync" = "Y" ]; then
         EXTRA_ARGS+=("--no-skip")
+    fi
+    if [ "$SKIP_MANHWA" = "1" ] || [ "$SKIP_MANHWA" = "true" ]; then
+        EXTRA_ARGS+=("--skip-manhwa")
+    fi
+    if [ "$SKIP_MANHUA" = "1" ] || [ "$SKIP_MANHUA" = "true" ]; then
+        EXTRA_ARGS+=("--skip-manhua")
     fi
 
     prepare_execution
@@ -2016,7 +2203,7 @@ show_status() {
     if [ -f ".env" ]; then
         echo -e "Cấu hình .env: ${GREEN}${BOLD}ĐÃ KÍCH HOẠT (.env)${NC}"
     else
-        echo -e "Cấu hình .env: ${YELLOW}Chưa có .env (Chọn [9] để tạo)${NC}"
+        echo -e "Cấu hình .env: ${YELLOW}Chưa có .env (Chọn [10] để tạo)${NC}"
     fi
 
     echo -e "Lưu trữ:    ${GREEN}${BOLD}Cloud Storage Bucket (nekohentai) & Web API${NC}"
@@ -2026,7 +2213,7 @@ show_status() {
     if [ -n "$SWAP_INFO" ] && [ "$SWAP_INFO" -gt 0 ]; then
         echo -e "Bộ nhớ ảo:  ${GREEN}${BOLD}${SWAP_INFO}MB Swap${NC} (Đang dùng: ${SWAP_USED}MB)"
     else
-        echo -e "Bộ nhớ ảo:  ${YELLOW}Chưa có Swap (Khuyên dùng [8] để tạo Swap chống tràn RAM)${NC}"
+        echo -e "Bộ nhớ ảo:  ${YELLOW}Chưa có Swap (Khuyên dùng [9] để tạo Swap chống tràn RAM)${NC}"
     fi
 
     # Đọc thống kê từ file state JSON
@@ -2081,6 +2268,18 @@ stop_background_process() {
 # ==============================================================================
 extract_python_engine
 
+# Kiểm tra các cờ filter trong CLI
+for arg in "$@"; do
+    if [ "$arg" = "--skip-manhwa" ]; then
+        SKIP_MANHWA=1
+    elif [ "$arg" = "--skip-manhua" ]; then
+        SKIP_MANHUA=1
+    elif [ "$arg" = "--manga-only" ]; then
+        SKIP_MANHWA=1
+        SKIP_MANHUA=1
+    fi
+done
+
 if [ "$1" = "--setup-env" ] || [ "$1" = "--env" ]; then
     setup_env_file 1
     exit 0
@@ -2128,13 +2327,25 @@ while true; do
     if [ -n "$SWAP_VAL" ] && [ "$SWAP_VAL" -gt 0 ]; then
         SWAP_BADGE="${GREEN}🟢 ${SWAP_VAL}MB (Đã kích hoạt)${NC}"
     else
-        SWAP_BADGE="${YELLOW}🟡 0MB (Chọn [8] để tạo)${NC}"
+        SWAP_BADGE="${YELLOW}🟡 0MB (Chọn [9] để tạo)${NC}"
     fi
 
     if [ -f ".env" ]; then
         ENV_BADGE="${GREEN}🟢 Đã có file .env${NC}"
     else
-        ENV_BADGE="${YELLOW}🟡 Chưa có (Chọn [9] để tạo)${NC}"
+        ENV_BADGE="${YELLOW}🟡 Chưa có (Chọn [10] để tạo)${NC}"
+    fi
+
+    if [ "$SKIP_MANHWA" = "1" ] || [ "$SKIP_MANHWA" = "true" ]; then
+        MANHWA_BADGE="${GREEN}🚫 BẬT (Bỏ qua Manhwa Hàn Quốc)${NC}"
+    else
+        MANHWA_BADGE="${YELLOW}⚪ TẮT (Tải bình thường)${NC}"
+    fi
+
+    if [ "$SKIP_MANHUA" = "1" ] || [ "$SKIP_MANHUA" = "true" ]; then
+        MANHUA_BADGE="${GREEN}🚫 BẬT (Bỏ qua Manhua Trung Quốc)${NC}"
+    else
+        MANHUA_BADGE="${YELLOW}⚪ TẮT (Tải bình thường)${NC}"
     fi
 
     echo -e "${CYAN}================================================================${NC}"
@@ -2150,6 +2361,8 @@ while true; do
     echo -e "   ${GREEN}☑️${NC} Bỏ qua chapter đã có (Web/Cloud/Máy):   ${BOLD}${GREEN}BẬT (Tránh tải trùng)${NC}"
     echo -e "   ${GREEN}☑️${NC} Ghép ảnh Manhwa 5-in-1 (>70 ảnh):        ${BOLD}${GREEN}BẬT (Đa luồng WebP)${NC}"
     echo -e "   ${GREEN}☑️${NC} Xử lý chuẩn xác chương Oneshot:          ${BOLD}${GREEN}BẬT${NC}"
+    echo -e "   🎯 Lọc Manhwa Hàn Quốc:                    $MANHWA_BADGE"
+    echo -e "   🎯 Lọc Manhua Trung Quốc:                   $MANHUA_BADGE"
     echo -e "   ${CYAN}⚡${NC} Luồng tải & Upload song song:            ${BOLD}${GREEN}32 luồng (Turbo Speed)${NC}"
     echo -e "   ${CYAN}⚡${NC} Nén WebP chất lượng cao (quality=90):    ${BOLD}${GREEN}BẬT${NC}"
     echo -e "${CYAN}================================================================${NC}"
@@ -2160,11 +2373,12 @@ while true; do
     echo -e "  ${BOLD}[5]${NC} 🔗 ${BOLD}Tải 1 bộ truyện theo Link / Slug HentaiVNReal${NC}"
     echo -e "  ${BOLD}[6]${NC} 📊 ${BOLD}Xem trạng thái, thống kê & nhật ký (Live Logs)${NC}"
     echo -e "  ${BOLD}[7]${NC} 🛑 ${BOLD}Dừng tiến trình tải ngầm${NC}"
-    echo -e "  ${BOLD}[8]${NC} 🛡️  ${BOLD}Thiết lập / Bật bộ nhớ ảo Swap (4GB / 2GB)${NC}"
-    echo -e "  ${BOLD}[9]${NC} 📝 ${BOLD}Tạo / Khôi phục file .env từ .env.example${NC}"
+    echo -e "  ${BOLD}[8]${NC} 🎯 ${BOLD}Cấu hình BẬT/TẮT Lọc Bỏ Qua Manhwa & Manhua${NC}"
+    echo -e "  ${BOLD}[9]${NC} 🛡️  ${BOLD}Thiết lập / Bật bộ nhớ ảo Swap (4GB / 2GB)${NC}"
+    echo -e "  ${BOLD}[10]${NC} 📝 ${BOLD}Tạo / Khôi phục file .env từ .env.example${NC}"
     echo -e "  ${BOLD}[0]${NC} ❌ Thoát"
     echo -e "${CYAN}----------------------------------------------------------------${NC}"
-    echo -n "Chọn thao tác [0-9]: "
+    echo -n "Chọn thao tác [0-10]: "
     read -r choice
 
     case "$choice" in
@@ -2175,8 +2389,9 @@ while true; do
         5) run_single_comic ;;
         6) show_status ;;
         7) stop_background_process ;;
-        8) setup_swap_memory ;;
-        9)
+        8) configure_filters ;;
+        9) setup_swap_memory ;;
+        10)
             if [ -f ".env" ]; then
                 echo -n "File .env đã tồn tại. Bạn có muốn ghi đè từ .env.example không? [y/N]: "
                 read -r ovr
