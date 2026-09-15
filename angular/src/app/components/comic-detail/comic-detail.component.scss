@@ -4,6 +4,10 @@
 
 .comic-detail-page {
   padding-bottom: 60px;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
 }
 
 /* ==================== 1. HERO SECTION ==================== */
@@ -11,6 +15,9 @@
   position: relative;
   min-height: 480px;
   padding: 24px 0 40px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 
   .hero-backdrop {
     position: absolute;
@@ -122,6 +129,9 @@
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-xl);
     border: 1px solid var(--glass-border);
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 
     @media (max-width: 768px) {
       grid-template-columns: 118px 1fr;
@@ -133,6 +143,9 @@
       gap: 14px;
       padding: 16px 14px;
       border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     /* 3D COVER COLUMN */
