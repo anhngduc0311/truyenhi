@@ -92,6 +92,20 @@ GCS_BUCKET = os.getenv("R2_BUCKET_NAME", "nekohentai-storage")
 CDN_BASE_URL = os.getenv("R2_CDN_BASE_URL", "https://img.nekohentai.lol").rstrip("/")
 
 
+def safe_url(url: str) -> str:
+    """Chuyển đổi URL chứa ký tự tiếng Việt / có dấu (Unicode) thành URL mã hóa an toàn (ASCII/Percent-encoded)"""
+    if not url:
+        return ""
+    try:
+        url_str = str(url).strip()
+        parsed = urllib.parse.urlsplit(url_str)
+        quoted_path = urllib.parse.quote(urllib.parse.unquote(parsed.path), safe="/:@!$&'()*+,;=-_.~")
+        quoted_query = urllib.parse.quote(urllib.parse.unquote(parsed.query), safe="=&:@!$'()*+,;/-_.~?")
+        return urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, quoted_path, quoted_query, parsed.fragment))
+    except Exception:
+        return urllib.parse.quote(str(url), safe=":/%?&=#+@$,;~-._!")
+
+
 def slugify(text: str) -> str:
     """Tạo slug chuẩn SEO từ chuỗi tiếng Việt hoặc quốc tế"""
     if not text:
@@ -300,11 +314,12 @@ class BaseMangaDownloader:
 
         headers = {}
         if referer:
-            headers["Referer"] = referer
+            headers["Referer"] = safe_url(referer)
 
+        clean_img_url = safe_url(img_url)
         for attempt in range(MAX_RETRIES):
             try:
-                res = self.http_session.get(img_url, headers=headers, timeout=TIMEOUT)
+                res = self.http_session.get(clean_img_url, headers=headers, timeout=TIMEOUT)
                 if res.status_code == 200 and len(res.content) > 500:
                     with open(save_path, "wb") as f:
                         f.write(res.content)
@@ -1036,7 +1051,7 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
         super().__init__(output_dir=output_dir, merge_slices=merge_slices, make_pdf=make_pdf, upload_to_web=upload_to_web, api_base_url=api_base_url)
         self.source_name = "HentaiVNReal"
         self.raw_input = str(comic_url).strip()
-        self.comic_url = self._normalize_url(self.raw_input)
+        self.comic_url = safe_url(self._normalize_url(self.raw_input))
         self.scraper = cloudscraper.create_scraper(
             browser={
                 'browser': 'chrome',
@@ -1044,7 +1059,7 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
                 'desktop': True
             }
         )
-        self.slug = self._extract_slug(self.comic_url)
+        self.slug = self._extract_slug(self.raw_input)
 
     def _normalize_url(self, url: str) -> str:
         url = url.strip()
@@ -1056,13 +1071,14 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
         return url
 
     def _extract_slug(self, url: str) -> str:
-        clean = url.split("?")[0].rstrip("/")
+        clean = urllib.parse.unquote(str(url).split("?")[0].rstrip("/"))
         parts = clean.split("/")
         if "truyen" in parts:
             idx = parts.index("truyen")
             if idx + 1 < len(parts):
-                return parts[idx + 1]
-        return parts[-1] if parts else "hentai-comic"
+                return slugify(parts[idx + 1])
+        raw_slug = parts[-1] if parts else "hentai-comic"
+        return slugify(raw_slug)
 
     def _download_single_image(self, img_url: str, save_path: Path, referer: str = None) -> bool:
         ref = referer or (self.BASE_URL + "/")
@@ -1072,8 +1088,8 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
         """Lấy thông tin chi tiết bộ truyện và toàn bộ danh sách chapter từ hentaivnreal.com"""
         if comic_url:
             self.raw_input = str(comic_url).strip()
-            self.comic_url = self._normalize_url(self.raw_input)
-            self.slug = self._extract_slug(self.comic_url)
+            self.comic_url = safe_url(self._normalize_url(self.raw_input))
+            self.slug = self._extract_slug(self.raw_input)
 
         if HAS_RICH and console:
             console.print(f"[bold cyan]🔍 Đang phân tích dữ liệu truyện từ HentaiVNReal:[/bold cyan] [underline]{self.comic_url}[/underline]")
@@ -1083,8 +1099,7 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
         res = self.scraper.get(self.comic_url, timeout=TIMEOUT)
         if res.status_code != 200:
             raise Exception(f"Không thể kết nối đến trang truyện HentaiVNReal (HTTP {res.status_code})")
-        res.encoding = 'utf-8'
-        soup = BeautifulSoup(res.text, "html.parser")
+        soup = BeautifulSoup(res.content, "html.parser")
 
         # 1. Tên truyện
         h1 = soup.find("h1")
@@ -1109,6 +1124,9 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
             ava = soup.select_one(".page-ava img, .box-cover img")
             if ava:
                 cover_url = ava.get("src") or ava.get("data-src")
+
+        if cover_url:
+            cover_url = safe_url(urllib.parse.urljoin(self.BASE_URL, cover_url))
 
         # 3. Metadata
         author = "Đang cập nhật"
@@ -1160,7 +1178,7 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
             for tr in chuong.find_all("tr"):
                 a = tr.find("a", href=True)
                 if a and a["href"] != "#" and not a["href"].startswith("javascript"):
-                    c_url = urllib.parse.urljoin(self.BASE_URL, a["href"])
+                    c_url = safe_url(urllib.parse.urljoin(self.BASE_URL, a["href"]))
                     c_title = a.get_text(strip=True)
 
                     # 1. Tìm số theo từ khóa: chap, chương, chapter, tập, hồi, lần, c1, ch1...
@@ -1229,17 +1247,34 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
     def get_chapter_images(self, chapter_info_or_url) -> list:
         """Lấy toàn bộ link ảnh chất lượng cao của chapter từ hentaivnreal.com"""
         c_url = chapter_info_or_url if isinstance(chapter_info_or_url, str) else chapter_info_or_url.get("url", "")
-        res = self.scraper.get(c_url, headers={"Referer": self.comic_url}, timeout=TIMEOUT)
+        safe_chap_url = safe_url(c_url)
+        safe_referer = safe_url(self.comic_url)
+        res = self.scraper.get(safe_chap_url, headers={"Referer": safe_referer}, timeout=TIMEOUT)
         if res.status_code != 200:
             return []
-        res.encoding = 'utf-8'
-        soup = BeautifulSoup(res.text, "html.parser")
+        soup = BeautifulSoup(res.content, "html.parser")
 
         images = []
         for img in soup.find_all("img"):
-            src = img.get("src") or img.get("data-src") or ""
-            if "manga-images" in src and src not in images:
-                images.append(src)
+            src = img.get("src") or img.get("data-src") or img.get("data-original") or img.get("data-cdn") or ""
+            src = src.strip()
+            if not src:
+                continue
+            if ("manga-images" in src or "chapter-images" in src or "/truyen/" in src or "/data/" in src or "cdn" in src or "hentaivn" in src) and src not in images:
+                full_img_url = safe_url(urllib.parse.urljoin(self.BASE_URL, src))
+                if full_img_url and full_img_url not in images:
+                    images.append(full_img_url)
+
+        if not images:
+            content_div = soup.find(id=lambda x: x and ("content" in x.lower() or "read" in x.lower() or "chap" in x.lower())) or soup.select_one(".reading-detail, .reading-content, .chapter-content")
+            if content_div:
+                for img in content_div.find_all("img"):
+                    src = img.get("src") or img.get("data-src") or img.get("data-original") or ""
+                    src = src.strip()
+                    if src and not src.startswith("data:"):
+                        full_img_url = safe_url(urllib.parse.urljoin(self.BASE_URL, src))
+                        if full_img_url and full_img_url not in images:
+                            images.append(full_img_url)
 
         return images
 
@@ -1270,12 +1305,11 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
 
             url = f"https://hentaivnreal.com/danh-sach?page={current_page}"
             try:
-                res = scraper.get(url, timeout=20)
+                res = scraper.get(safe_url(url), timeout=20)
                 if res.status_code != 200:
                     time.sleep(2)
                     continue
-                res.encoding = 'utf-8'
-                soup = BeautifulSoup(res.text, "html.parser")
+                soup = BeautifulSoup(res.content, "html.parser")
 
                 pag = soup.find(class_=lambda c: c and 'pagination' in c)
                 if pag:
@@ -1302,12 +1336,27 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
                         continue
 
                     comic_rel_url = a_tag["href"]
-                    comic_full_url = urllib.parse.urljoin("https://hentaivnreal.com", comic_rel_url)
+                    comic_full_url = safe_url(urllib.parse.urljoin("https://hentaivnreal.com", comic_rel_url))
                     comic_title = a_tag.get_text(strip=True)
-                    slug = comic_rel_url.split("?")[0].rstrip("/").split("/")[-1]
+                    raw_slug = urllib.parse.unquote(comic_rel_url.split("?")[0].rstrip("/").split("/")[-1])
+                    slug = slugify(raw_slug)
 
                     img_elem = it.find("img")
-                    thumb_url = img_elem.get("src") or img_elem.get("data-src") or "" if img_elem else ""
+                    thumb_raw = img_elem.get("src") or img_elem.get("data-src") or "" if img_elem else ""
+                    thumb_url = safe_url(urllib.parse.urljoin("https://hentaivnreal.com", thumb_raw)) if thumb_raw else ""
+
+                    # Bóc tách số lượng chapter mới nhất hiển thị trong danh sách (vd: "- 97 chap" hoặc "- Oneshot")
+                    remote_chaps_count = None
+                    p_desc_first = desc_elem.find("p") if desc_elem else None
+                    raw_desc_text = p_desc_first.get_text(" ", strip=True) if p_desc_first else ""
+                    m_chap = re.search(r'-\s*([\d\.]+)\s*(?:chap|chương|tập|hoi|hồi)', raw_desc_text, re.I)
+                    if m_chap:
+                        try:
+                            remote_chaps_count = int(float(m_chap.group(1)))
+                        except Exception:
+                            remote_chaps_count = None
+                    elif "oneshot" in raw_desc_text.lower():
+                        remote_chaps_count = 1
 
                     other_names = ""
                     for p in it.find_all("p"):
@@ -1333,6 +1382,7 @@ class HentaiVNRealDownloader(BaseMangaDownloader):
                         "title": comic_title,
                         "url": comic_full_url,
                         "cover_thumb": thumb_url,
+                        "chapters_count": remote_chaps_count,
                         "other_names": other_names,
                         "tags": tags,
                         "views": views,

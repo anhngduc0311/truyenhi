@@ -52,6 +52,7 @@ try:
         ZetMangaDownloader,
         HentaiVNRealDownloader,
         slugify,
+        safe_url,
         is_manhwa_comic,
         is_manhua_comic,
         upload_file_to_cloud,
@@ -66,6 +67,17 @@ try:
         STITCH_GROUP_SIZE,
     )
 except ImportError:
+    def safe_url(url: str) -> str:
+        if not url: return ""
+        try:
+            url_str = str(url).strip()
+            parsed = urllib.parse.urlsplit(url_str)
+            quoted_path = urllib.parse.quote(urllib.parse.unquote(parsed.path), safe="/:@!$&'()*+,;=-_.~")
+            quoted_query = urllib.parse.quote(urllib.parse.unquote(parsed.query), safe="=&:@!$'()*+,;/-_.~?")
+            return urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, quoted_path, quoted_query, parsed.fragment))
+        except Exception:
+            return urllib.parse.quote(str(url), safe=":/%?&=#+@$,;~-._!")
+
     DEFAULT_COMIC_URL = "https://hentaivnreal.com/truyen/me-ban-la-mau-hinh-ly-tuong-cua-toi"
     DEFAULT_API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:5000/api")
     MANGADEX_API_BASE = "https://api.mangadex.org"
@@ -1033,9 +1045,8 @@ class MangaDownloaderGUI(ctk.CTk):
         try:
             scraper = cloudscraper.create_scraper()
             url = f"https://hentaivnreal.com/danh-sach?page={self.current_hentai_page}"
-            res = scraper.get(url, timeout=20)
-            res.encoding = 'utf-8'
-            soup = BeautifulSoup(res.text, "html.parser")
+            res = scraper.get(safe_url(url), timeout=20)
+            soup = BeautifulSoup(res.content, "html.parser")
 
             pag = soup.find(class_=lambda c: c and 'pagination' in c)
             if pag:
@@ -1059,12 +1070,14 @@ class MangaDownloaderGUI(ctk.CTk):
                     continue
 
                 comic_rel_url = a_tag["href"]
-                comic_full_url = urllib.parse.urljoin("https://hentaivnreal.com", comic_rel_url)
+                comic_full_url = safe_url(urllib.parse.urljoin("https://hentaivnreal.com", comic_rel_url))
                 comic_title = a_tag.get_text(strip=True)
-                slug = comic_rel_url.split("?")[0].rstrip("/").split("/")[-1]
+                raw_slug = urllib.parse.unquote(comic_rel_url.split("?")[0].rstrip("/").split("/")[-1])
+                slug = slugify(raw_slug)
 
                 img_elem = it.find("img")
-                thumb_url = img_elem.get("src") or img_elem.get("data-src") or "" if img_elem else ""
+                thumb_raw = img_elem.get("src") or img_elem.get("data-src") or "" if img_elem else ""
+                thumb_url = safe_url(urllib.parse.urljoin("https://hentaivnreal.com", thumb_raw)) if thumb_raw else ""
 
                 other_names = ""
                 for p in it.find_all("p"):
@@ -1302,7 +1315,7 @@ class MangaDownloaderGUI(ctk.CTk):
 
     def _load_async_thumb(self, img_url, label_widget):
         try:
-            r = requests.get(img_url, headers={"User-Agent": "NekoHentai-Downloader/1.0", "Referer": "https://hentaivnreal.com/"}, timeout=10)
+            r = requests.get(safe_url(img_url), headers={"User-Agent": "NekoHentai-Downloader/1.0", "Referer": "https://hentaivnreal.com/"}, timeout=10)
             if r.status_code == 200:
                 pil_im = Image.open(BytesIO(r.content))
                 pil_im.thumbnail((65, 90))
